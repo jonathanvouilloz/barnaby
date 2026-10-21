@@ -13,3 +13,7 @@ uuid.workspace = true
 chrono.workspace = true
 hound.workspace = true
 log.workspace = true
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+ureq = { version = "3.4.2", features = ["json"] }
+hmac = "0.13.0"
+sha2 = "0.11.1"
