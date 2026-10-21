@@ -23,8 +23,9 @@ pub fn create(handle: &AppHandle) -> tauri::Result<()> {
         .focusable(false)
         // Windows: shown once here, never re-shown (see `show`).
         .visible(cfg!(target_os = "windows"))
-        .position(OFF_SCREEN.0, OFF_SCREEN.1)
         .build()?;
+    // Not `.position(OFF_SCREEN)`: tao ignores a start position outside every monitor.
+    hide(handle);
     Ok(())
 }
 

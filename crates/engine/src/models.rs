@@ -166,7 +166,8 @@ fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<
         file.write_all(&buf[..n])?;
         hasher.update(&buf[..n]);
         done += n as u64;
-        progress((done as f32 / total as f32).min(1.0));
+        // Capped below 1.0: checksum, extraction and rename still follow (`fetch` sends 1.0).
+        progress((done as f32 / total as f32).min(0.99));
     }
     file.sync_all()?;
     ensure!(length.is_none_or(|l| l == done), "download {} truncated", entry.id);
@@ -280,6 +281,8 @@ pub(crate) mod tests {
         assert!(!dir.join("m.bin.part").exists());
         let seen = seen.into_inner().unwrap();
         assert!(seen.windows(2).all(|w| w[0] <= w[1]) && seen.last() == Some(&1.0) && seen.len() > 2);
+        // 1.0 means installed: the UI relies on it, so the transfer alone never reaches it.
+        assert!(seen[..seen.len() - 1].iter().all(|&p| p < 1.0));
         fs::remove_dir_all(dir).unwrap();
     }
 

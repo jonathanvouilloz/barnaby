@@ -236,7 +236,7 @@
                 {/if}
               </div>
               {#if p !== undefined}
-                <span class="secondary tabular" aria-live="polite">{t('settings.downloading', { pct: Math.round(p * 100) })}</span>
+                <span class="secondary tabular" aria-live="polite">{p >= 0.99 ? t('settings.installing') : t('settings.downloading', { pct: Math.round(p * 100) })}</span>
               {:else if m.installed}
                 <span class="installed">{t('settings.installed')}</span>
                 <button class="btn ghost small danger" aria-label={t('settings.delete_name', { name: m.name })} onclick={() => removeModel(m)}>{t('common.delete')}</button>

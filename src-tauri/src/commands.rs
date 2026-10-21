@@ -1,6 +1,6 @@
 //! IPC commands. The contract is `ui/src/lib/api.ts`.
 
-use std::sync::Arc;
+use std::{collections::BTreeSet, sync::{Arc, Mutex}};
 
 use barnaby_core::{
     retention::{self, MIX_WAV},
@@ -234,8 +234,14 @@ pub fn list_models(app: AppState) -> Vec<ModelInfo> {
 /// The one network action allowed in local mode, and only on the user's request (spec 6).
 #[tauri::command]
 pub async fn download_model(app: AppState<'_>, id: String) -> CmdResult<()> {
+    // Two downloads of one model would write the same temporary files.
+    static RUNNING: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+    if !lock(&RUNNING).insert(id.clone()) {
+        return Err("download_running".into());
+    }
     let app = app.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    let running = id.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         let handle = app.handle.clone();
         // One event per percent: the reader reports every chunk, thousands for a large model.
         let last = std::cell::Cell::new(-1);
@@ -247,8 +253,9 @@ pub async fn download_model(app: AppState<'_>, id: String) -> CmdResult<()> {
         };
         models::download(&app.models_dir, &id, progress).map(drop).map_err(code("download_failed"))
     })
-    .await
-    .map_err(|_| "download_failed".to_string())?
+    .await;
+    lock(&RUNNING).remove(&running);
+    result.map_err(|_| "download_failed".to_string())?
 }
 
 #[tauri::command]

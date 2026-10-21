@@ -56,6 +56,7 @@
         <span class="name">{m.name}<small>{t(`setup.role.${m.kind}`)}</small></span>
         <span class="state tabular">
           {#if progress[m.id] === 1}{t('settings.installed')}
+          {:else if progress[m.id] >= 0.99}{t('settings.installing')}
           {:else if progress[m.id] !== undefined}{t('settings.downloading', { pct: Math.round(progress[m.id] * 100) })}
           {:else}{size(m.size_mb)}{/if}
         </span>
