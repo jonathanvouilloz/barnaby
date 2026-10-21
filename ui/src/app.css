@@ -1,0 +1,131 @@
+/* Tokens: see DESIGN.md. Light by default, dark follows the system. */
+:root {
+  color-scheme: light dark;
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --sidebar: rgb(236 236 240 / .8);
+  --text: #1d1d1f;
+  --text-2: #6e6e73;
+  --border: rgb(0 0 0 / .1);
+  --accent: #0a66d8;
+  --on-accent: #ffffff;
+  --danger: #c62828;
+  --warn: #9a6400;
+  --ok: #1f7a3a;
+  --fill: rgb(0 0 0 / .05);
+  --fill-strong: rgb(0 0 0 / .09);
+  --owl-body: #b9b1a4;
+  --owl-face: #efe9df;
+  --owl-beak: #c98a2b;
+
+  --r-control: 6px;
+  --r-card: 10px;
+  --r-sheet: 14px;
+  --ease: cubic-bezier(.2, .7, .3, 1);
+  --font: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Cantarell, "Noto Sans", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --surface: #2c2c2e;
+    --sidebar: rgb(44 44 46 / .72);
+    --text: #f5f5f7;
+    --text-2: #a1a1a6;
+    --border: rgb(255 255 255 / .12);
+    --accent: #3d9bff;
+    /* white on #3d9bff fails AA; near-black passes */
+    --on-accent: #0b1220;
+    --danger: #ff6b60;
+    --warn: #ffcc4d;
+    --ok: #4cd774;
+    --fill: rgb(255 255 255 / .06);
+    --fill-strong: rgb(255 255 255 / .11);
+    --owl-body: #8a8276;
+    --owl-face: #d9d2c6;
+    --owl-beak: #e0a443;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#app { height: 100%; }
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1 { font-size: 22px; font-weight: 600; line-height: 1.25; }
+h2 { font-size: 15px; font-weight: 600; line-height: 1.35; }
+ul, ol { padding: 0; list-style: none; }
+
+.secondary { font-size: 12.5px; color: var(--text-2); }
+.tabular { font-variant-numeric: tabular-nums; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* Buttons: one filled primary per screen, the rest quiet. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 30px; padding: 4px 12px;
+  border: 1px solid var(--border); border-radius: var(--r-control);
+  background: var(--surface); color: var(--text);
+  font-size: 13.5px; font-weight: 500; white-space: nowrap; cursor: pointer;
+  transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
+}
+.btn:hover:not(:disabled) { background: var(--fill-strong); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
+.btn.danger { color: var(--danger); }
+.btn.danger-fill { background: var(--danger); border-color: transparent; color: var(--on-accent); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover:not(:disabled) { background: var(--fill); }
+.btn.small { min-height: 26px; padding: 2px 9px; font-size: 12.5px; }
+.btn.icon { padding: 0; width: 28px; min-height: 28px; }
+
+input[type="text"], input[type="email"], input[type="url"], input[type="number"], input[type="password"], input:not([type]), select, textarea {
+  width: 100%; min-height: 30px; padding: 4px 9px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-control);
+  font-size: 14px;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
+textarea { resize: vertical; line-height: 1.5; padding: 6px 9px; }
+input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
+::placeholder { color: var(--text-2); opacity: 1; }
+
+label { display: block; }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: 12.5px; color: var(--text-2); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card);
+}
+
+/* Screen layout shared by every route. */
+.screen { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.screen-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 20px 28px 16px; min-height: 72px;
+}
+.screen-head h1 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.screen-body { flex: 1; min-height: 0; overflow: auto; padding: 0 28px 28px; }
+
+.empty { color: var(--text-2); padding: 20px 16px; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
