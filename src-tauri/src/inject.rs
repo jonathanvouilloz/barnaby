@@ -1,6 +1,6 @@
 //! Text injection at the cursor (spec 7.2): clipboard, simulated paste, then restore.
 
-use std::{process::Command, sync::Mutex, thread, time::Duration};
+use std::{sync::Mutex, thread, time::Duration};
 
 use anyhow::{Context, Result};
 
@@ -60,6 +60,7 @@ fn simulate_paste() -> Result<()> {
 
 #[cfg(target_os = "linux")]
 fn run_tool(bin: &str, args: &[&str]) -> bool {
+    use std::process::Command;
     use std::io::Write;
     if bin == "dotool" {
         // dotool reads commands on stdin.
@@ -90,7 +91,7 @@ fn enigo_paste() -> Result<()> {
 pub fn active_app() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
-        let out = Command::new("xdotool").args(["getactivewindow", "getwindowpid"]).output().ok()?;
+        let out = std::process::Command::new("xdotool").args(["getactivewindow", "getwindowpid"]).output().ok()?;
         let pid = String::from_utf8(out.stdout).ok()?.trim().to_string();
         let name = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()?.trim().to_string();
         (!name.is_empty()).then_some(name)
