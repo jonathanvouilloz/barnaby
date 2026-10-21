@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main, phase-1]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+      - name: Core tests
+        run: cargo test -p barnaby-core
+      - name: UI checks
+        working-directory: ui
+        run: bun install --frozen-lockfile && bun run check && bun test
+
+  build:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+      - name: Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libasound2-dev libxdo-dev libssl-dev cmake clang
+      - name: UI deps
+        working-directory: ui
+        run: bun install --frozen-lockfile
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Engine tests
+        run: cargo test -p barnaby-engine
+      - name: Build installers
+        working-directory: src-tauri
+        run: bunx @tauri-apps/cli@2.12.3 build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: barnaby-${{ runner.os }}
+          path: |
+            target/release/bundle/**/*.deb
+            target/release/bundle/**/*.AppImage
+            target/release/bundle/**/*.msi
+            target/release/bundle/**/*-setup.exe
