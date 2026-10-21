@@ -39,6 +39,10 @@ pub fn start(app: &Arc<App>, title: &str, participants: &[Participant]) -> Resul
             return Err(e);
         }
     };
+    // Spec 7.4: a dictation already running keeps the mic out of the meeting track.
+    if lock(&app.dictation).is_some() {
+        recorder.pause_mic(true);
+    }
     *recording = Some(ActiveMeeting { id: meeting.id, recorder, started: Instant::now() });
     drop(recording);
     app.emit_meeting(meeting.id);
@@ -74,13 +78,14 @@ pub fn toggle(app: &Arc<App>) -> Result<()> {
     start(app, &title, &[]).map(drop)
 }
 
-pub fn add_marker(app: &App) -> Result<()> {
+/// Timestamped note on the meeting being recorded ("manual" from the UI, "marker" from the shortcut).
+pub fn add_note(app: &App, text: &str, source: &str) -> Result<()> {
     let (id, at) = {
         let rec = lock(&app.recording);
         let Some(a) = rec.as_ref() else { bail!("not_recording") };
         (a.id, a.started.elapsed().as_secs_f64())
     };
-    app.db().add_note(id, at, "", "marker")?;
+    app.db().add_note(id, at, text, source)?;
     Ok(())
 }
 
@@ -137,6 +142,8 @@ pub fn worker(app: Arc<App>, jobs: Receiver<Job>) {
 
 fn process(app: &App, id: Uuid) {
     let settings = app.settings();
+    // The meeting's own mode, not the current setting: a local meeting stays local when retried.
+    let Ok(mode) = app.db().get_meeting(id).map(|m| m.mode) else { return };
     let fail = |code: &str| {
         let _ = app.db().set_state(id, MeetingState::Failed, Some(code));
         app.emit_meeting(id);
@@ -150,7 +157,7 @@ fn process(app: &App, id: Uuid) {
             base_url: settings.llm.base_url.clone(),
             model: settings.llm.model.clone(),
             api_key: None,
-            policy: NetPolicy { mode: settings.processing_mode },
+            policy: NetPolicy { mode },
         }) as Arc<dyn Structurer>
     });
     let pipeline = Pipeline {
@@ -160,6 +167,7 @@ fn process(app: &App, id: Uuid) {
         structurer,
         data_dir: app.data_dir.clone(),
     };
+    // Pipeline::run sets `processing` too, but only returns at the end: tell the UI now.
     let _ = app.db().set_state(id, MeetingState::Processing, None);
     app.emit_meeting(id);
     let ok = pipeline.run(id).is_ok();

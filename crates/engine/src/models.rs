@@ -6,6 +6,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, ensure, Context, Result};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModelKind {
@@ -35,6 +36,8 @@ pub struct ModelEntry {
     /// Download size in MB (10^6 bytes).
     pub size_mb: u32,
     pub url: &'static str,
+    /// SHA-256 of the downloaded file (the archive for `.tar.bz2`): models are parsed by native code.
+    pub sha256: &'static str,
     /// Path inside `models/`. For a `.tar.bz2` download it is also the archive member
     /// kept, so an archive unpacked by hand into `models/` lands on the same path.
     pub file_name: &'static str,
@@ -43,16 +46,16 @@ pub struct ModelEntry {
 use ModelKind::*;
 
 static CATALOG: &[ModelEntry] = &[
-    ModelEntry { id: "whisper-tiny", kind: Whisper, name: "Whisper tiny", size_mb: 78, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin", file_name: "ggml-tiny.bin" },
-    ModelEntry { id: "whisper-base", kind: Whisper, name: "Whisper base", size_mb: 148, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin", file_name: "ggml-base.bin" },
-    ModelEntry { id: "whisper-small", kind: Whisper, name: "Whisper small", size_mb: 488, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin", file_name: "ggml-small.bin" },
+    ModelEntry { id: "whisper-tiny", kind: Whisper, name: "Whisper tiny", size_mb: 78, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin", sha256: "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21", file_name: "ggml-tiny.bin" },
+    ModelEntry { id: "whisper-base", kind: Whisper, name: "Whisper base", size_mb: 148, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin", sha256: "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe", file_name: "ggml-base.bin" },
+    ModelEntry { id: "whisper-small", kind: Whisper, name: "Whisper small", size_mb: 488, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin", sha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b", file_name: "ggml-small.bin" },
     ModelEntry {
         id: "whisper-large-v3-turbo",
         kind: Whisper,
         name: "Whisper large-v3 turbo",
         size_mb: 1625,
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin",
-        file_name: "ggml-large-v3-turbo.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
+        sha256: "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69", file_name: "ggml-large-v3-turbo.bin",
     },
     ModelEntry {
         id: "pyannote-segmentation-3-0",
@@ -60,7 +63,7 @@ static CATALOG: &[ModelEntry] = &[
         name: "Pyannote segmentation 3.0",
         size_mb: 7,
         url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2",
-        file_name: "sherpa-onnx-pyannote-segmentation-3-0/model.onnx",
+        sha256: "24615ee884c897d9d2ba09bb4d30da6bb1b15e685065962db5b02e76e4996488", file_name: "sherpa-onnx-pyannote-segmentation-3-0/model.onnx",
     },
     // WeSpeaker ResNet34 trained on VoxCeleb (speakers of 145 nationalities, many languages)
     // with large-margin fine-tuning; speaker embeddings depend little on the spoken language.
@@ -70,9 +73,9 @@ static CATALOG: &[ModelEntry] = &[
         name: "WeSpeaker ResNet34 (VoxCeleb)",
         size_mb: 27,
         url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_en_voxceleb_resnet34_LM.onnx",
-        file_name: "wespeaker_en_voxceleb_resnet34_LM.onnx",
+        sha256: "e9848563da86f263117134dfd7ad63c92355b37de492b55e325400c9d9c39012", file_name: "wespeaker_en_voxceleb_resnet34_LM.onnx",
     },
-    ModelEntry { id: "silero-vad", kind: Vad, name: "Silero VAD", size_mb: 1, url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx", file_name: "silero_vad.onnx" },
+    ModelEntry { id: "silero-vad", kind: Vad, name: "Silero VAD", size_mb: 1, url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx", sha256: "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6", file_name: "silero_vad.onnx" },
 ];
 
 pub fn catalog() -> &'static [ModelEntry] {
@@ -92,7 +95,7 @@ pub fn installed(models_dir: &Path, id: &str) -> bool {
 }
 
 /// Blocking download of model `id` into `models_dir`; `progress` gets a fraction in [0, 1].
-/// The file only appears under its final name once complete and size-checked.
+/// The file only appears under its final name once complete and checksum-verified.
 pub fn download(models_dir: &Path, id: &str, progress: impl Fn(f32)) -> Result<PathBuf> {
     let entry = find(id).ok_or_else(|| anyhow!("unknown model {id}"))?;
     fetch(models_dir, entry, &progress)
@@ -130,6 +133,7 @@ fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<
     let total = length.unwrap_or(expected).max(1);
     let mut reader = resp.body_mut().as_reader();
     let mut file = File::create(path)?;
+    let mut hasher = Sha256::new();
     let mut buf = vec![0u8; 1 << 16];
     let mut done: u64 = 0;
     loop {
@@ -138,14 +142,14 @@ fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<
             break;
         }
         file.write_all(&buf[..n])?;
+        hasher.update(&buf[..n]);
         done += n as u64;
         progress((done as f32 / total as f32).min(1.0));
     }
     file.sync_all()?;
     ensure!(length.is_none_or(|l| l == done), "download {} truncated", entry.id);
-    // Catches an error page or a different file served under the same URL, while
-    // tolerating a minor upstream re-upload.
-    ensure!(done.abs_diff(expected) <= (expected / 10).max(1_000_000), "download {}: unexpected size {done}", entry.id);
+    let digest: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    ensure!(digest == entry.sha256, "download {}: checksum mismatch", entry.id);
     Ok(())
 }
 
@@ -202,8 +206,9 @@ pub(crate) mod tests {
         Box::leak(url.into_boxed_str())
     }
 
-    fn fake(url: &'static str, size_mb: u32, file_name: &'static str) -> ModelEntry {
-        ModelEntry { id: "fake", kind: Whisper, name: "Fake", size_mb, url, file_name }
+    fn fake(url: &'static str, body: &[u8], file_name: &'static str) -> ModelEntry {
+        let sha256: String = Sha256::digest(body).iter().map(|b| format!("{b:02x}")).collect();
+        ModelEntry { id: "fake", kind: Whisper, name: "Fake", size_mb: 0, url, sha256: Box::leak(sha256.into_boxed_str()), file_name }
     }
 
     #[test]
@@ -232,7 +237,7 @@ pub(crate) mod tests {
         let dir = temp_dir("plain");
         let body = vec![7u8; 300_000];
         let seen = Mutex::new(Vec::new());
-        let entry = fake(serve(body.clone(), "m.bin"), 0, "m.bin");
+        let entry = fake(serve(body.clone(), "m.bin"), &body, "m.bin");
         let path = fetch(&dir, &entry, &|p| seen.lock().unwrap().push(p)).unwrap();
         assert_eq!(fs::read(&path).unwrap(), body);
         assert!(!dir.join("m.bin.part").exists());
@@ -252,7 +257,7 @@ pub(crate) mod tests {
             tar.append_data(&mut header, name, data).unwrap();
         }
         let archive = tar.into_inner().unwrap().finish().unwrap();
-        let entry = fake(serve(archive, "seg.tar.bz2"), 0, "seg/model.onnx");
+        let entry = fake(serve(archive.clone(), "seg.tar.bz2"), &archive, "seg/model.onnx");
         let path = fetch(&dir, &entry, &|_| {}).unwrap();
         assert_eq!(path, dir.join("seg/model.onnx"));
         assert_eq!(fs::read(path).unwrap(), b"onnx-bytes");
@@ -261,9 +266,9 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn wrong_size_leaves_nothing_behind() {
-        let dir = temp_dir("size");
-        let entry = fake(serve(b"<html>not found</html>".to_vec(), "big.bin"), 50, "big.bin");
+    fn wrong_checksum_leaves_nothing_behind() {
+        let dir = temp_dir("checksum");
+        let entry = fake(serve(b"<html>not found</html>".to_vec(), "big.bin"), b"the real model", "big.bin");
         assert!(fetch(&dir, &entry, &|_| {}).is_err());
         assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
         fs::remove_dir_all(dir).unwrap();

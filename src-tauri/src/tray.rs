@@ -32,7 +32,12 @@ pub fn create(handle: &AppHandle) -> tauri::Result<()> {
                     log::warn!("meeting toggle: {e:#}");
                 }
             }
-            "quit" => handle.exit(0),
+            "quit" => {
+                // Finalize the WAV headers rather than leaving the meeting to crash recovery.
+                let app = handle.state::<std::sync::Arc<App>>().inner().clone();
+                let _ = crate::meeting::stop(&app);
+                handle.exit(0)
+            }
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {

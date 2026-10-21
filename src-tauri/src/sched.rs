@@ -3,7 +3,8 @@
 
 use std::sync::{Arc, Condvar, Mutex};
 
-use barnaby_core::{audio::rms_windows, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
+use barnaby_core::{
+    audio::{rms, rms_windows}, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
 
 #[derive(Default)]
 pub struct Gate {
@@ -47,6 +48,8 @@ impl Drop for GateGuard<'_> {
 const BLOCK_S: f64 = 30.0;
 /// The cut is placed at the quietest 100 ms of the block's last seconds, to avoid splitting words.
 const SEARCH_S: f64 = 5.0;
+/// Below this a block is treated as silence (about -50 dBFS).
+const SPEECH_RMS: f32 = 3e-3;
 
 /// Wraps the meeting transcriber: block-wise, yielding the gate between blocks.
 pub struct MeetingTranscriber {
@@ -64,12 +67,16 @@ impl Transcriber for MeetingTranscriber {
         let mut detected = None;
         for (start, end) in blocks(samples) {
             let offset = start as f64 / SAMPLE_RATE as f64;
+            let block = &samples[start..end];
             let part = {
                 let _turn = self.gate.acquire(false);
-                // Lock the language after the first block so blocks don't flip between languages.
-                self.inner.transcribe(&samples[start..end], language.or(detected.as_deref()))?
+                self.inner.transcribe(block, language.or(detected.as_deref()))?
             };
-            detected.get_or_insert(part.language);
+            // Lock the language on the first block with speech, so blocks don't flip between
+            // languages; whisper guesses at random on the silence that often opens a meeting.
+            if !part.segments.is_empty() && rms(block) > SPEECH_RMS {
+                detected.get_or_insert(part.language);
+            }
             segments.extend(part.segments.into_iter().map(|s| RawSegment { start: s.start + offset, end: s.end + offset, ..s }));
         }
         Ok(Transcript { language: detected.unwrap_or_else(|| language.unwrap_or("auto").to_string()), segments })

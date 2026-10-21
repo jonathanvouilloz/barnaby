@@ -70,21 +70,6 @@ impl Pipeline {
         }
     }
 
-    /// Runs every meeting left captured, queued or mid-processing (app start). Returns their ids.
-    pub fn resume_pending(&self) -> Result<Vec<Uuid>> {
-        let pending = self.db().list_meetings_in(&[
-            MeetingState::Captured,
-            MeetingState::Queued,
-            MeetingState::Processing,
-        ])?;
-        // Failures are recorded on each meeting; one bad meeting must not block the others.
-        Ok(pending
-            .into_iter()
-            .map(|m| m.id)
-            .inspect(|id| drop(self.run(*id)))
-            .collect())
-    }
-
     fn process(&self, id: Uuid) -> Result<(), Failure> {
         let (settings, pending) = {
             let db = self.db();
@@ -107,14 +92,22 @@ impl Pipeline {
             Tracks::default()
         };
         for step in pending {
-            self.step(id, step, &tracks, &settings).map_err(|e| {
-                let code = if net::is_blocked(&e) {
-                    net::BLOCKED.to_string()
-                } else {
-                    format!("{step:?}_failed").to_lowercase()
-                };
-                (code, e)
-            })?;
+            match self.step(id, step, &tracks, &settings) {
+                Ok(()) => {}
+                // The summary is optional: an unreachable LLM must not block the review.
+                // Nothing is saved, so the next run tries the summary again.
+                Err(e) if step == Step::Structure && !net::is_blocked(&e) => {
+                    log::warn!("meeting {id}: structure_failed");
+                }
+                Err(e) => {
+                    let code = if net::is_blocked(&e) {
+                        net::BLOCKED.to_string()
+                    } else {
+                        format!("{step:?}_failed").to_lowercase()
+                    };
+                    return Err((code, e));
+                }
+            }
         }
         Ok(())
     }
@@ -453,7 +446,7 @@ mod tests {
     }
 
     #[test]
-    fn failed_step_resumes_without_redoing_earlier_steps() {
+    fn unreachable_llm_does_not_block_review_and_is_retried() {
         let (store, dir, id) = setup(&[]);
         let asr = Arc::new(FakeTranscriber::default());
         let p = pipeline(
@@ -462,35 +455,16 @@ mod tests {
             asr.clone(),
             Some(Arc::new(FlakyStructurer::default())),
         );
-        assert!(p.run(id).is_err());
+        p.run(id).unwrap();
         let m = lock(&store).get_meeting(id).unwrap();
-        assert_eq!(
-            (m.state, m.error.as_deref()),
-            (MeetingState::Failed, Some("structure_failed"))
-        );
+        assert_eq!(m.state, MeetingState::NeedsReview);
+        assert!(lock(&store).meeting_doc(id).unwrap().summary.is_none());
 
-        assert_eq!(
-            p.resume_pending().unwrap(),
-            Vec::<Uuid>::new(),
-            "failed meetings wait for a manual retry"
-        );
+        // The next run only redoes the missing summary.
         p.run(id).unwrap();
         let db = lock(&store);
-        assert_eq!(db.get_meeting(id).unwrap().state, MeetingState::NeedsReview);
         assert_eq!(asr.0.load(Ordering::SeqCst), 1);
         assert_eq!(db.meeting_doc(id).unwrap().summary.unwrap().overview, "ok");
-        std::fs::remove_dir_all(dir).unwrap();
-    }
-
-    #[test]
-    fn resume_pending_runs_captured_meetings() {
-        let (store, dir, id) = setup(&[]);
-        let p = pipeline(&store, &dir, Arc::new(FakeTranscriber::default()), None);
-        assert_eq!(p.resume_pending().unwrap(), vec![id]);
-        assert_eq!(
-            lock(&store).get_meeting(id).unwrap().state,
-            MeetingState::NeedsReview
-        );
         std::fs::remove_dir_all(dir).unwrap();
     }
 

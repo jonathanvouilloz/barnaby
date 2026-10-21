@@ -52,7 +52,10 @@ pub fn stop(app: &Arc<App>) {
         if let Err(e) = transcribe_and_paste(&app, samples) {
             log::warn!("dictation failed: {e:#}");
         }
-        status(&app, "idle");
+        // A new dictation may have started while this one was transcribing.
+        if !is_recording(&app) {
+            status(&app, "idle");
+        }
     });
 }
 

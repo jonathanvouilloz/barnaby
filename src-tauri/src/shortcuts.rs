@@ -49,7 +49,7 @@ impl Action {
             Action::Dictation { hold: true } => dictation::stop(app),
             Action::Dictation { hold: false } if pressed => dictation::toggle(app),
             Action::Meeting if pressed => log_err(meeting::toggle(app)),
-            Action::Marker if pressed => log_err(meeting::add_marker(app)),
+            Action::Marker if pressed => log_err(meeting::add_note(app, "", "marker")),
             Action::ReviewQueue if pressed => crate::show_main(&app.handle, Some("review")),
             _ => {}
         }

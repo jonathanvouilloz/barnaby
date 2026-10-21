@@ -1,6 +1,6 @@
 //! Text injection at the cursor (spec 7.2): clipboard, simulated paste, then restore.
 
-use std::{process::Command, thread, time::Duration};
+use std::{process::Command, sync::Mutex, thread, time::Duration};
 
 use anyhow::{Context, Result};
 
@@ -9,18 +9,36 @@ pub struct Delays {
     pub before_restore: Duration,
 }
 
+/// Two dictations finishing close together must not interleave their set/paste/restore.
+static PASTE: Mutex<()> = Mutex::new(());
+
 pub fn paste_text(text: &str, delays: &Delays) -> Result<()> {
+    let _one_at_a_time = PASTE.lock().unwrap_or_else(|e| e.into_inner());
     let mut clipboard = arboard::Clipboard::new().context("clipboard_unavailable")?;
     let previous = clipboard.get_text().ok();
-    clipboard.set_text(text).context("clipboard_write")?;
+    set_private(&mut clipboard, text).context("clipboard_write")?;
     thread::sleep(delays.before_paste);
     let pasted = simulate_paste();
     thread::sleep(delays.before_restore);
-    // Restore even when the paste failed, so the user never loses their clipboard.
+    // Restore even when the paste failed. Text only: an image on the clipboard is not restored.
     if let Some(prev) = previous {
         let _ = clipboard.set_text(prev);
     }
     pasted
+}
+
+/// Keeps dictated text out of clipboard managers and Windows cloud sync (local-first).
+fn set_private(clipboard: &mut arboard::Clipboard, text: &str) -> Result<(), arboard::Error> {
+    #[cfg(target_os = "windows")]
+    use arboard::SetExtWindows;
+    #[cfg(target_os = "linux")]
+    use arboard::SetExtLinux;
+    #[cfg(target_os = "macos")]
+    use arboard::SetExtApple;
+    let set = clipboard.set().exclude_from_history();
+    #[cfg(target_os = "windows")]
+    let set = set.exclude_from_cloud();
+    set.text(text)
 }
 
 #[cfg(target_os = "linux")]

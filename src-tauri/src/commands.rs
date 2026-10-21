@@ -104,12 +104,7 @@ pub fn current_recording(app: AppState) -> Option<String> {
 
 #[tauri::command]
 pub fn add_note(app: AppState, text: String) -> CmdResult<()> {
-    let (id, at) = {
-        let rec = lock(&app.recording);
-        let a = rec.as_ref().ok_or("not_recording")?;
-        (a.id, a.started.elapsed().as_secs_f64())
-    };
-    app.db().add_note(id, at, &text, "manual").map(drop).map_err(code("store_failed"))
+    meeting::add_note(&app, &text, "manual").map_err(code("note_failed"))
 }
 
 #[tauri::command]
@@ -223,8 +218,13 @@ pub async fn download_model(app: AppState<'_>, id: String) -> CmdResult<()> {
     let app = app.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         let handle = app.handle.clone();
+        // One event per percent: the reader reports every chunk, thousands for a large model.
+        let last = std::cell::Cell::new(-1);
         let progress = |p: f32| {
-            let _ = handle.emit("model-progress", serde_json::json!({ "id": id, "progress": p }));
+            let pct = (p * 100.0) as i32;
+            if last.replace(pct) != pct {
+                let _ = handle.emit("model-progress", serde_json::json!({ "id": id, "progress": p }));
+            }
         };
         models::download(&app.models_dir, &id, progress).map(drop).map_err(code("download_failed"))
     })

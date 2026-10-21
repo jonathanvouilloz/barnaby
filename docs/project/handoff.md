@@ -5,7 +5,8 @@ Mise à jour : 2026-10-21
 Phase 1 (`docs/plans/phase-1.md`) codée sur la branche `phase-1`, pas encore fusionnée dans `main`. Lots A (cœur), B (moteur), C (interface) et D (app Tauri) sont faits.
 
 Vérifié sur le VPS (Linux, sans matériel audio) :
-- `cargo clippy --workspace --all-targets -D warnings` propre ; tests : 26 (cœur), 12 (moteur), 3 (app), 17 (front).
+- `cargo clippy --workspace --all-targets -D warnings` propre ; tests : 25 (cœur), 12 (moteur), 3 (app), 17 (front).
+- Revue `ponytail-review` faite. Corrigés : langue figée sur un bloc silencieux, dictées exclues de l'historique du presse-papiers, mode réseau propre à chaque réunion, LLM injoignable qui ne bloque plus la relecture, modèles vérifiés par SHA-256, collages sérialisés, arrêt propre en quittant.
 - Pipeline local complet avec de vrais modèles (whisper-tiny + sherpa-onnx, test `e2e` ignoré par défaut) : attribution micro = « me », piste système = autre locuteur, idempotence.
 - `.deb` release construit (16 Mo), bibliothèques sherpa résolues via le rpath, app packagée lancée sous Xvfb : la webview s'affiche, l'IPC répond.
 
@@ -35,3 +36,5 @@ Vérifié sur le VPS (Linux, sans matériel audio) :
   - Pas de zones « terme incertain ».
   - `injected_into` reste vide sous Windows.
   - L'écho haut-parleur → micro peut fausser l'attribution de « me ».
+  - Résumé LLM raté : la réunion passe quand même en relecture, sans résumé. Il n'y a pas encore de bouton « régénérer le résumé ».
+  - Mémoire : environ 1 Go de pic pour 1 h de réunion (pistes en f32), soit environ 2 Go pour 2 h.

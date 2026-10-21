@@ -345,6 +345,7 @@ dependencies = [
  "cpal",
  "hound",
  "log",
+ "sha2 0.11.1",
  "sherpa-rs",
  "tar",
  "ureq 3.4.2",
