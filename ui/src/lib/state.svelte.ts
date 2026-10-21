@@ -72,9 +72,10 @@ export function applySettings(s: Settings) {
   document.documentElement.lang = s.ui_language;
 }
 
-/** Backend error codes map to `error.<code>`; unknown codes are shown as is. */
+/** Backend error codes map to `error.<code>` (a `:detail` suffix, e.g. `send_failed:webhook`, is dropped); unknown codes are shown as is. */
 export function errorText(code: string | null): string {
-  return code && has(`error.${code}`) ? t(`error.${code}`) : (code ?? '');
+  const key = `error.${code?.split(':')[0]}`;
+  return code && has(key) ? t(key) : (code ?? '');
 }
 
 export const reviewCount = () => app.meetings.filter((m) => m.state === 'needs_review').length;

@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/lib/barnaby/libonnxruntime.so": "../target/release/libonnxruntime.so",
+          "/usr/lib/barnaby/libsherpa-onnx-c-api.so": "../target/release/libsherpa-onnx-c-api.so"
+        }
+      }
+    }
+  }
+}

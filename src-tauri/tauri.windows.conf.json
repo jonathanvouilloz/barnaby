@@ -1,0 +1,5 @@
+{
+  "bundle": {
+    "resources": { "../target/release/*.dll": "./" }
+  }
+}
