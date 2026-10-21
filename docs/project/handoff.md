@@ -1,56 +1,48 @@
 # Reprise — Barnaby
-Mise à jour : 2026-10-21
+Mise à jour : 2026-10-21 (soir)
 
 ## Où on en est
-- Phase 1 (`docs/plans/phase-1.md`) et itération 1b (`docs/plans/phase-1b-dictation.md`) codées sur la branche `phase-1`, poussées. `main` ne contient que la spec. Aucune PR ouverte : le propriétaire fusionnera après ses tests.
-- Dictée : Parakeet v3 transcrit pendant la parole, en mode bascule (Ctrl+Alt+Espace), avec overlay, vocabulaire et collage au curseur hors historique du presse-papiers.
-- Réunion : capture micro et système, whisper + sherpa, relecture, export dossier et webhook. Résumé IA local (Ollama) ou cloud (OpenRouter, mode `hybrid`).
-- Installeurs de la CI, dernier run vert (Windows `.exe`/`.msi`, Linux `.deb`) : https://github.com/jonathanvouilloz/barnaby/actions/runs/39625164580 (section Artifacts).
-
-## Vérifications faites (2026-10-21, VPS)
-- `. ~/sysroot/env.sh && cargo clippy --workspace --all-targets -j2 -- -D warnings` : propre.
-- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 31 tests (cœur), 13 (moteur, dont 6 ignorés), 4 (app), tous verts.
-- `cd ui && bun run check && bun test` : 0 erreur, 22 tests verts.
-- `BARNABY_MODELS_DIR=$PWD/target/test-models cargo test --release -p barnaby-engine -- --ignored` :
-  - pipeline réunion de bout en bout : OK ;
-  - dictée de 62 s : 0,47 s entre l'arrêt et le texte ;
-  - chargement de Parakeet : environ 6 à 8 s.
-- `.deb` packagé et lancé sous Xvfb : webview et IPC OK. C'était avant la 1b, l'overlay n'a pas été vu dans une vraie fenêtre.
-- Rien n'a été testé avec du vrai matériel audio. Arbre de travail propre.
+- Phase 1 (`docs/plans/phase-1.md`) et itération 1b (`docs/plans/phase-1b-dictation.md`) codées sur `phase-1`, poussées. `main` ne contient que la spec. Pas de PR : la fusion attend les tests du propriétaire.
+- Premier test Windows du propriétaire : trois bugs, corrigés dans `e0ee496`, pas encore revérifiés sur Windows.
+  - Parakeet v3 se téléchargeait en boucle. La barre affichait 100 % avant la vérification et la décompression, et Réglages réaffichait alors « Télécharger ».
+  - La fenêtre « Modèles à installer » restait bloquée : même cause.
+  - La bulle de dictée était visible au démarrage : tao ignore une position de départ hors écran.
+- Installeurs de ce commit (Windows `.exe`/`.msi`, Linux `.deb`) : https://github.com/jonathanvouilloz/barnaby/actions/runs/39677298833 (section Artifacts).
+- Mascotte : orientation choisie, voir la dernière entrée de `decisions.md`. Le propriétaire génère l'image puis la vidéo.
 
 ## Prochaine action
-1. Le propriétaire teste l'installeur Windows (checklist ci-dessous) et rapporte : la latence ressentie, le collage, le raccourci, l'overlay.
-2. Corriger d'après son retour, puis ouvrir la PR `phase-1` → `main`. La fusion attend son accord.
-3. Ensuite : build GPU (Vulkan) de whisper pour les réunions, Phase 0 (DER/WER sur le corpus réel).
+1. Le propriétaire installe ce build. Il vérifie que la bulle n'est plus là au lancement, que Parakeet passe par « Installation… » puis « Installé », et que la fenêtre de configuration se ferme seule.
+2. Il continue la checklist ci-dessous et rapporte. On corrige, puis on ouvre la PR `phase-1` → `main` (accord requis pour fusionner).
+3. Quand la vidéo de la mascotte arrive (`scp` à la racine du dépôt) : la convertir avec ffmpeg en WebM et MP4 800 px (site) et en WebM 512 px (onboarding de l'app).
+4. Ensuite : build GPU (Vulkan) de whisper, puis Phase 0 (DER/WER sur le corpus réel).
+
+## Vérifications (2026-10-21, VPS, sur `e0ee496`)
+- `. ~/sysroot/env.sh && cargo clippy --workspace --all-targets -j2 -- -D warnings` : propre.
+- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 31 (cœur), 13 (moteur, 6 ignorés), 4 (app), tous verts.
+- `cd ui && bun run check && bun test` : 0 erreur, 22 tests verts.
+- CI run 39677298833 : succès.
+- Non vérifié : les trois correctifs sur un vrai Windows ; OpenRouter avec une vraie clé (seulement contre un faux serveur) ; aucun test avec du vrai matériel audio.
 
 ## Checklist de test (Windows, puis Linux)
-- **D'abord** : dicter dans le Bloc-notes. Le texte doit y arriver, ce qui prouve que l'overlay ne vole pas le focus.
-- Premier lancement : la feuille « Modèles à installer », puis « Tout télécharger ». Réglages enregistrés avant la 1b : remettre Parakeet v3 et le mode Bascule dans Réglages › Dictée.
+- Dicter dans le Bloc-notes : le texte doit y arriver (l'overlay ne vole pas le focus).
+- Réglages d'avant la 1b : remettre Parakeet v3 et le mode Bascule dans Réglages › Dictée.
 - Dictée de 30 à 60 s avec des pauses : latence, ponctuation, vocabulaire (« Barber Concept »).
-- Réunion réelle (Meet ou Teams) : niveaux micro et système, notification de fin, relecture, renommage des locuteurs, envoi vers le dossier et le webhook.
-- Résumé cloud : clé OpenRouter, un modèle (`qwen/…`, `deepseek/…`, `z-ai/glm-…`).
-- Crash pendant un enregistrement, puis relance : la réunion doit reprendre. `barnaby --toggle` depuis un terminal.
-- Logs : `%LOCALAPPDATA%\app.barnaby.desktop\logs`.
+- Réunion réelle (Meet ou Teams) : niveaux, fin, relecture, locuteurs, envoi dossier et webhook. Comparer Whisper small (défaut) et large-v3 turbo.
+- Résumé cloud : Réglages › Structuration (IA) › Cloud (OpenRouter), clé, identifiant de modèle (ex. `deepseek/deepseek-v4-flash`). Environ 0,002 à 0,04 $ par heure de réunion.
+- Crash pendant un enregistrement, puis relance : la réunion reprend. `barnaby --toggle` depuis un terminal.
+- Logs : `%LOCALAPPDATA%\app.barnaby.desktop\logs` (chercher `download_failed:` si un modèle ne s'installe pas).
+
+## État non commité
+Rien. Branche `phase-1`.
 
 ## Bloquants et actions du propriétaire
-- Tester l'installeur et rapporter les problèmes.
-- Fournir le logo et la chouette définitifs : remplacer `ui/public/owl.svg`, puis `cd src-tauri && bunx @tauri-apps/cli icon ../ui/public/owl.svg`, et refaire `icons/tray*.png`.
+- Tester le build et rapporter.
+- Mascotte : choisir l'image, générer la vidéo, l'envoyer. Dire si on retire les six états de la chouette (spec 10.4 et `Owl.svelte`).
+- Nouvelle icône d'app : fournir un SVG simplifié, puis `cd src-tauri && bunx @tauri-apps/cli icon <fichier>.svg` et refaire `icons/tray*.png`.
 
 ## Pièges connus
-- VPS sans sudo :
-  - Sourcer `~/sysroot/env.sh` avant toute compilation.
-  - Lancer un seul cargo à la fois (2 CPU).
-  - Ne jamais faire `pkill -f vite` : la commande tue aussi le shell qui la lance. Utiliser `kill <pid>`.
+- VPS sans sudo : sourcer `~/sysroot/env.sh` avant toute compilation ; un seul cargo à la fois (2 CPU) ; jamais `pkill -f vite` (tue le shell), utiliser `kill <pid>`.
 - Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt.
-- sherpa-onnx est lié dynamiquement :
-  - Linux : rpath `$ORIGIN/../lib/barnaby` et `tauri.linux.conf.json`.
-  - Windows : `tauri.bundle-windows.json` est passé seulement à l'empaquetage, après `cargo build --release` (voir AGENTS.md).
-  - Pas de rust-cache dans le job de build de la CI : il restaure sherpa sans ses bibliothèques.
-- Pas encore traité :
-  - Pas d'AppImage.
-  - Pas de zones « terme incertain ».
-  - Pas de bouton « régénérer le résumé ».
-  - `injected_into` reste vide sous Windows.
-  - L'écho haut-parleur peut fausser l'attribution de « me ».
-  - Environ 1 Go de RAM par heure de réunion.
-  - Le vocabulaire peut sur-corriger un mot proche (« barbier concept » devient « Barber Concept »).
+- sherpa-onnx lié dynamiquement : rpath `$ORIGIN/../lib/barnaby` sous Linux ; `tauri.bundle-windows.json` seulement à l'empaquetage Windows ; pas de rust-cache dans le job de build de la CI.
+- Overlay Windows : ne jamais le cacher ni lui donner de position de départ hors écran, seulement le déplacer (voir `decisions.md`).
+- Pas encore traité : AppImage, zones « terme incertain », bouton « régénérer le résumé », `injected_into` vide sous Windows, écho haut-parleur qui fausse « me », environ 1 Go de RAM par heure de réunion, sur-correction du vocabulaire (« barbier concept »).

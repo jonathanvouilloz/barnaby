@@ -46,7 +46,7 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - À rouvrir si : les sur-corrections gênent en pratique (exemple connu : « barbier concept »).
 
 ## 2026-10-21 — Overlay Windows : déplacé hors écran, jamais caché
-- Choix : la fenêtre est créée visible et non focalisable, puis on la déplace à l'écran ou hors écran.
+- Choix : la fenêtre est créée visible et non focalisable, puis on la déplace à l'écran ou hors écran. Le premier déplacement hors écran se fait juste après la création : tao ignore une position de départ située hors de tout écran et pose la fenêtre en plein écran (bug vu au premier test).
 - Pourquoi : `ShowWindow` peut l'activer malgré `WS_EX_NOACTIVATE`, et le collage partirait alors dans l'overlay.
 - À rouvrir si : le test sur le PC du propriétaire montre un vol de focus ou un artefact visuel.
 
@@ -54,3 +54,9 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : le job de build compile sans rust-cache ; Linux ne livre que le `.deb`.
 - Pourquoi : le cache restaurait sherpa-rs-sys sans ses bibliothèques partagées, d'où des tests et un bundle cassés. `linuxdeploy` échoue sur l'AppImage.
 - À rouvrir si : la durée de la CI devient gênante (piste : copier les bibliothèques depuis `~/.cache/sherpa-rs` après la restauration), ou si une distribution non Debian est demandée.
+
+## 2026-10-21 — Mascotte : vidéo générée par IA, décorative
+- Choix : chouette « esprit » 2D minimaliste, générée en image puis animée en image vers vidéo (Kling) : boucle de 5 s, carré 1:1. Usages : le site (WebM + MP4, 800 px) et l'onboarding de l'app (WebM, 512 px). Dans l'app, elle est décorative.
+- Écarté : animation SVG ou Rive pilotée par l'état (jugée trop coûteuse pour le besoin) ; Kling pour une animation qui réagit en direct (une vidéo ne change pas d'état).
+- Ouvert : retirer de la spec (10.4) et du code les six états de la chouette. Le propriétaire n'a pas encore tranché.
+- À rouvrir si : une boucle vidéo pèse trop ou rend mal sur fond clair et sombre.
