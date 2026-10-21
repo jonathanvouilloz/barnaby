@@ -2,51 +2,55 @@
 Mise à jour : 2026-10-21
 
 ## Où on en est
-Phase 1 (`docs/plans/phase-1.md`) codée sur la branche `phase-1`, pas encore fusionnée dans `main`. Lots A (cœur), B (moteur), C (interface) et D (app Tauri) sont faits.
+- Phase 1 (`docs/plans/phase-1.md`) et itération 1b (`docs/plans/phase-1b-dictation.md`) codées sur la branche `phase-1`, poussées. `main` ne contient que la spec. Aucune PR ouverte : le propriétaire fusionnera après ses tests.
+- Dictée : Parakeet v3 transcrit pendant la parole, en mode bascule (Ctrl+Alt+Espace), avec overlay, vocabulaire et collage au curseur hors historique du presse-papiers.
+- Réunion : capture micro et système, whisper + sherpa, relecture, export dossier et webhook. Résumé IA local (Ollama) ou cloud (OpenRouter, mode `hybrid`).
+- Installeurs de la CI, dernier run vert (Windows `.exe`/`.msi`, Linux `.deb`) : https://github.com/jonathanvouilloz/barnaby/actions/runs/39625164580 (section Artifacts).
 
-Vérifié sur le VPS (Linux, sans matériel audio) :
-- `cargo clippy --workspace --all-targets -D warnings` propre ; tests : 25 (cœur), 12 (moteur), 3 (app), 17 (front).
-- Revue `ponytail-review` faite. Corrigés : langue figée sur un bloc silencieux, dictées exclues de l'historique du presse-papiers, mode réseau propre à chaque réunion, LLM injoignable qui ne bloque plus la relecture, modèles vérifiés par SHA-256, collages sérialisés, arrêt propre en quittant.
-- Pipeline local complet avec de vrais modèles (whisper-tiny + sherpa-onnx, test `e2e` ignoré par défaut) : attribution micro = « me », piste système = autre locuteur, idempotence.
-- `.deb` release construit (16 Mo), bibliothèques sherpa résolues via le rpath, app packagée lancée sous Xvfb : la webview s'affiche, l'IPC répond.
-
-## Itération 1b (dictée instantanée)
-Faite (`docs/plans/phase-1b-dictation.md`) :
-- Dictée avec Parakeet v3, transcrite en flux : 0,47 s entre l'arrêt et le texte pour 62 s de dictée sur le VPS (2 vCPU chargés).
-- Mode bascule par défaut ; un appui court marche aussi en mode maintien.
-- Overlay (chouette et onde sonore).
-- Vocabulaire personnalisé (correction locale, et transmis au LLM).
-- Structuration cloud via OpenRouter (mode `hybrid`, clé dans le trousseau).
-- whisper.cpp compilé de façon portable (AVX2).
+## Vérifications faites (2026-10-21, VPS)
+- `. ~/sysroot/env.sh && cargo clippy --workspace --all-targets -j2 -- -D warnings` : propre.
+- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 31 tests (cœur), 13 (moteur, dont 6 ignorés), 4 (app), tous verts.
+- `cd ui && bun run check && bun test` : 0 erreur, 22 tests verts.
+- `BARNABY_MODELS_DIR=$PWD/target/test-models cargo test --release -p barnaby-engine -- --ignored` :
+  - pipeline réunion de bout en bout : OK ;
+  - dictée de 62 s : 0,47 s entre l'arrêt et le texte ;
+  - chargement de Parakeet : environ 6 à 8 s.
+- `.deb` packagé et lancé sous Xvfb : webview et IPC OK. C'était avant la 1b, l'overlay n'a pas été vu dans une vraie fenêtre.
+- Rien n'a été testé avec du vrai matériel audio. Arbre de travail propre.
 
 ## Prochaine action
-1. Pousser `phase-1` pour que la CI construise les installeurs Windows et Linux (`.github/workflows/ci.yml`), et corriger ce qui casse sous Windows.
-2. Le propriétaire teste sur ses PC (checklist ci-dessous). Ensuite, fusion dans `main` et Phase 0 (mesures DER/WER sur le corpus réel).
+1. Le propriétaire teste l'installeur Windows (checklist ci-dessous) et rapporte : la latence ressentie, le collage, le raccourci, l'overlay.
+2. Corriger d'après son retour, puis ouvrir la PR `phase-1` → `main`. La fusion attend son accord.
+3. Ensuite : build GPU (Vulkan) de whisper pour les réunions, Phase 0 (DER/WER sur le corpus réel).
 
-## Checklist de test (Windows et Linux)
-- **En premier : l'overlay ne doit pas voler le focus.** Dicter dans le Bloc-notes : le texte doit arriver dans le Bloc-notes, pas disparaître.
-- Réglages enregistrés avant la 1b : vérifier Réglages › Dictée. Choisir Parakeet v3 et le mode Bascule si les anciens réglages (whisper-base, maintien) sont restés.
-- Premier lancement : la feuille « Modèles à installer » propose le pack (environ 670 Mo) ; « Tout télécharger ». Variantes dans Réglages › Modèles.
-- Dictée : en mode maintien et en mode bascule, dans un éditeur, un navigateur et un terminal. Vérifier que le texte arrive et que le presse-papiers est restauré. Mesurer la latence.
-- Linux : sous X11 (`xdotool`) et sous Wayland (`wtype`). Sans eux, repli sur enigo.
-- Réunion : un appel réel (Meet ou Teams), avec niveaux micro et système visibles. Arrêter, attendre la notification, relire, renommer les locuteurs, valider. Contrôler la sortie dossier et webhook.
-- Crash : tuer l'app pendant un enregistrement, la relancer. La réunion doit reprendre et se traiter.
-- Ollama (facultatif) : activer la structuration avec `http://localhost:11434/v1`.
-- CLI : `barnaby --toggle` lance ou arrête une dictée dans l'instance déjà ouverte.
+## Checklist de test (Windows, puis Linux)
+- **D'abord** : dicter dans le Bloc-notes. Le texte doit y arriver, ce qui prouve que l'overlay ne vole pas le focus.
+- Premier lancement : la feuille « Modèles à installer », puis « Tout télécharger ». Réglages enregistrés avant la 1b : remettre Parakeet v3 et le mode Bascule dans Réglages › Dictée.
+- Dictée de 30 à 60 s avec des pauses : latence, ponctuation, vocabulaire (« Barber Concept »).
+- Réunion réelle (Meet ou Teams) : niveaux micro et système, notification de fin, relecture, renommage des locuteurs, envoi vers le dossier et le webhook.
+- Résumé cloud : clé OpenRouter, un modèle (`qwen/…`, `deepseek/…`, `z-ai/glm-…`).
+- Crash pendant un enregistrement, puis relance : la réunion doit reprendre. `barnaby --toggle` depuis un terminal.
+- Logs : `%LOCALAPPDATA%\app.barnaby.desktop\logs`.
 
 ## Bloquants et actions du propriétaire
-- Valider le push de `phase-1` (déclenche la CI).
-- Logo et chouette définitifs : remplacer `ui/public/owl.svg`, puis `cd src-tauri && bunx @tauri-apps/cli icon ../ui/public/owl.svg` ; régénérer aussi `icons/tray.png` et `icons/tray-active.png`.
+- Tester l'installeur et rapporter les problèmes.
+- Fournir le logo et la chouette définitifs : remplacer `ui/public/owl.svg`, puis `cd src-tauri && bunx @tauri-apps/cli icon ../ui/public/owl.svg`, et refaire `icons/tray*.png`.
 
 ## Pièges connus
-- VPS de dev sans sudo : sourcer `~/sysroot/env.sh` (en-têtes ALSA/webkit/cmake/clang extraits de .deb) avant toute compilation. Pour lancer les tests de l'app : `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu`.
-- Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt, pas depuis `src-tauri`.
-- sherpa-onnx est lié dynamiquement : les `.so`/`.dll` sont livrés par `tauri.linux.conf.json` et, sous Windows, par `tauri.bundle-windows.json`, passé uniquement à l'empaquetage (voir AGENTS.md). Le binaire Linux cherche dans `$ORIGIN:$ORIGIN/../lib/barnaby` (`build.rs`).
+- VPS sans sudo :
+  - Sourcer `~/sysroot/env.sh` avant toute compilation.
+  - Lancer un seul cargo à la fois (2 CPU).
+  - Ne jamais faire `pkill -f vite` : la commande tue aussi le shell qui la lance. Utiliser `kill <pid>`.
+- Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt.
+- sherpa-onnx est lié dynamiquement :
+  - Linux : rpath `$ORIGIN/../lib/barnaby` et `tauri.linux.conf.json`.
+  - Windows : `tauri.bundle-windows.json` est passé seulement à l'empaquetage, après `cargo build --release` (voir AGENTS.md).
+  - Pas de rust-cache dans le job de build de la CI : il restaure sherpa sans ses bibliothèques.
 - Pas encore traité :
-  - Pas de détection d'un champ texte actif : le texte est toujours collé, et l'historique le garde.
+  - Pas d'AppImage.
   - Pas de zones « terme incertain ».
+  - Pas de bouton « régénérer le résumé ».
   - `injected_into` reste vide sous Windows.
-  - L'écho haut-parleur → micro peut fausser l'attribution de « me ».
-  - Résumé LLM raté : la réunion passe quand même en relecture, sans résumé. Il n'y a pas encore de bouton « régénérer le résumé ».
-  - AppImage retiré : `linuxdeploy` échoue en CI. Seul le `.deb` est livré pour l'instant.
-  - Mémoire : environ 1 Go de pic pour 1 h de réunion (pistes en f32), soit environ 2 Go pour 2 h.
+  - L'écho haut-parleur peut fausser l'attribution de « me ».
+  - Environ 1 Go de RAM par heure de réunion.
+  - Le vocabulaire peut sur-corriger un mot proche (« barbier concept » devient « Barber Concept »).
