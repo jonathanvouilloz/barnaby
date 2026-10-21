@@ -63,7 +63,7 @@ static CATALOG: &[ModelEntry] = &[
     ModelEntry {
         id: "parakeet-v3",
         kind: Parakeet,
-        name: "Parakeet v3 (dictée rapide)",
+        name: "Parakeet v3",
         size_mb: 487,
         url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
         sha256: "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf", file_name: "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/tokens.txt",

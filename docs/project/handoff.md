@@ -10,11 +10,22 @@ Vérifié sur le VPS (Linux, sans matériel audio) :
 - Pipeline local complet avec de vrais modèles (whisper-tiny + sherpa-onnx, test `e2e` ignoré par défaut) : attribution micro = « me », piste système = autre locuteur, idempotence.
 - `.deb` release construit (16 Mo), bibliothèques sherpa résolues via le rpath, app packagée lancée sous Xvfb : la webview s'affiche, l'IPC répond.
 
+## Itération 1b (dictée instantanée)
+Faite (`docs/plans/phase-1b-dictation.md`) :
+- Dictée avec Parakeet v3, transcrite en flux : 0,47 s entre l'arrêt et le texte pour 62 s de dictée sur le VPS (2 vCPU chargés).
+- Mode bascule par défaut ; un appui court marche aussi en mode maintien.
+- Overlay (chouette et onde sonore).
+- Vocabulaire personnalisé (correction locale, et transmis au LLM).
+- Structuration cloud via OpenRouter (mode `hybrid`, clé dans le trousseau).
+- whisper.cpp compilé de façon portable (AVX2).
+
 ## Prochaine action
 1. Pousser `phase-1` pour que la CI construise les installeurs Windows et Linux (`.github/workflows/ci.yml`), et corriger ce qui casse sous Windows.
 2. Le propriétaire teste sur ses PC (checklist ci-dessous). Ensuite, fusion dans `main` et Phase 0 (mesures DER/WER sur le corpus réel).
 
 ## Checklist de test (Windows et Linux)
+- **En premier : l'overlay ne doit pas voler le focus.** Dicter dans le Bloc-notes : le texte doit arriver dans le Bloc-notes, pas disparaître.
+- Réglages enregistrés avant la 1b : vérifier Réglages › Dictée. Choisir Parakeet v3 et le mode Bascule si les anciens réglages (whisper-base, maintien) sont restés.
 - Premier lancement : la feuille « Modèles à installer » propose le pack (environ 670 Mo) ; « Tout télécharger ». Variantes dans Réglages › Modèles.
 - Dictée : en mode maintien et en mode bascule, dans un éditeur, un navigateur et un terminal. Vérifier que le texte arrive et que le presse-papiers est restauré. Mesurer la latence.
 - Linux : sous X11 (`xdotool`) et sous Wayland (`wtype`). Sans eux, repli sur enigo.

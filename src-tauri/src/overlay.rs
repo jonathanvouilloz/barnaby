@@ -21,10 +21,16 @@ pub fn create(handle: &AppHandle) -> tauri::Result<()> {
         .shadow(false)
         .focused(false)
         .focusable(false)
-        .visible(false)
+        // Windows: shown once here, never re-shown (see `show`).
+        .visible(cfg!(target_os = "windows"))
+        .position(OFF_SCREEN.0, OFF_SCREEN.1)
         .build()?;
     Ok(())
 }
+
+/// Windows can activate a window on `ShowWindow` even with WS_EX_NOACTIVATE, which would
+/// send the paste into the overlay; moving an already-visible window never activates it.
+const OFF_SCREEN: (f64, f64) = (-32000.0, -32000.0);
 
 /// Bottom centre of the primary monitor's work area, so it clears the taskbar. Never focuses.
 pub fn show(handle: &AppHandle) {
@@ -36,11 +42,16 @@ pub fn show(handle: &AppHandle) {
         let y = area.position.y + area.size.height as i32 - height - margin;
         let _ = w.set_position(PhysicalPosition::new(x, y));
     }
-    let _ = w.show();
+    if !cfg!(target_os = "windows") {
+        let _ = w.show();
+    }
 }
 
 pub fn hide(handle: &AppHandle) {
-    if let Some(w) = handle.get_webview_window(LABEL) {
+    let Some(w) = handle.get_webview_window(LABEL) else { return };
+    if cfg!(target_os = "windows") {
+        let _ = w.set_position(tauri::LogicalPosition::new(OFF_SCREEN.0, OFF_SCREEN.1));
+    } else {
         let _ = w.hide();
     }
 }

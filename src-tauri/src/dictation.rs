@@ -163,7 +163,7 @@ fn level(chunk: &[f32]) -> f32 {
 
 fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms: u64) -> anyhow::Result<()> {
     let text = transcript.segments.iter().map(|s| s.text.trim()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" ");
-    // vocabulary correction: barnaby_core::vocabulary::correct(&text, &settings.vocabulary)
+    let text = barnaby_core::vocabulary::correct(&text, &settings.vocabulary);
     if text.is_empty() {
         return Ok(());
     }

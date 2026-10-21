@@ -155,6 +155,7 @@ fn process(app: &App, id: Uuid) {
             base_url: settings.llm.base_url.clone(),
             model: settings.llm.model.clone(),
             api_key: app.llm_api_key(),
+            vocabulary: settings.vocabulary.clone(),
             policy: NetPolicy { mode },
         }) as Arc<dyn Structurer>
     });
