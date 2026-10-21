@@ -1,0 +1,1 @@
+Lire `AGENTS.md`.
