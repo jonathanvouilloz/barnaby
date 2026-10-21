@@ -14,7 +14,7 @@ use crate::model::*;
 use crate::provider::*;
 use crate::retention::{meeting_dir, MIC_WAV, MIX_WAV, SYSTEM_WAV};
 use crate::store::{lock, SharedStore, Store};
-use crate::{net, review};
+use crate::{net, review, vocabulary};
 
 pub struct Pipeline {
     pub store: SharedStore,
@@ -148,7 +148,10 @@ impl Pipeline {
                 let transcript: Transcript = load(&db, id, Step::Transcribe)?;
                 let turns: Vec<SpeakerTurn> = load(&db, id, Step::Diarize)?;
                 let labels = label_turns(&turns, &t.mic, &t.system);
-                let segments = assign_segments(&transcript, &turns, &labels);
+                let mut segments = assign_segments(&transcript, &turns, &labels);
+                for s in &mut segments {
+                    s.text = vocabulary::correct(&s.text, &settings.vocabulary);
+                }
                 let participants = merge_participants(&db, db.participants(id)?, &labels)?;
                 db.set_participants(id, &participants)?;
                 db.save_segments(id, &segments)?;
@@ -446,6 +449,28 @@ mod tests {
     }
 
     #[test]
+    fn segments_get_vocabulary_spelling() {
+        let (store, dir, id) = setup(&[]);
+        {
+            let db = lock(&store);
+            let mut settings = db.settings().unwrap();
+            settings.vocabulary = vec!["Salüt".into()];
+            db.save_settings(&settings).unwrap();
+        }
+        pipeline(&store, &dir, Arc::new(FakeTranscriber::default()), None)
+            .run(id)
+            .unwrap();
+        let texts: Vec<_> = lock(&store)
+            .segments(id)
+            .unwrap()
+            .into_iter()
+            .map(|s| s.text)
+            .collect();
+        assert_eq!(texts, vec!["bonjour", "Salüt"]);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
     fn unreachable_llm_does_not_block_review_and_is_retried() {
         let (store, dir, id) = setup(&[]);
         let asr = Arc::new(FakeTranscriber::default());
@@ -526,6 +551,7 @@ mod tests {
             base_url,
             model: "m".into(),
             api_key: None,
+            vocabulary: Vec::new(),
             policy: NetPolicy {
                 mode: ProcessingMode::Local,
             },

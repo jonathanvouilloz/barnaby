@@ -81,10 +81,10 @@ mod tests {
         ] {
             assert!(p.check(bad).is_err(), "{bad}");
         }
-        assert!(NetPolicy {
-            mode: ProcessingMode::Api
+        for mode in [ProcessingMode::Hybrid, ProcessingMode::Api] {
+            assert!(NetPolicy { mode }
+                .check("https://openrouter.ai/api/v1/chat/completions")
+                .is_ok());
         }
-        .check("https://api.openai.com")
-        .is_ok());
     }
 }
