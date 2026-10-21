@@ -10,6 +10,9 @@ pub mod models;
 pub mod vad;
 pub mod whisper;
 
+#[cfg(test)]
+mod e2e;
+
 pub use capture::Recorder;
 pub use diarize::SherpaDiarizer;
 pub use mic::DictationRecorder;

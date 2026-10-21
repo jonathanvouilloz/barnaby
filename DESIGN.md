@@ -32,6 +32,9 @@ Police système uniquement : `system-ui, -apple-system, "Segoe UI Variable Text"
 | `--danger` | `#c62828` | `#ff6b60` |
 | `--warn` (zones d'ombre) | `#9a6400` | `#ffcc4d` |
 | `--ok` | `#1f7a3a` | `#4cd774` |
+| `--on-accent` (texte sur accent) | `#ffffff` | `#0b1220` (le blanc sur `#3d9bff` échoue AA) |
+| `--fill` / `--fill-strong` (fonds de contrôles) | `rgb(0 0 0 / .05)` / `.09` | `rgb(255 255 255 / .06)` / `.11` |
+| `--owl-body` / `--owl-face` / `--owl-beak` | `#b9b1a4` / `#efe9df` / `#c98a2b` | `#8a8276` / `#d9d2c6` / `#e0a443` |
 
 Rayons : 6px (contrôles), 10px (cartes), 14px (feuilles). Espacements : multiples de 4px.
 
