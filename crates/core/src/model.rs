@@ -223,6 +223,8 @@ pub struct DictationSettings {
     pub paste_delay_before_ms: u64,
     pub paste_delay_after_ms: u64,
     pub keep_history: bool,
+    /// Small always-on-top recording indicator while dictating.
+    pub show_overlay: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -289,16 +291,21 @@ pub struct Settings {
     pub llm: LlmSettings,
     pub consent_acknowledged: bool,
     pub notification_sound: bool,
+    /// Terms (brand names, jargon) the transcripts must spell right; also given to the LLM.
+    pub vocabulary: Vec<String>,
+    /// The user saw what leaves the machine in `hybrid`/`api` mode (spec 6).
+    pub cloud_disclosure_acknowledged: bool,
 }
 
 impl Default for DictationSettings {
     fn default() -> Self {
         Self {
-            mode: DictationMode::Hold,
-            model: "whisper-base".into(),
+            mode: DictationMode::Toggle,
+            model: "parakeet-v3".into(),
             paste_delay_before_ms: 50,
             paste_delay_after_ms: 300,
             keep_history: true,
+            show_overlay: true,
         }
     }
 }
@@ -347,6 +354,8 @@ impl Default for Settings {
             llm: LlmSettings::default(),
             consent_acknowledged: false,
             notification_sound: false,
+            vocabulary: Vec::new(),
+            cloud_disclosure_acknowledged: false,
         }
     }
 }

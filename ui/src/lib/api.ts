@@ -61,16 +61,21 @@ export interface Settings {
   ui_language: 'fr' | 'en';
   transcription_language: 'auto' | 'fr' | 'en';
   processing_mode: ProcessingMode;
-  dictation: { mode: DictationMode; model: string; paste_delay_before_ms: number; paste_delay_after_ms: number; keep_history: boolean };
+  dictation: { mode: DictationMode; model: string; paste_delay_before_ms: number; paste_delay_after_ms: number; keep_history: boolean; show_overlay: boolean };
   meeting: { model: string; confidence_threshold: number; retention: AudioRetention };
   shortcuts: { dictation: string; meeting_toggle: string; marker: string; review_queue: string };
   destinations: { folder: { enabled: boolean; path: string }; webhook: { enabled: boolean; url: string } };
   llm: { enabled: boolean; base_url: string; model: string };
   consent_acknowledged: boolean;
   notification_sound: boolean;
+  /** Terms (brand names, jargon) the transcripts must spell right; also given to the LLM. */
+  vocabulary: string[];
+  /** The user saw what leaves the machine in hybrid/api mode (spec 6). */
+  cloud_disclosure_acknowledged: boolean;
 }
 
-export type ModelKind = 'whisper' | 'diarization_segmentation' | 'diarization_embedding' | 'vad';
+/** 'parakeet': fast dictation model (sherpa-onnx); 'whisper': meetings, dictation fallback. */
+export type ModelKind = 'whisper' | 'parakeet' | 'diarization_segmentation' | 'diarization_embedding' | 'vad';
 export interface ModelInfo { id: string; kind: ModelKind; name: string; size_mb: number; installed: boolean }
 
 export type DictationStatus = 'idle' | 'recording' | 'transcribing';
@@ -82,6 +87,9 @@ export const api = {
   /** Stored in the OS keyring. Empty string clears it. */
   setWebhookSecret: (secret: string) => invoke<void>('set_webhook_secret', { secret }),
   hasWebhookSecret: () => invoke<boolean>('has_webhook_secret'),
+  /** Cloud LLM key (OpenRouter), stored in the OS keyring. Empty string clears it. */
+  setLlmApiKey: (key: string) => invoke<void>('set_llm_api_key', { key }),
+  hasLlmApiKey: () => invoke<boolean>('has_llm_api_key'),
 
   listMeetings: () => invoke<Meeting[]>('list_meetings'),
   getMeeting: (id: string) => invoke<MeetingDetail>('get_meeting', { id }),
@@ -113,6 +121,8 @@ export const api = {
 export const events = {
   meetingUpdated: (cb: (m: Meeting) => void): Promise<UnlistenFn> => listen<Meeting>('meeting-updated', (e) => cb(e.payload)),
   dictationStatus: (cb: (s: DictationStatus) => void) => listen<DictationStatus>('dictation-status', (e) => cb(e.payload)),
+  /** Mic RMS in [0, 1], ~20 per second while dictating (overlay waveform). */
+  dictationLevel: (cb: (level: number) => void) => listen<number>('dictation-level', (e) => cb(e.payload)),
   dictationDone: (cb: (d: Dictation) => void) => listen<Dictation>('dictation-done', (e) => cb(e.payload)),
   /** RMS levels in [0, 1], ~10 per second while recording a meeting. */
   audioLevel: (cb: (l: { mic: number; system: number }) => void) => listen<{ mic: number; system: number }>('audio-level', (e) => cb(e.payload)),
