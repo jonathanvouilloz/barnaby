@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModelKind {
     Whisper,
+    Parakeet,
     DiarizationSegmentation,
     DiarizationEmbedding,
     Vad,
@@ -21,6 +22,7 @@ impl ModelKind {
     pub fn as_str(self) -> &'static str {
         match self {
             ModelKind::Whisper => "whisper",
+            ModelKind::Parakeet => "parakeet",
             ModelKind::DiarizationSegmentation => "diarization_segmentation",
             ModelKind::DiarizationEmbedding => "diarization_embedding",
             ModelKind::Vad => "vad",
@@ -38,8 +40,9 @@ pub struct ModelEntry {
     pub url: &'static str,
     /// SHA-256 of the downloaded file (the archive for `.tar.bz2`): models are parsed by native code.
     pub sha256: &'static str,
-    /// Path inside `models/`. For a `.tar.bz2` download it is also the archive member
-    /// kept, so an archive unpacked by hand into `models/` lands on the same path.
+    /// Path inside `models/`. For a `.tar.bz2` download it is an archive member: the
+    /// members of its directory are kept too, so an archive unpacked by hand into
+    /// `models/` lands on the same paths. This file is written last: it marks the model installed.
     pub file_name: &'static str,
 }
 
@@ -56,6 +59,14 @@ static CATALOG: &[ModelEntry] = &[
         size_mb: 1625,
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
         sha256: "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69", file_name: "ggml-large-v3-turbo.bin",
+    },
+    ModelEntry {
+        id: "parakeet-v3",
+        kind: Parakeet,
+        name: "Parakeet v3 (dictée rapide)",
+        size_mb: 487,
+        url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+        sha256: "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf", file_name: "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/tokens.txt",
     },
     ModelEntry {
         id: "pyannote-segmentation-3-0",
@@ -94,6 +105,17 @@ pub fn installed(models_dir: &Path, id: &str) -> bool {
     path_for(models_dir, id).is_some()
 }
 
+/// Removes an installed model: its file, or its whole directory for an archive.
+pub fn delete(models_dir: &Path, id: &str) -> Result<()> {
+    let entry = find(id).ok_or_else(|| anyhow!("unknown model {id}"))?;
+    let path = path_for(models_dir, id).ok_or_else(|| anyhow!("model {id} not installed"))?;
+    match Path::new(entry.file_name).parent().filter(|p| !p.as_os_str().is_empty()) {
+        Some(dir) => fs::remove_dir_all(models_dir.join(dir))?,
+        None => fs::remove_file(path)?,
+    }
+    Ok(())
+}
+
 /// Blocking download of model `id` into `models_dir`; `progress` gets a fraction in [0, 1].
 /// The file only appears under its final name once complete and checksum-verified.
 pub fn download(models_dir: &Path, id: &str, progress: impl Fn(f32)) -> Result<PathBuf> {
@@ -112,7 +134,7 @@ fn fetch(models_dir: &Path, entry: &ModelEntry, progress: &dyn Fn(f32)) -> Resul
     let result = (|| {
         stream_to(entry, &download, progress)?;
         if archive {
-            extract(&download, entry.file_name, &part)?;
+            extract(&download, models_dir, entry.file_name, &part)?;
             fs::remove_file(&download)?;
         }
         fs::rename(&part, &dest)?;
@@ -153,16 +175,27 @@ fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<
     Ok(())
 }
 
-fn extract(archive: &Path, member: &str, out: &Path) -> Result<()> {
+/// Unpacks `member` to `out` and the other files of its directory (sample audio aside) in place.
+fn extract(archive: &Path, models_dir: &Path, member: &str, out: &Path) -> Result<()> {
+    let member = Path::new(member);
+    let dir = member.parent().unwrap_or(Path::new(""));
+    let mut found = false;
     let mut tar = tar::Archive::new(bzip2::read::BzDecoder::new(File::open(archive)?));
     for item in tar.entries()? {
         let mut item = item?;
-        if item.path()? == Path::new(member) {
-            std::io::copy(&mut item, &mut File::create(out)?)?;
-            return Ok(());
+        let path = item.path()?.into_owned();
+        // Only plain relative paths inside the model directory: the archive is untrusted.
+        let safe = path.components().all(|c| matches!(c, std::path::Component::Normal(_)));
+        let wanted = path == member || (!dir.as_os_str().is_empty() && path.parent() == Some(dir));
+        if !safe || !wanted || !item.header().entry_type().is_file() {
+            continue;
         }
+        let dest = if path == member { out.to_path_buf() } else { models_dir.join(&path) };
+        std::io::copy(&mut item, &mut File::create(dest)?)?;
+        found |= path == member;
     }
-    Err(anyhow!("{member} missing from archive"))
+    ensure!(found, "{} missing from archive", member.display());
+    Ok(())
 }
 
 #[cfg(test)]
@@ -229,6 +262,10 @@ pub(crate) mod tests {
         fs::create_dir_all(dir.join("sherpa-onnx-pyannote-segmentation-3-0")).unwrap();
         fs::write(dir.join("sherpa-onnx-pyannote-segmentation-3-0/model.onnx"), b"x").unwrap();
         assert!(installed(&dir, "pyannote-segmentation-3-0"));
+        delete(&dir, "pyannote-segmentation-3-0").unwrap();
+        assert!(!dir.join("sherpa-onnx-pyannote-segmentation-3-0").exists());
+        delete(&dir, "whisper-base").unwrap();
+        assert!(!installed(&dir, "whisper-base"));
         fs::remove_dir_all(dir).unwrap();
     }
 
@@ -250,7 +287,7 @@ pub(crate) mod tests {
     fn download_extracts_member_from_tar_bz2() {
         let dir = temp_dir("archive");
         let mut tar = tar::Builder::new(bzip2::write::BzEncoder::new(Vec::new(), bzip2::Compression::fast()));
-        for (name, data) in [("seg/README", &b"readme"[..]), ("seg/model.onnx", &b"onnx-bytes"[..])] {
+        for (name, data) in [("seg/model.onnx", &b"onnx-bytes"[..]), ("seg/tokens.txt", &b"tokens"[..]), ("seg/test_wavs/fr.wav", &b"wav"[..]), ("other/x", &b"x"[..])] {
             let mut header = tar::Header::new_gnu();
             header.set_size(data.len() as u64);
             header.set_mode(0o644);
@@ -262,6 +299,8 @@ pub(crate) mod tests {
         assert_eq!(path, dir.join("seg/model.onnx"));
         assert_eq!(fs::read(path).unwrap(), b"onnx-bytes");
         assert_eq!(fs::read_dir(&dir).unwrap().count(), 1, "only seg/ is left");
+        assert_eq!(fs::read(dir.join("seg/tokens.txt")).unwrap(), b"tokens", "siblings are kept");
+        assert!(!dir.join("seg/test_wavs").exists());
         fs::remove_dir_all(dir).unwrap();
     }
 

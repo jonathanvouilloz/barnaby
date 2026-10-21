@@ -1,12 +1,23 @@
 //! Global shortcuts (spec 10.2), re-registered whenever settings change.
 
-use std::sync::Arc;
+use std::{
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 
 use barnaby_core::{DictationMode, Settings};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-use crate::{dictation, meeting, state::App};
+use crate::{
+    dictation, meeting,
+    state::{lock, App},
+};
+
+/// Hold mode: a release sooner than this after the press is a tap.
+const TAP: Duration = Duration::from_millis(300);
+/// When the press that started the current hold-mode dictation happened.
+static HOLD_START: Mutex<Option<Instant>> = Mutex::new(None);
 
 /// Registers all shortcuts or none: on a conflict, the error names the faulty accelerator.
 pub fn register(handle: &AppHandle, settings: &Settings) -> Result<(), String> {
@@ -45,8 +56,20 @@ impl Action {
     fn run(self, app: &Arc<App>, state: ShortcutState) {
         let pressed = state == ShortcutState::Pressed;
         match self {
-            Action::Dictation { hold: true } if pressed => dictation::start(app),
-            Action::Dictation { hold: true } => dictation::stop(app),
+            // Tap or hold: holding dictates until release; a tap keeps recording until the next press.
+            Action::Dictation { hold: true } if pressed => {
+                if dictation::is_recording(app) {
+                    dictation::stop(app);
+                } else {
+                    dictation::start(app);
+                    *lock(&HOLD_START) = Some(Instant::now());
+                }
+            }
+            Action::Dictation { hold: true } => {
+                if lock(&HOLD_START).take().is_some_and(|t| t.elapsed() >= TAP) {
+                    dictation::stop(app);
+                }
+            }
             Action::Dictation { hold: false } if pressed => dictation::toggle(app),
             Action::Meeting if pressed => log_err(meeting::toggle(app)),
             Action::Marker if pressed => log_err(meeting::add_note(app, "", "marker")),

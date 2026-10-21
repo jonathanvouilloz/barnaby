@@ -9,13 +9,13 @@ use std::{
 
 use barnaby_core::{
     store::{SharedStore, Store},
-    Settings,
+    Settings, Transcriber,
 };
-use barnaby_engine::{models, DictationRecorder, Recorder, SherpaDiarizer, Vad, WhisperTranscriber};
+use barnaby_engine::{models, ParakeetTranscriber, Recorder, SherpaDiarizer, WhisperTranscriber};
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
 
-use crate::sched::Gate;
+use crate::{dictation::Session, sched::Gate};
 
 pub enum Job {
     Process(Uuid),
@@ -36,14 +36,14 @@ pub struct App {
     pub gate: Arc<Gate>,
     pub jobs: Sender<Job>,
     pub recording: Mutex<Option<ActiveMeeting>>,
-    pub dictation: Mutex<Option<DictationRecorder>>,
-    whisper: Mutex<HashMap<String, Arc<WhisperTranscriber>>>,
+    pub dictation: Mutex<Option<Session>>,
+    transcribers: Mutex<HashMap<String, Arc<dyn Transcriber>>>,
     diarizer: Mutex<Option<Arc<SherpaDiarizer>>>,
-    vad: Mutex<Option<Arc<Vad>>>,
 }
 
 pub const KEYRING_SERVICE: &str = "barnaby";
 pub const WEBHOOK_SECRET_USER: &str = "webhook-secret";
+pub const LLM_API_KEY_USER: &str = "llm-api-key";
 
 /// Error codes cross the IPC boundary as plain strings (`error.<code>` in the UI).
 pub type CmdResult<T> = Result<T, String>;
@@ -66,9 +66,8 @@ impl App {
             jobs,
             recording: Mutex::default(),
             dictation: Mutex::default(),
-            whisper: Mutex::default(),
+            transcribers: Mutex::default(),
             diarizer: Mutex::default(),
-            vad: Mutex::default(),
         }
     }
 
@@ -88,19 +87,39 @@ impl App {
     }
 
     pub fn webhook_secret(&self) -> Option<String> {
-        keyring::Entry::new(KEYRING_SERVICE, WEBHOOK_SECRET_USER).ok()?.get_password().ok()
+        secret(WEBHOOK_SECRET_USER)
+    }
+
+    pub fn llm_api_key(&self) -> Option<String> {
+        secret(LLM_API_KEY_USER)
     }
 
     /// Loaded once per model id; loading a large model takes seconds.
-    pub fn whisper(&self, model_id: &str) -> anyhow::Result<Arc<WhisperTranscriber>> {
-        let mut cache = lock(&self.whisper);
+    pub fn transcriber(&self, model_id: &str) -> anyhow::Result<Arc<dyn Transcriber>> {
+        let mut cache = lock(&self.transcribers);
         if let Some(t) = cache.get(model_id) {
             return Ok(t.clone());
         }
         let path = models::path_for(&self.models_dir, model_id).ok_or_else(|| anyhow::anyhow!("model_missing"))?;
-        let t = Arc::new(WhisperTranscriber::load(&path, true)?);
+        let parakeet = models::catalog().iter().any(|m| m.id == model_id && m.kind == models::ModelKind::Parakeet);
+        let t: Arc<dyn Transcriber> = match path.parent() {
+            // The catalog path of an archive model is a file inside its directory.
+            Some(dir) if parakeet => Arc::new(ParakeetTranscriber::load(dir)?),
+            _ => Arc::new(WhisperTranscriber::load(&path, true)?),
+        };
         cache.insert(model_id.to_string(), t.clone());
         Ok(t)
+    }
+
+    /// Loads the dictation model in the background, so the first dictation doesn't wait for it.
+    pub fn preload_dictation_model(self: &Arc<Self>) {
+        let app = self.clone();
+        std::thread::spawn(move || {
+            let id = app.settings().dictation.model;
+            if let Err(e) = app.transcriber(&id) {
+                log::info!("dictation model {id} not preloaded: {e:#}");
+            }
+        });
     }
 
     pub fn diarizer(&self) -> anyhow::Result<Arc<SherpaDiarizer>> {
@@ -123,21 +142,14 @@ impl App {
         Ok(d)
     }
 
-    /// None when the VAD model isn't installed: dictation then keeps the raw audio.
-    pub fn vad(&self) -> Option<Arc<Vad>> {
-        let mut cache = lock(&self.vad);
-        if cache.is_none() {
-            let path = models::path_for(&self.models_dir, "silero-vad")?;
-            *cache = Vad::load(&path).ok().map(Arc::new);
-        }
-        cache.clone()
-    }
-
     pub fn forget_models(&self) {
-        lock(&self.whisper).clear();
+        lock(&self.transcribers).clear();
         *lock(&self.diarizer) = None;
-        *lock(&self.vad) = None;
     }
+}
+
+fn secret(user: &str) -> Option<String> {
+    keyring::Entry::new(KEYRING_SERVICE, user).ok()?.get_password().ok()
 }
 
 pub fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {

@@ -1,19 +1,46 @@
-//! Dictation (spec 7): mic → VAD → whisper (ahead of meetings) → paste at cursor.
+//! Dictation (spec 7): mic → streaming VAD → each speech segment transcribed while the
+//! user talks (ahead of meetings) → on stop, only the tail is left → paste at cursor.
 
-use std::{sync::Arc, thread, time::Duration};
+use std::{
+    sync::{
+        mpsc::{self, Receiver, RecvTimeoutError, Sender},
+        Arc,
+    },
+    thread,
+    time::Duration,
+};
 
-use barnaby_core::{Dictation, Transcriber, SAMPLE_RATE};
-use barnaby_engine::DictationRecorder;
+use anyhow::anyhow;
+use barnaby_core::{audio::rms, Dictation, Settings, Transcript, SAMPLE_RATE};
+use barnaby_engine::{models, DictationRecorder, LiveDictation, VadStream};
 use tauri::Emitter;
 use tauri_plugin_notification::NotificationExt;
 
 use crate::{
-    inject,
+    inject, overlay,
     state::{lock, App},
 };
 
+/// Mic polling period: also paces `dictation-level` (20 per second).
+const TICK: Duration = Duration::from_millis(50);
+
+/// The running dictation, owned by its worker thread; this is how it is told to end.
+pub struct Session {
+    end: Sender<End>,
+}
+
+enum End {
+    Stop,
+    Cancel,
+}
+
 fn status(app: &App, s: &str) {
     let _ = app.handle.emit("dictation-status", s);
+    match s {
+        "recording" if app.settings().dictation.show_overlay => overlay::show(&app.handle),
+        "idle" => overlay::hide(&app.handle),
+        _ => {}
+    }
     crate::tray::refresh(app);
 }
 
@@ -26,37 +53,28 @@ pub fn start(app: &Arc<App>) {
     if slot.is_some() {
         return;
     }
-    match DictationRecorder::start() {
-        Ok(r) => *slot = Some(r),
+    let recorder = match DictationRecorder::start() {
+        Ok(r) => r,
         Err(e) => {
             log::warn!("dictation start: {e:#}");
             alert(app, if e.to_string() == "capture.permission_denied" { Alert::MicDenied } else { Alert::NoMic });
             return;
         }
-    }
+    };
+    let (end, rx) = mpsc::channel();
+    *slot = Some(Session { end });
     drop(slot);
     // Spec 7.4: the mic is shared; keep the dictation out of a meeting's mic track.
     if let Some(m) = lock(&app.recording).as_ref() {
         m.recorder.pause_mic(true);
     }
     status(app, "recording");
+    let app = app.clone();
+    thread::spawn(move || run(&app, recorder, rx));
 }
 
 pub fn stop(app: &Arc<App>) {
-    let Some(rec) = lock(&app.dictation).take() else { return };
-    let samples = rec.stop();
-    resume_meeting_mic(app);
-    status(app, "transcribing");
-    let app = app.clone();
-    thread::spawn(move || {
-        if let Err(e) = transcribe_and_paste(&app, samples) {
-            log::warn!("dictation failed: {e:#}");
-        }
-        // A new dictation may have started while this one was transcribing.
-        if !is_recording(&app) {
-            status(&app, "idle");
-        }
-    });
+    end(app, End::Stop, "transcribing");
 }
 
 pub fn toggle(app: &Arc<App>) {
@@ -68,10 +86,14 @@ pub fn toggle(app: &Arc<App>) {
 }
 
 pub fn cancel(app: &App) {
-    if lock(&app.dictation).take().is_some() {
-        resume_meeting_mic(app);
-        status(app, "idle");
-    }
+    end(app, End::Cancel, "idle");
+}
+
+fn end(app: &App, how: End, next: &str) {
+    let Some(session) = lock(&app.dictation).take() else { return };
+    let _ = session.end.send(how);
+    resume_meeting_mic(app);
+    status(app, next);
 }
 
 fn resume_meeting_mic(app: &App) {
@@ -80,29 +102,68 @@ fn resume_meeting_mic(app: &App) {
     }
 }
 
-fn transcribe_and_paste(app: &App, samples: Vec<f32>) -> anyhow::Result<()> {
-    let duration_ms = samples.len() as u64 * 1000 / SAMPLE_RATE as u64;
-    let speech = match app.vad() {
-        Some(vad) => vad.trim_silence(&samples),
-        None => samples,
-    };
-    if speech.is_empty() {
-        return Ok(());
-    }
+/// Worker thread of one dictation, from the first sample to the paste.
+fn run(app: &Arc<App>, mut recorder: DictationRecorder, end: Receiver<End>) {
     let settings = app.settings();
-    let transcriber = match app.whisper(&settings.dictation.model) {
-        Ok(t) => t,
-        Err(e) => {
-            alert(app, Alert::ModelMissing);
-            return Err(e);
+    // Without the VAD model the whole recording is transcribed at the end.
+    let vad = models::path_for(&app.models_dir, "silero-vad").and_then(|p| VadStream::new(&p).inspect_err(|e| log::warn!("vad: {e:#}")).ok());
+    let mut live = LiveDictation::new(vad, segment_transcriber(app.clone(), &settings));
+    let mut samples = 0;
+    let stopped = loop {
+        match end.recv_timeout(TICK) {
+            Err(RecvTimeoutError::Timeout) => {
+                let chunk = recorder.drain();
+                let _ = app.handle.emit("dictation-level", level(&chunk));
+                samples += chunk.len();
+                live.push(&chunk);
+            }
+            Ok(End::Stop) | Err(RecvTimeoutError::Disconnected) => break true,
+            Ok(End::Cancel) => break false,
         }
     };
-    let language = (settings.transcription_language != "auto").then_some(settings.transcription_language.as_str());
-    let transcript = {
+    let tail = recorder.stop();
+    let _ = app.handle.emit("dictation-level", 0.0f32);
+    if !stopped {
+        return;
+    }
+    samples += tail.len();
+    live.push(&tail);
+    let duration_ms = samples as u64 * 1000 / u64::from(SAMPLE_RATE);
+    if let Err(e) = live.finish().and_then(|t| deliver(app, &settings, &t, duration_ms)) {
+        log::warn!("dictation failed: {e:#}");
+        if e.to_string() == "model_missing" {
+            alert(app, Alert::ModelMissing);
+        }
+    }
+    // A new dictation may have started while this one was transcribing.
+    if !is_recording(app) {
+        status(app, "idle");
+    }
+}
+
+/// One speech segment at a time, ahead of any meeting (gate) and on the cached model.
+fn segment_transcriber(app: Arc<App>, settings: &Settings) -> impl FnMut(&[f32]) -> anyhow::Result<Transcript> + Send + 'static {
+    let model = settings.dictation.model.clone();
+    let language = (settings.transcription_language != "auto").then(|| settings.transcription_language.clone());
+    move |speech| {
+        let transcriber = app.transcriber(&model).map_err(|e| {
+            log::warn!("dictation model {model}: {e:#}");
+            anyhow!("model_missing")
+        })?;
         let _turn = app.gate.acquire(true);
-        transcriber.transcribe(&speech, language)?
-    };
+        transcriber.transcribe(speech, language.as_deref())
+    }
+}
+
+/// Mic RMS mapped from -60..-10 dBFS to 0..1, so normal speech sits mid-scale.
+fn level(chunk: &[f32]) -> f32 {
+    let db = 20.0 * rms(chunk).max(1e-6).log10();
+    ((db + 60.0) / 50.0).clamp(0.0, 1.0)
+}
+
+fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms: u64) -> anyhow::Result<()> {
     let text = transcript.segments.iter().map(|s| s.text.trim()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" ");
+    // vocabulary correction: barnaby_core::vocabulary::correct(&text, &settings.vocabulary)
     if text.is_empty() {
         return Ok(());
     }
@@ -119,10 +180,10 @@ fn transcribe_and_paste(app: &App, samples: Vec<f32>) -> anyhow::Result<()> {
         id: uuid::Uuid::new_v4(),
         created_at: chrono::Utc::now(),
         text,
-        language: Some(transcript.language),
+        language: Some(transcript.language.clone()).filter(|l| !l.is_empty() && l != "auto"),
         duration_ms,
         injected_into,
-        provider: transcriber.name().to_string(),
+        provider: app.transcriber(&settings.dictation.model).map(|t| t.name().to_string()).unwrap_or_default(),
     };
     if settings.dictation.keep_history {
         app.db().add_dictation(&dictation)?;
@@ -149,4 +210,17 @@ fn alert(app: &App, alert: Alert) {
         (Alert::ModelMissing, true) => "Dictation model missing. Download it in Settings › Models.",
     };
     let _ = app.handle.notification().builder().title("Barnaby").body(body).show();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::level;
+
+    #[test]
+    fn level_scale() {
+        assert_eq!(level(&[]), 0.0);
+        assert_eq!(level(&[1.0; 100]), 1.0);
+        let speech = level(&[0.03; 800]); // about -30 dBFS
+        assert!((0.5..0.7).contains(&speech), "{speech}");
+    }
 }

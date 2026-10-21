@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     meeting, shortcuts,
-    state::{code, lock, App, CmdResult, Job, KEYRING_SERVICE, WEBHOOK_SECRET_USER},
+    state::{code, lock, App, CmdResult, Job, KEYRING_SERVICE, LLM_API_KEY_USER, WEBHOOK_SECRET_USER},
 };
 
 type AppState<'a> = State<'a, Arc<App>>;
@@ -35,26 +35,45 @@ pub fn save_settings(app: AppState, settings: Settings) -> CmdResult<()> {
         let _ = shortcuts::register(&app.handle, &previous);
         return Err(e);
     }
-    app.db().save_settings(&settings).map_err(code("store_failed"))
+    app.db().save_settings(&settings).map_err(code("store_failed"))?;
+    if settings.dictation.model != previous.dictation.model {
+        app.preload_dictation_model();
+    }
+    Ok(())
 }
 
 #[tauri::command]
 pub fn set_webhook_secret(secret: String) -> CmdResult<()> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, WEBHOOK_SECRET_USER).map_err(|_| "keyring_unavailable")?;
+    set_secret(WEBHOOK_SECRET_USER, &secret)
+}
+
+#[tauri::command]
+pub fn has_webhook_secret(app: AppState) -> bool {
+    app.webhook_secret().is_some()
+}
+
+#[tauri::command]
+pub fn set_llm_api_key(key: String) -> CmdResult<()> {
+    set_secret(LLM_API_KEY_USER, &key)
+}
+
+#[tauri::command]
+pub fn has_llm_api_key(app: AppState) -> bool {
+    app.llm_api_key().is_some()
+}
+
+/// An empty value deletes the secret.
+fn set_secret(user: &str, secret: &str) -> CmdResult<()> {
+    let entry = keyring::Entry::new(KEYRING_SERVICE, user).map_err(|_| "keyring_unavailable")?;
     let result = if secret.is_empty() {
         entry.delete_credential().or_else(|e| match e {
             keyring::Error::NoEntry => Ok(()),
             e => Err(e),
         })
     } else {
-        entry.set_password(&secret)
+        entry.set_password(secret)
     };
     result.map_err(|_| "keyring_failed".to_string())
-}
-
-#[tauri::command]
-pub fn has_webhook_secret(app: AppState) -> bool {
-    app.webhook_secret().is_some()
 }
 
 #[tauri::command]
@@ -234,7 +253,9 @@ pub async fn download_model(app: AppState<'_>, id: String) -> CmdResult<()> {
 
 #[tauri::command]
 pub fn delete_model(app: AppState, id: String) -> CmdResult<()> {
-    let path = models::path_for(&app.models_dir, &id).ok_or("not_found")?;
+    if !models::installed(&app.models_dir, &id) {
+        return Err("not_found".into());
+    }
     app.forget_models();
-    std::fs::remove_file(path).map_err(|_| "delete_failed".to_string())
+    models::delete(&app.models_dir, &id).map_err(code("delete_failed"))
 }

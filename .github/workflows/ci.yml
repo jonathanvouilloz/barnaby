@@ -28,6 +28,14 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-22.04]
     runs-on: ${{ matrix.os }}
+    # Portable whisper.cpp: by default ggml targets the build machine's CPU, which may
+    # not match the users' (whisper-rs-sys forwards GGML_* variables to CMake).
+    env:
+      GGML_NATIVE: "OFF"
+      GGML_AVX: "ON"
+      GGML_AVX2: "ON"
+      GGML_FMA: "ON"
+      GGML_F16C: "ON"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
