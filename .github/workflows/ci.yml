@@ -33,6 +33,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
+        with:
+          key: sherpa
+          # sherpa-rs-sys downloads its libraries here; a cached build script without them fails to link.
+          cache-directories: |
+            ~/.cache/sherpa-rs
+            ~/AppData/Local/sherpa-rs
       - uses: oven-sh/setup-bun@v2
       - name: Linux system deps
         if: runner.os == 'Linux'
