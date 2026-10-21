@@ -28,3 +28,29 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : `DESIGN.md` minimal, avec la police système et des tokens clair/sombre, tirés de la spec (section 10.1).
 - Pourquoi : le propriétaire a voulu avancer sur le build. La spec fixe déjà la direction et la typographie système.
 - À rouvrir si : une refonte visuelle est demandée (passer alors par `design-references` puis `/impeccable`).
+
+## 2026-10-21 — Dictée : Parakeet v3 en flux plutôt que Whisper
+- Choix : Parakeet TDT 0.6b v3 int8 via sherpa-onnx (déjà embarqué). Chaque segment de parole est transcrit dès sa fin (VAD Silero), le modèle est préchargé au démarrage. Whisper reste réservé aux réunions.
+- Écarté : whisper en fin de dictée (6 s pour 5 s de parole sur CPU, à cause des fenêtres de 30 s) ; transcription cloud comme Wispr Flow ou Willow (l'audio quitterait la machine).
+- Pourquoi : 0,47 s entre l'arrêt et le texte pour 62 s de dictée, mesuré sur 2 vCPU. Texte français identique à whisper et ponctué. Objectif du propriétaire : environ 0,3 s, comme Willow.
+- À rouvrir si : la latence ressentie sur le PC du propriétaire dépasse 0,5 s, ou si la qualité française décroche sur ses dictées. Revue après son test.
+
+## 2026-10-21 — Réunions : traitement après l'appel, résumé local ou cloud
+- Choix : on enregistre, puis on traite à la fin (whisper + sherpa en local). Le résumé passe par Ollama (`local`) ou OpenRouter (`hybrid`, clé dans le trousseau, avertissement sur les données avant la première activation). Seul le texte part.
+- Écarté : transcrire les réunions en direct (la diarisation est meilleure sur l'audio complet, et le délai compte peu) ; envoyer l'audio au cloud.
+- À rouvrir si : le traitement local d'une réunion d'une heure dépasse la durée de l'appel sur le PC du propriétaire. Piste : build GPU Vulkan.
+
+## 2026-10-21 — Vocabulaire : correction approchée locale, plus prompt LLM
+- Choix : distance d'édition sur une forme normalisée, au plus 1 ou 2 éditions selon la longueur, première lettre identique, liste de mots courants exclus. Les termes sont aussi donnés au LLM du résumé.
+- Écarté : hotwords de sherpa (non garantis pour le transducer NeMo) ; correction par LLM de chaque dictée (latence, réseau).
+- À rouvrir si : les sur-corrections gênent en pratique (exemple connu : « barbier concept »).
+
+## 2026-10-21 — Overlay Windows : déplacé hors écran, jamais caché
+- Choix : la fenêtre est créée visible et non focalisable, puis on la déplace à l'écran ou hors écran.
+- Pourquoi : `ShowWindow` peut l'activer malgré `WS_EX_NOACTIVATE`, et le collage partirait alors dans l'overlay.
+- À rouvrir si : le test sur le PC du propriétaire montre un vol de focus ou un artefact visuel.
+
+## 2026-10-21 — CI : pas de cache Rust au build, pas d'AppImage
+- Choix : le job de build compile sans rust-cache ; Linux ne livre que le `.deb`.
+- Pourquoi : le cache restaurait sherpa-rs-sys sans ses bibliothèques partagées, d'où des tests et un bundle cassés. `linuxdeploy` échoue sur l'AppImage.
+- À rouvrir si : la durée de la CI devient gênante (piste : copier les bibliothèques depuis `~/.cache/sherpa-rs` après la restauration), ou si une distribution non Debian est demandée.
