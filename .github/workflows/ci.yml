@@ -10,7 +10,7 @@ jobs:
   checks:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
@@ -37,7 +37,7 @@ jobs:
       GGML_FMA: "ON"
       GGML_F16C: "ON"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       # No rust-cache here: a restored sherpa-rs-sys build skips the step that copies its shared
@@ -68,7 +68,7 @@ jobs:
           else
             bunx @tauri-apps/cli@2.12.3 build
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: barnaby-${{ runner.os }}
           path: |
