@@ -2,9 +2,10 @@
 //! and, later, API clients. All calls are blocking; callers run them off the UI thread.
 
 use crate::model::{MeetingDoc, Summary};
+use serde::{Deserialize, Serialize};
 
 /// A transcribed span, times in seconds from the start of the audio.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RawSegment {
     pub start: f64,
     pub end: f64,
@@ -13,7 +14,7 @@ pub struct RawSegment {
     pub confidence: f32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Transcript {
     /// Detected or forced language code ("fr", "en", ...).
     pub language: String,
@@ -21,7 +22,7 @@ pub struct Transcript {
 }
 
 /// "Who speaks when": anonymous speaker index per turn.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SpeakerTurn {
     pub start: f64,
     pub end: f64,
