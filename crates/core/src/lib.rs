@@ -10,6 +10,7 @@ pub mod retention;
 pub mod review;
 pub mod send;
 pub mod store;
+pub mod vocabulary;
 
 pub use model::*;
 pub use provider::*;

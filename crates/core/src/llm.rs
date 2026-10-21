@@ -15,6 +15,8 @@ pub struct OpenAiStructurer {
     pub base_url: String,
     pub model: String,
     pub api_key: Option<String>,
+    /// `Settings.vocabulary`, spelled out in the prompt.
+    pub vocabulary: Vec<String>,
     pub policy: NetPolicy,
 }
 
@@ -30,12 +32,19 @@ impl Structurer for OpenAiStructurer {
     fn structure(&self, doc: &MeetingDoc) -> Result<Summary> {
         let url = format!("{}/chat/completions", self.base_url.trim_end_matches('/'));
         self.policy.check(&url)?;
-        let mut req = crate::net::agent(Duration::from_secs(600)).post(&url);
+        // OpenRouter's optional app attribution; other servers ignore these headers.
+        let mut req = crate::net::agent(Duration::from_secs(600))
+            .post(&url)
+            .header(
+                "HTTP-Referer",
+                "https://github.com/jonathanvouilloz/barnaby",
+            )
+            .header("X-Title", "Barnaby");
         if let Some(key) = &self.api_key {
             req = req.header("Authorization", format!("Bearer {key}"));
         }
         let reply: Value = req
-            .send_json(request_body(&self.model, doc))?
+            .send_json(request_body(&self.model, &self.vocabulary, doc))?
             .body_mut()
             .read_json()?;
         let content = reply["choices"][0]["message"]["content"]
@@ -45,8 +54,15 @@ impl Structurer for OpenAiStructurer {
     }
 }
 
-fn request_body(model: &str, doc: &MeetingDoc) -> Value {
+fn request_body(model: &str, vocabulary: &[String], doc: &MeetingDoc) -> Value {
     let language = doc.meeting.language.as_deref().unwrap_or("auto");
+    let mut system = format!("{SYSTEM_PROMPT} (language code: {language}).");
+    if !vocabulary.is_empty() {
+        system.push_str(&format!(
+            " Spell these terms exactly: {}.",
+            vocabulary.join(", ")
+        ));
+    }
     let transcript: Vec<String> = doc
         .segments
         .iter()
@@ -61,7 +77,7 @@ fn request_body(model: &str, doc: &MeetingDoc) -> Value {
     json!({
         "model": model,
         "messages": [
-            { "role": "system", "content": format!("{SYSTEM_PROMPT} (language code: {language}).") },
+            { "role": "system", "content": system },
             { "role": "user", "content": transcript.join("\n") },
         ],
         "response_format": {
@@ -115,6 +131,7 @@ pub(crate) mod tests {
             base_url: format!("{url}/v1/"),
             model: "m".into(),
             api_key: Some("k".into()),
+            vocabulary: vec!["Barber Concept".into(), "OpenRouter".into()],
             policy: NetPolicy {
                 mode: ProcessingMode::Local,
             },
@@ -125,7 +142,14 @@ pub(crate) mod tests {
         assert!(headers
             .iter()
             .any(|h| h.eq_ignore_ascii_case("authorization: Bearer k")));
+        assert!(headers
+            .iter()
+            .any(|h| h.eq_ignore_ascii_case("x-title: Barnaby")));
         let body: Value = serde_json::from_str(&body).unwrap();
+        assert!(body["messages"][0]["content"]
+            .as_str()
+            .unwrap()
+            .ends_with("Spell these terms exactly: Barber Concept, OpenRouter."));
         assert_eq!(body["response_format"]["json_schema"]["strict"], true);
         assert_eq!(
             body["messages"][1]["content"],
