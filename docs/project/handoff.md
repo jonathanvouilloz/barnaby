@@ -30,11 +30,12 @@ Vérifié sur le VPS (Linux, sans matériel audio) :
 ## Pièges connus
 - VPS de dev sans sudo : sourcer `~/sysroot/env.sh` (en-têtes ALSA/webkit/cmake/clang extraits de .deb) avant toute compilation. Pour lancer les tests de l'app : `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu`.
 - Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt, pas depuis `src-tauri`.
-- sherpa-onnx est lié dynamiquement : les `.so`/`.dll` sont livrés par `tauri.linux.conf.json` et `tauri.windows.conf.json`. Le binaire Linux cherche dans `$ORIGIN:$ORIGIN/../lib/barnaby` (`build.rs`).
+- sherpa-onnx est lié dynamiquement : les `.so`/`.dll` sont livrés par `tauri.linux.conf.json` et, sous Windows, par `tauri.bundle-windows.json`, passé uniquement à l'empaquetage (voir AGENTS.md). Le binaire Linux cherche dans `$ORIGIN:$ORIGIN/../lib/barnaby` (`build.rs`).
 - Pas encore traité :
   - Pas de détection d'un champ texte actif : le texte est toujours collé, et l'historique le garde.
   - Pas de zones « terme incertain ».
   - `injected_into` reste vide sous Windows.
   - L'écho haut-parleur → micro peut fausser l'attribution de « me ».
   - Résumé LLM raté : la réunion passe quand même en relecture, sans résumé. Il n'y a pas encore de bouton « régénérer le résumé ».
+  - AppImage retiré : `linuxdeploy` échoue en CI. Seul le `.deb` est livré pour l'instant.
   - Mémoire : environ 1 Go de pic pour 1 h de réunion (pistes en f32), soit environ 2 Go pour 2 h.

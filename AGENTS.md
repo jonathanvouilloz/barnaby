@@ -19,7 +19,7 @@ Tauri 2 + Rust (workspace : `crates/core`, `crates/engine`, `src-tauri`), front 
 | Front : types | `cd ui && bun run check` |
 | Front : tests | `cd ui && bun test` |
 | App en dev | `cd src-tauri && cargo tauri dev` (machine avec webview et audio) |
-| Installeurs | `cargo tauri build`, ou via la CI (`.github/workflows/ci.yml`) |
+| Installeurs | Linux : `cd src-tauri && bunx @tauri-apps/cli build`. Windows : `cargo build --release -p barnaby` puis `bunx @tauri-apps/cli build --config tauri.bundle-windows.json` (DLL sherpa). Ou via la CI. |
 
 Prérequis Linux pour l'app : `libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libssl-dev cmake clang pulseaudio-utils`. Windows : MSVC, CMake, LLVM.
 

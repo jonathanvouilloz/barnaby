@@ -49,12 +49,20 @@ jobs:
         run: cargo test -p barnaby-engine
       - name: Build installers
         working-directory: src-tauri
-        run: bunx @tauri-apps/cli@2.12.3 build
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # The sherpa-onnx DLLs exist only after a release build; tauri-build checks
+            # resource globs at build-script time, hence the two passes.
+            cargo build --release -p barnaby
+            bunx @tauri-apps/cli@2.12.3 build --config tauri.bundle-windows.json
+          else
+            bunx @tauri-apps/cli@2.12.3 build
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: barnaby-${{ runner.os }}
           path: |
             target/release/bundle/**/*.deb
-            target/release/bundle/**/*.AppImage
             target/release/bundle/**/*.msi
             target/release/bundle/**/*-setup.exe
