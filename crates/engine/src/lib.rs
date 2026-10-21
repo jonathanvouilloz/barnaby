@@ -1,12 +1,14 @@
-//! Native side of Barnaby: audio capture, VAD, whisper.cpp and sherpa-onnx providers,
+//! Native side of Barnaby: audio capture, VAD, live dictation, whisper.cpp and sherpa-onnx providers,
 //! and the local model catalog. Knows nothing of Tauri or SQLite.
 
 pub mod capture;
 pub mod diarize;
 mod dsp;
 mod input;
+pub mod live;
 pub mod mic;
 pub mod models;
+pub mod parakeet;
 pub mod vad;
 pub mod whisper;
 
@@ -15,9 +17,11 @@ mod e2e;
 
 pub use capture::Recorder;
 pub use diarize::SherpaDiarizer;
+pub use live::LiveDictation;
 pub use mic::DictationRecorder;
 pub use models::{ModelEntry, ModelKind};
-pub use vad::Vad;
+pub use parakeet::ParakeetTranscriber;
+pub use vad::VadStream;
 pub use whisper::WhisperTranscriber;
 
 // The app keeps recorders and providers in shared state across threads.
@@ -28,5 +32,7 @@ const _: () = {
     send::<DictationRecorder>();
     send_sync::<WhisperTranscriber>();
     send_sync::<SherpaDiarizer>();
-    send_sync::<Vad>();
+    send_sync::<ParakeetTranscriber>();
+    send::<VadStream>();
+    send::<LiveDictation>();
 };

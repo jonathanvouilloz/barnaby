@@ -2,6 +2,7 @@ mod commands;
 mod dictation;
 mod inject;
 mod meeting;
+mod overlay;
 mod sched;
 mod shortcuts;
 mod state;
@@ -58,6 +59,8 @@ pub fn run() {
             handle.manage(app.clone());
 
             tray::create(&handle)?;
+            overlay::create(&handle)?;
+            app.preload_dictation_model();
             if let Err(e) = shortcuts::register(&handle, &app.settings()) {
                 log::warn!("shortcuts: {e}");
             }
@@ -81,6 +84,8 @@ pub fn run() {
             commands::save_settings,
             commands::set_webhook_secret,
             commands::has_webhook_secret,
+            commands::set_llm_api_key,
+            commands::has_llm_api_key,
             commands::list_meetings,
             commands::get_meeting,
             commands::start_meeting,
