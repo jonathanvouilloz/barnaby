@@ -17,15 +17,18 @@ let settings: Settings = {
   ui_language: 'fr',
   transcription_language: 'auto',
   processing_mode: 'local',
-  dictation: { mode: 'hold', model: 'whisper-base', paste_delay_before_ms: 60, paste_delay_after_ms: 300, keep_history: true },
+  dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, paste_delay_after_ms: 300, keep_history: true, show_overlay: true },
   meeting: { model: 'whisper-small', confidence_threshold: 0.6, retention: 'on_review' },
   shortcuts: { dictation: 'Ctrl+Alt+Space', meeting_toggle: 'Ctrl+Shift+R', marker: 'Ctrl+Shift+M', review_queue: 'Ctrl+Shift+L' },
   destinations: { folder: { enabled: true, path: '/home/camille/Documents/Réunions' }, webhook: { enabled: false, url: '' } },
   llm: { enabled: false, base_url: 'http://localhost:11434/v1', model: 'qwen2.5:7b' },
   consent_acknowledged: false,
   notification_sound: false,
+  vocabulary: ['Barber Concept', 'Barnaby'],
+  cloud_disclosure_acknowledged: false,
 };
 let webhookSecret = '';
+let llmApiKey = '';
 
 const team: Participant[] = [
   { id: 'p_camille', name: 'Camille Martin', email: 'camille.martin@exemple.fr', confirmed: true },
@@ -119,6 +122,7 @@ let dictations: Dictation[] = [
 ];
 
 const models: ModelInfo[] = [
+  { id: 'parakeet-v3', kind: 'parakeet', name: 'Parakeet v3 (dictée rapide)', size_mb: 487, installed: false },
   { id: 'whisper-tiny', kind: 'whisper', name: 'Whisper tiny', size_mb: 78, installed: false },
   { id: 'whisper-base', kind: 'whisper', name: 'Whisper base', size_mb: 148, installed: true },
   { id: 'whisper-small', kind: 'whisper', name: 'Whisper small', size_mb: 488, installed: true },
@@ -203,6 +207,8 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     }
     case 'set_webhook_secret': webhookSecret = a.secret; return null;
     case 'has_webhook_secret': return webhookSecret !== '';
+    case 'set_llm_api_key': llmApiKey = a.key; return null;
+    case 'has_llm_api_key': return llmApiKey !== '';
     case 'list_meetings': return clone(meetings);
     case 'get_meeting': {
       const d = details.get(a.id);
@@ -284,4 +290,13 @@ export function installMock() {
   (window as any).__TAURI_INTERNALS__.convertFileSrc = () => wav;
   // Lets a test driver (Playwright) simulate backend events.
   (window as any).__barnabyMock = { emit };
+  // Overlay window: fake mic levels, bursts of speech with short pauses.
+  if (location.hash === '#overlay') {
+    let tick = 0;
+    setInterval(() => {
+      tick++;
+      const speaking = tick % 40 < 28;
+      emit('dictation-level', speaking ? 0.03 + 0.12 * Math.abs(Math.sin(tick / 2.3)) * Math.random() + 0.04 * Math.random() : 0.004);
+    }, 50);
+  }
 }

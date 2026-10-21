@@ -3,7 +3,7 @@ import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments } from './review';
-import { isLoopbackUrl } from './settings';
+import { addTerm, isLoopbackUrl } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 
@@ -132,5 +132,21 @@ describe('missingRequired', () => {
     const models = [m('whisper-base', 'whisper', true), m('whisper-small', 'whisper', true),
       m('seg', 'diarization_segmentation', true), m('emb', 'diarization_embedding', true), m('vad', 'vad', true)];
     expect(missingRequired(models, settings)).toEqual([]);
+  });
+  test('accepts a parakeet dictation model', () => {
+    const s = { dictation: { model: 'parakeet-v3' }, meeting: { model: 'whisper-small' } } as Settings;
+    const models = [m('parakeet-v3', 'parakeet'), m('whisper-base', 'whisper'), m('whisper-small', 'whisper', true),
+      m('seg', 'diarization_segmentation', true), m('emb', 'diarization_embedding', true), m('vad', 'vad', true)];
+    expect(missingRequired(models, s).map((x) => x.id)).toEqual(['parakeet-v3']);
+  });
+});
+
+describe('addTerm', () => {
+  test('appends the trimmed term', () => {
+    expect(addTerm(['Barnaby'], '  Barber Concept ')).toEqual(['Barnaby', 'Barber Concept']);
+  });
+  test('refuses empty terms and case-insensitive duplicates', () => {
+    expect(addTerm(['Barnaby'], '   ')).toBeNull();
+    expect(addTerm(['Barnaby'], 'barnaby')).toBeNull();
   });
 });

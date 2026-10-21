@@ -4,8 +4,9 @@
   import { app, applySettings, attempt, notify, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
-  import { isLoopbackUrl } from '../lib/settings';
+  import { addTerm, isLoopbackUrl, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
+  import Sheet from '../lib/Sheet.svelte';
 
   // Explicit save: shortcuts are re-registered by the backend and may be refused as a whole.
   let draft = $state<Settings>($state.snapshot(app.settings!));
@@ -16,9 +17,18 @@
   let hasSecret = $state(false);
   let secret = $state('');
   let errorEl = $state<HTMLElement>();
+  let term = $state('');
+  let hasKey = $state(false);
+  let apiKey = $state('');
+  let disclosureOpen = $state(false);
+
+  const CLOUD_MODELS = ['qwen/qwen3-235b-a22b-2507', 'deepseek/deepseek-chat-v3.1', 'z-ai/glm-4.6'];
 
   const dirty = $derived(JSON.stringify(draft) !== JSON.stringify(app.settings));
   const whisper = $derived(models.filter((m) => m.kind === 'whisper'));
+  const parakeet = $derived(models.filter((m) => m.kind === 'parakeet'));
+  const cloud = $derived(draft.processing_mode !== 'local');
+  const termDuplicate = $derived(term.trim() !== '' && addTerm(draft.vocabulary, term) === null);
   const llmNotLocal = $derived(draft.llm.enabled && draft.processing_mode === 'local' && !isLoopbackUrl(draft.llm.base_url));
 
   async function loadModels() {
@@ -28,6 +38,7 @@
   onMount(() => {
     loadModels();
     attempt(api.hasWebhookSecret).then((v) => (hasSecret = v ?? false));
+    attempt(api.hasLlmApiKey).then((v) => (hasKey = v ?? false));
     const off = events.modelProgress(({ id, progress: p }) => {
       progress[id] = p;
       if (p >= 1) {
@@ -74,6 +85,47 @@
     notify(t(value ? 'settings.secret_saved' : 'settings.secret_cleared'));
   }
 
+  function addVocabulary(e: SubmitEvent) {
+    e.preventDefault();
+    const next = addTerm(draft.vocabulary, term);
+    if (!next) return;
+    draft.vocabulary = next;
+    term = '';
+  }
+
+  function useLocal() {
+    draft.processing_mode = 'local';
+    draft.llm.base_url = OLLAMA_URL;
+  }
+
+  function useCloud() {
+    draft.processing_mode = 'hybrid';
+    draft.llm.base_url = OPENROUTER_URL;
+    // An Ollama tag (no vendor prefix) would be refused by OpenRouter.
+    if (!draft.llm.model.includes('/')) draft.llm.model = CLOUD_MODELS[0];
+  }
+
+  function pickCloud(e: MouseEvent) {
+    if (cloud) return;
+    if (draft.cloud_disclosure_acknowledged) return useCloud();
+    // Keep the radio on "local" until the user has read what leaves the machine.
+    e.preventDefault();
+    disclosureOpen = true;
+  }
+
+  function acknowledgeCloud() {
+    draft.cloud_disclosure_acknowledged = true;
+    disclosureOpen = false;
+    useCloud();
+  }
+
+  async function storeKey(value: string) {
+    if ((await attempt(() => api.setLlmApiKey(value))) === undefined) return;
+    hasKey = value !== '';
+    apiKey = '';
+    notify(t(value ? 'settings.key_saved' : 'settings.key_cleared'));
+  }
+
   const size = (mb: number) => {
     const s = formatSize(mb, app.lang);
     return t(`settings.size_${s.unit}`, { n: s.n });
@@ -96,7 +148,7 @@
         <h2 id="s-dictation">{t('settings.dictation')}</h2>
         <fieldset>
           <legend class="secondary">{t('settings.mode')}</legend>
-          {#each ['hold', 'toggle'] as const as mode (mode)}
+          {#each ['toggle', 'hold'] as const as mode (mode)}
             <label class="choice">
               <input type="radio" name="dictation-mode" value={mode} bind:group={draft.dictation.mode} />
               <span><span class="strong">{t(`settings.${mode}`)}</span> <span class="secondary">{t(`settings.${mode}_hint`)}</span></span>
@@ -104,10 +156,20 @@
           {/each}
         </fieldset>
         <label class="field"><span>{t('settings.model')}</span>
-          <select bind:value={draft.dictation.model}>
-            {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+          <select bind:value={draft.dictation.model} aria-describedby="dictation-model-hint">
+            {#if parakeet.length}
+              <optgroup label={t('settings.group_fast')}>
+                {#each parakeet as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+              </optgroup>
+            {/if}
+            <optgroup label="Whisper">
+              {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+            </optgroup>
           </select>
+          <span id="dictation-model-hint" class="secondary">{t('settings.dictation_model_hint')}</span>
         </label>
+        <label class="check"><input type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" /> {t('settings.show_overlay')}</label>
+        <p class="secondary sub" id="overlay-hint">{t('settings.show_overlay_hint')}</p>
         <div class="two">
           <label class="field"><span>{t('settings.delay_before')}</span><input type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} /></label>
           <label class="field"><span>{t('settings.delay_after')}</span><input type="number" min="0" max="5000" step="50" bind:value={draft.dictation.paste_delay_after_ms} /></label>
@@ -132,6 +194,32 @@
             {#each ['on_review', 'seven_days', 'forever'] as r (r)}<option value={r}>{t(`settings.retention.${r}`)}</option>{/each}
           </select>
         </label>
+      </section>
+
+      <section class="card" aria-labelledby="s-vocab">
+        <h2 id="s-vocab">{t('settings.vocabulary')}</h2>
+        <p class="secondary">{t('settings.vocabulary_hint')}</p>
+        {#if draft.vocabulary.length}
+          <ul class="terms">
+            {#each draft.vocabulary as v, i (v)}
+              <li>
+                <span>{v}</span>
+                <button class="btn ghost icon remove" aria-label={t('settings.term_remove', { term: v })} onclick={() => draft.vocabulary.splice(i, 1)}>
+                  <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 2 L10 10 M10 2 L2 10" /></svg>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {:else}
+          <p class="secondary">{t('settings.vocabulary_empty')}</p>
+        {/if}
+        <form class="secret" onsubmit={addVocabulary}>
+          <label class="field grow"><span>{t('settings.term')}</span>
+            <input type="text" bind:value={term} autocomplete="off" aria-describedby="term-state" />
+          </label>
+          <button class="btn" type="submit" disabled={!term.trim() || termDuplicate}>{t('settings.term_add')}</button>
+        </form>
+        <p class="secondary" id="term-state" role="status">{termDuplicate ? t('settings.term_duplicate') : ''}</p>
       </section>
 
       <section class="card" aria-labelledby="s-models">
@@ -190,12 +278,41 @@
       <section class="card" aria-labelledby="s-llm">
         <h2 id="s-llm">{t('settings.llm')}</h2>
         <label class="check"><input type="checkbox" bind:checked={draft.llm.enabled} /> {t('settings.llm_enabled')}</label>
-        <div class="two">
-          <label class="field"><span>{t('settings.base_url')}</span><input type="url" bind:value={draft.llm.base_url} disabled={!draft.llm.enabled} /></label>
-          <label class="field"><span>{t('settings.llm_model')}</span><input type="text" bind:value={draft.llm.model} disabled={!draft.llm.enabled} /></label>
-        </div>
-        <p class="secondary">{t('settings.llm_local_note')}</p>
-        {#if llmNotLocal}<p class="warn" role="status">{t('settings.llm_not_local')}</p>{/if}
+        <fieldset disabled={!draft.llm.enabled}>
+          <legend class="secondary">{t('settings.llm_where')}</legend>
+          <label class="choice">
+            <input type="radio" name="llm-where" checked={!cloud} onchange={useLocal} />
+            <span><span class="strong">{t('settings.llm_local')}</span> <span class="secondary">{t('settings.llm_local_hint')}</span></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="llm-where" checked={cloud} onclick={pickCloud} />
+            <span><span class="strong">{t('settings.llm_cloud')}</span> <span class="secondary">{t('settings.llm_cloud_hint')}</span></span>
+          </label>
+        </fieldset>
+        {#if cloud}
+          <label class="field"><span>{t('settings.llm_model')}</span>
+            <input type="text" list="cloud-models" bind:value={draft.llm.model} disabled={!draft.llm.enabled} autocomplete="off" aria-describedby="cloud-model-hint" />
+            <datalist id="cloud-models">{#each CLOUD_MODELS as m (m)}<option value={m}></option>{/each}</datalist>
+            <span id="cloud-model-hint" class="secondary">{t('settings.llm_cloud_model_hint')}</span>
+          </label>
+          <form class="secret" onsubmit={(e) => { e.preventDefault(); if (apiKey) storeKey(apiKey); }}>
+            <label class="field grow"><span>{t('settings.api_key')}</span>
+              <input type="password" bind:value={apiKey} autocomplete="off" aria-describedby="key-state" />
+            </label>
+            <button class="btn" type="submit" disabled={!apiKey}>{t('settings.key_save')}</button>
+          </form>
+          <p class="secondary row" id="key-state">
+            {t(hasKey ? 'settings.key_set' : 'settings.key_none')}
+            {#if hasKey}<button class="btn ghost small danger" onclick={() => storeKey('')}>{t('settings.key_clear')}</button>{/if}
+          </p>
+        {:else}
+          <div class="two">
+            <label class="field"><span>{t('settings.base_url')}</span><input type="url" bind:value={draft.llm.base_url} disabled={!draft.llm.enabled} /></label>
+            <label class="field"><span>{t('settings.llm_model')}</span><input type="text" bind:value={draft.llm.model} disabled={!draft.llm.enabled} /></label>
+          </div>
+          <p class="secondary">{t('settings.llm_local_note')}</p>
+          {#if llmNotLocal}<p class="warn" role="status">{t('settings.llm_not_local')}</p>{/if}
+        {/if}
       </section>
 
       <section class="card" aria-labelledby="s-lang">
@@ -228,6 +345,21 @@
   </div>
 </section>
 
+<Sheet open={disclosureOpen} title={t('cloud.title')} onclose={() => (disclosureOpen = false)}>
+  <p>{t('cloud.intro')}</p>
+  <ul class="bullets">
+    <li>{t('cloud.sent_transcript')}</li>
+    <li>{t('cloud.sent_notes')}</li>
+    <li>{t('cloud.sent_vocabulary')}</li>
+  </ul>
+  <p>{t('cloud.never')}</p>
+  <p class="secondary">{t('cloud.terms')}</p>
+  {#snippet actions()}
+    <button class="btn" onclick={() => (disclosureOpen = false)}>{t('common.cancel')}</button>
+    <button class="btn primary" onclick={acknowledgeCloud}>{t('cloud.confirm')}</button>
+  {/snippet}
+</Sheet>
+
 <style>
   .sections { display: grid; gap: 16px; max-width: 680px; }
   .card { padding: 16px 18px; display: grid; gap: 12px; }
@@ -249,6 +381,18 @@
   .secret { display: flex; gap: 8px; align-items: end; }
   .row { display: flex; align-items: center; gap: 8px; }
   .warn { color: var(--warn); font-size: 13px; }
+  .sub { margin-top: -8px; padding-left: 24px; }
+  .terms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .terms li {
+    display: inline-flex; align-items: center; gap: 2px;
+    padding: 2px 2px 2px 10px; border-radius: var(--r-control);
+    background: var(--fill); border: 1px solid var(--border);
+  }
+  .remove { width: 24px; min-height: 24px; }
+  .remove path { stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+  /* Empty live region stays in the tree (so it announces) but takes no room. */
+  #term-state:empty { margin-top: -12px; }
+  .bullets { list-style: disc; padding-left: 20px; display: grid; gap: 4px; }
   .error {
     max-width: 680px; margin-bottom: 16px; padding: 10px 14px; border-radius: var(--r-card);
     color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
