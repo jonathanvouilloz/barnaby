@@ -148,10 +148,8 @@ fn process(app: &App, id: Uuid) {
         let _ = app.db().set_state(id, MeetingState::Failed, Some(code));
         app.emit_meeting(id);
     };
-    let (transcriber, diarizer) = match (app.whisper(&settings.meeting.model), app.diarizer()) {
-        (Ok(t), Ok(d)) => (t, d),
-        _ => return fail("model_missing"),
-    };
+    let Ok(transcriber) = app.whisper(&settings.meeting.model) else { return fail("model_missing") };
+    let Ok(diarizer) = app.diarizer() else { return fail("diarization_model_missing") };
     let structurer = settings.llm.enabled.then(|| {
         Arc::new(OpenAiStructurer {
             base_url: settings.llm.base_url.clone(),

@@ -15,7 +15,7 @@ Vérifié sur le VPS (Linux, sans matériel audio) :
 2. Le propriétaire teste sur ses PC (checklist ci-dessous). Ensuite, fusion dans `main` et Phase 0 (mesures DER/WER sur le corpus réel).
 
 ## Checklist de test (Windows et Linux)
-- Réglages › Modèles : télécharger `whisper-base`, `whisper-small`, `pyannote-segmentation-3-0`, `wespeaker-voxceleb-resnet34-lm`, `silero-vad`.
+- Premier lancement : la feuille « Modèles à installer » propose le pack (environ 670 Mo) ; « Tout télécharger ». Variantes dans Réglages › Modèles.
 - Dictée : en mode maintien et en mode bascule, dans un éditeur, un navigateur et un terminal. Vérifier que le texte arrive et que le presse-papiers est restauré. Mesurer la latence.
 - Linux : sous X11 (`xdotool`) et sous Wayland (`wtype`). Sans eux, repli sur enigo.
 - Réunion : un appel réel (Meet ou Teams), avec niveaux micro et système visibles. Arrêter, attendre la notification, relire, renommer les locuteurs, valider. Contrôler la sortie dossier et webhook.

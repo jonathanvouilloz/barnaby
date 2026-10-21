@@ -3,6 +3,7 @@
   import { app, go, init, owlState, reviewCount, type Route } from './lib/state.svelte';
   import { t } from './lib/i18n';
   import Owl from './lib/Owl.svelte';
+  import ModelSetup from './lib/ModelSetup.svelte';
   import Home from './screens/Home.svelte';
   import NewMeeting from './screens/NewMeeting.svelte';
   import Recording from './screens/Recording.svelte';
@@ -67,6 +68,7 @@
       {:else if app.route.name === 'settings'}<Settings />
       {/if}
     {/if}
+    {#if app.settings}<ModelSetup />{/if}
     <p class="notice" role="status" aria-live="polite">{#if app.notice}<span>{app.notice}</span>{/if}</p>
   </main>
 </div>

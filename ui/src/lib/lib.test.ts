@@ -4,7 +4,8 @@ import { acceleratorFromKey, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments } from './review';
 import { isLoopbackUrl } from './settings';
-import type { ReviewItem, Segment } from './api';
+import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
+import { missingRequired } from './models';
 
 describe('i18n', () => {
   test('replaces params and keeps unknown placeholders', () => {
@@ -117,4 +118,19 @@ test('loopback check for local-mode LLM', () => {
   expect(isLoopbackUrl('https://api.openai.com/v1')).toBe(false);
   expect(isLoopbackUrl('http://localhost.evil.com')).toBe(false);
   expect(isLoopbackUrl('pas une url')).toBe(false);
+});
+
+describe('missingRequired', () => {
+  const m = (id: string, kind: ModelInfo['kind'], installed = false): ModelInfo => ({ id, kind, name: id, size_mb: 1, installed });
+  const settings = { dictation: { model: 'whisper-base' }, meeting: { model: 'whisper-small' } } as Settings;
+  test('lists the chosen whisper models and one model per required kind', () => {
+    const models = [m('whisper-tiny', 'whisper'), m('whisper-base', 'whisper'), m('whisper-small', 'whisper', true),
+      m('seg', 'diarization_segmentation'), m('emb', 'diarization_embedding'), m('vad', 'vad')];
+    expect(missingRequired(models, settings).map((x) => x.id)).toEqual(['whisper-base', 'seg', 'emb', 'vad']);
+  });
+  test('is empty once everything needed is installed', () => {
+    const models = [m('whisper-base', 'whisper', true), m('whisper-small', 'whisper', true),
+      m('seg', 'diarization_segmentation', true), m('emb', 'diarization_embedding', true), m('vad', 'vad', true)];
+    expect(missingRequired(models, settings)).toEqual([]);
+  });
 });

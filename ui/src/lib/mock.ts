@@ -119,13 +119,14 @@ let dictations: Dictation[] = [
 ];
 
 const models: ModelInfo[] = [
-  { id: 'whisper-tiny', kind: 'whisper', name: 'Whisper Tiny', size_mb: 75, installed: false },
-  { id: 'whisper-base', kind: 'whisper', name: 'Whisper Base', size_mb: 142, installed: true },
-  { id: 'whisper-small', kind: 'whisper', name: 'Whisper Small', size_mb: 466, installed: true },
-  { id: 'whisper-large-v3-turbo', kind: 'whisper', name: 'Whisper Large v3 Turbo', size_mb: 1620, installed: false },
-  { id: 'pyannote-segmentation-3', kind: 'diarization_segmentation', name: 'Pyannote Segmentation 3.0', size_mb: 6, installed: true },
-  { id: 'nemo-titanet-small', kind: 'diarization_embedding', name: 'TitaNet Small', size_mb: 38, installed: true },
-  { id: 'silero-vad', kind: 'vad', name: 'Silero VAD', size_mb: 2, installed: true },
+  { id: 'whisper-tiny', kind: 'whisper', name: 'Whisper tiny', size_mb: 78, installed: false },
+  { id: 'whisper-base', kind: 'whisper', name: 'Whisper base', size_mb: 148, installed: true },
+  { id: 'whisper-small', kind: 'whisper', name: 'Whisper small', size_mb: 488, installed: true },
+  { id: 'whisper-large-v3-turbo', kind: 'whisper', name: 'Whisper large-v3 turbo', size_mb: 1625, installed: false },
+  { id: 'pyannote-segmentation-3-0', kind: 'diarization_segmentation', name: 'Pyannote segmentation 3.0', size_mb: 7, installed: true },
+  // Missing on purpose: the first-run sheet shows up in dev.
+  { id: 'wespeaker-voxceleb-resnet34-lm', kind: 'diarization_embedding', name: 'WeSpeaker ResNet34 (VoxCeleb)', size_mb: 27, installed: false },
+  { id: 'silero-vad', kind: 'vad', name: 'Silero VAD', size_mb: 1, installed: false },
 ];
 
 let recording: string | null = null;
