@@ -40,13 +40,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: sherpa
-          # sherpa-rs-sys downloads its libraries here; a cached build script without them fails to link.
-          cache-directories: |
-            ~/.cache/sherpa-rs
-            ~/AppData/Local/sherpa-rs
+      # No rust-cache here: a restored sherpa-rs-sys build skips the step that copies its shared
+      # libraries into target/, so tests and the Windows bundle can't find them.
       - uses: oven-sh/setup-bun@v2
       - name: Linux system deps
         if: runner.os == 'Linux'
