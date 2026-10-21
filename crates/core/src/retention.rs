@@ -11,6 +11,8 @@ use crate::store::Store;
 
 pub const MIC_WAV: &str = "mic.wav";
 pub const SYSTEM_WAV: &str = "system.wav";
+/// Mic + system mix, written by the pipeline for the review player.
+pub const MIX_WAV: &str = "mix.wav";
 
 /// `<data_dir>/meetings/<id>/`
 pub fn meeting_dir(data_dir: &Path, id: Uuid) -> PathBuf {
@@ -19,7 +21,7 @@ pub fn meeting_dir(data_dir: &Path, id: Uuid) -> PathBuf {
 
 /// Removes the meeting's WAV files; the transcript is never deleted automatically.
 pub fn delete_audio(data_dir: &Path, id: Uuid) -> Result<()> {
-    for name in [MIC_WAV, SYSTEM_WAV] {
+    for name in [MIC_WAV, SYSTEM_WAV, MIX_WAV] {
         match std::fs::remove_file(meeting_dir(data_dir, id).join(name)) {
             Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e.into()),
             _ => {}

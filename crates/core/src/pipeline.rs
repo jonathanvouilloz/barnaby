@@ -9,10 +9,10 @@ use anyhow::{bail, Result};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::audio::{mix, read_wav, repair_wav, rms, slice};
+use crate::audio::{mix, read_wav, repair_wav, rms, slice, write_wav};
 use crate::model::*;
 use crate::provider::*;
-use crate::retention::{meeting_dir, MIC_WAV, SYSTEM_WAV};
+use crate::retention::{meeting_dir, MIC_WAV, MIX_WAV, SYSTEM_WAV};
 use crate::store::{lock, SharedStore, Store};
 use crate::{net, review};
 
@@ -133,11 +133,12 @@ impl Pipeline {
         if mic.is_empty() && system.is_empty() {
             bail!("audio_missing");
         }
-        Ok(Tracks {
-            mixed: mix(&mic, &system),
-            mic,
-            system,
-        })
+        let mixed = mix(&mic, &system);
+        let mix_path = dir.join(MIX_WAV);
+        if !mix_path.exists() {
+            write_wav(&mix_path, &mixed)?;
+        }
+        Ok(Tracks { mixed, mic, system })
     }
 
     fn step(&self, id: Uuid, step: Step, t: &Tracks, settings: &Settings) -> Result<()> {

@@ -32,6 +32,22 @@ pub fn read_wav(path: &Path) -> Result<Vec<f32>> {
 }
 
 /// Linear interpolation; good enough for speech going into whisper.
+/// Writes 16 kHz mono i16 (used for the review player's mixed track).
+pub fn write_wav(path: &Path, samples: &[f32]) -> Result<()> {
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: SAMPLE_RATE,
+        bits_per_sample: 16,
+        sample_format: SampleFormat::Int,
+    };
+    let mut w = hound::WavWriter::create(path, spec)?;
+    for s in samples {
+        w.write_sample((s.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)?;
+    }
+    w.finalize()?;
+    Ok(())
+}
+
 pub fn resample(samples: &[f32], from: u32, to: u32) -> Vec<f32> {
     if from == to || samples.is_empty() {
         return samples.to_vec();

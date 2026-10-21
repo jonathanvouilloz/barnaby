@@ -43,7 +43,13 @@ pub enum Step {
 }
 
 impl Step {
-    pub const ALL: [Step; 5] = [Step::Transcribe, Step::Diarize, Step::Identify, Step::Review, Step::Structure];
+    pub const ALL: [Step; 5] = [
+        Step::Transcribe,
+        Step::Diarize,
+        Step::Identify,
+        Step::Review,
+        Step::Structure,
+    ];
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -287,13 +293,23 @@ pub struct Settings {
 
 impl Default for DictationSettings {
     fn default() -> Self {
-        Self { mode: DictationMode::Hold, model: "whisper-base".into(), paste_delay_before_ms: 50, paste_delay_after_ms: 300, keep_history: true }
+        Self {
+            mode: DictationMode::Hold,
+            model: "whisper-base".into(),
+            paste_delay_before_ms: 50,
+            paste_delay_after_ms: 300,
+            keep_history: true,
+        }
     }
 }
 
 impl Default for MeetingSettings {
     fn default() -> Self {
-        Self { model: "whisper-small".into(), confidence_threshold: 0.6, retention: AudioRetention::OnReview }
+        Self {
+            model: "whisper-small".into(),
+            confidence_threshold: 0.6,
+            retention: AudioRetention::OnReview,
+        }
     }
 }
 
@@ -310,7 +326,11 @@ impl Default for Shortcuts {
 
 impl Default for LlmSettings {
     fn default() -> Self {
-        Self { enabled: false, base_url: "http://localhost:11434/v1".into(), model: "llama3.1:8b".into() }
+        Self {
+            enabled: false,
+            base_url: "http://localhost:11434/v1".into(),
+            model: "llama3.1:8b".into(),
+        }
     }
 }
 
