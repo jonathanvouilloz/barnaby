@@ -32,7 +32,7 @@
                   <span class="title">{m.title}</span>
                   <span class="secondary tabular">{formatDateTime(m.started_at, app.lang)} · {t('review.progress', { done: m.review_items_resolved, total: m.review_items_total })}</span>
                 </span>
-                <span class="count tabular" aria-label={t('nav.review_badge', { n: left })}><Spark size={10} />{left}</span>
+                {#if left > 0}<span class="count tabular" aria-label={t('nav.review_badge', { n: left })}><Spark size={10} />{left}</span>{/if}
                 <span class="chevron"><Icon name="chevron" /></span>
               </button>
             {:else}

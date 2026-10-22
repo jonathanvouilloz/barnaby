@@ -288,6 +288,9 @@ const fr: Record<string, string> = {
   'settings.notification_sound': 'Jouer un son à la fin du traitement',
   'settings.mascot': 'Afficher la chouette',
   'settings.mascot_hint': 'S’applique tout de suite, sur cet appareil.',
+  'settings.welcome': 'Premiers pas',
+  'settings.welcome_hint': 'Micro, modèles et tour des fonctions, comme au premier lancement.',
+  'settings.welcome_again': 'Revoir l’accueil',
 
   'owl.label': 'Chouette : {state}',
   'owl.idle': 'au repos',
@@ -583,6 +586,9 @@ const en: Record<string, string> = {
   'settings.notification_sound': 'Play a sound when processing ends',
   'settings.mascot': 'Show the owl',
   'settings.mascot_hint': 'Applies right away, on this device.',
+  'settings.welcome': 'Getting started',
+  'settings.welcome_hint': 'Microphone, models and a tour of the features, as on first launch.',
+  'settings.welcome_again': 'Show the welcome again',
 
   'owl.label': 'Owl: {state}',
   'owl.idle': 'idle',

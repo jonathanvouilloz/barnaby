@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export type IconName = 'home' | 'review' | 'settings' | 'record' | 'mic' | 'spark' | 'check' | 'chevron';
+  export type IconName = 'home' | 'review' | 'settings' | 'record' | 'mic' | 'spark' | 'check' | 'chevron' | 'play';
 </script>
 
 <script lang="ts">
@@ -16,8 +16,9 @@
     spark: 'M8 .5C8.6 5 11 7.4 15.5 8 11 8.6 8.6 11 8 15.5 7.4 11 5 8.6.5 8 5 7.4 7.4 5 8 .5Z',
     check: 'M3.25 8.5 6.5 11.75 12.75 4.75',
     chevron: 'M6 3.5 10.5 8 6 12.5',
+    play: 'M5 3.25v9.5L12.5 8Z',
   };
-  const filled = $derived(name === 'record' || name === 'spark');
+  const filled = $derived(name === 'record' || name === 'spark' || name === 'play');
 </script>
 
 <svg

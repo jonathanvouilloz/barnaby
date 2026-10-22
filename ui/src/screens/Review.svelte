@@ -5,7 +5,8 @@
   import { app, attempt, go, notify } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatDateTime, formatTimestamp } from '../lib/format';
-  import { canSend, flaggedSegments, nextOpenAfter, remaining, segmentAt, speakerIds, speakerName, stepId } from '../lib/review';
+  import { canSend, flaggedSegments, isOpen, nextOpenAfter, remaining, segmentAt, speakerIds, speakerName, stepId } from '../lib/review';
+  import Spark from '../lib/Spark.svelte';
   import ReviewZone from './ReviewZone.svelte';
 
   let { id }: { id: string } = $props();
@@ -32,6 +33,7 @@
   const flagged = $derived(flaggedSegments(items));
   const playing = $derived(paused ? null : segmentAt(segments, currentTime)?.id);
   const left = $derived(remaining(items));
+  const current = $derived(items.find((i) => i.id === focusedId && isOpen(i))?.id ?? items.find(isOpen)?.id);
   const nameOf = (sid: string | null) => speakerName(sid, participants, t);
   const speakers = $derived(speakerIds(segments));
   const choices = $derived(
@@ -166,6 +168,7 @@
         <ol class="segments">
           {#each segments as s (s.id)}
             <li id="seg-{s.id}" class="seg" class:flagged={flagged.has(s.id)} class:playing={playing === s.id}>
+              <span class="mark"><Spark active={flagged.has(s.id)} /></span>
               <button class="ts tabular" disabled={!detail.audio_path} aria-label={t('review.seek', { time: formatTimestamp(s.start) })} onclick={() => seek(s.start)}>
                 {formatTimestamp(s.start)}
               </button>
@@ -199,7 +202,7 @@
             <p class="secondary keys">{t('review.keys')}</p>
             <ul class="zones">
               {#each items as item (item.id)}
-                <ReviewZone {item} speakers={choices} onresolve={(r) => resolve(item, r)} onplay={() => playZone(item)} />
+                <ReviewZone {item} speakers={choices} current={item.id === current} onresolve={(r) => resolve(item, r)} onplay={() => playZone(item)} onfocus={() => (focusedId = item.id)} />
               {/each}
             </ul>
           {/if}
@@ -230,50 +233,56 @@
 <style>
   .title { flex: 1; min-width: 0; }
   .title h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .player { padding: 0 28px 12px; }
+  .player { padding: 0 40px 16px; }
   audio { width: 100%; height: 36px; }
 
-  .columns { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 340px; border-top: 1px solid var(--border); }
+  .columns { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; border-top: 1px solid var(--border); }
   .col { overflow: auto; min-height: 0; }
-  .transcript { padding: 16px 20px 32px 28px; }
-  .side { padding: 16px 24px 32px 20px; border-left: 1px solid var(--border); display: grid; gap: 24px; align-content: start; }
+  .transcript { padding: 24px 24px 40px 32px; }
+  .side { padding: 24px 24px 40px; border-left: 1px solid var(--border); display: grid; gap: 32px; align-content: start; }
 
-  .summary { padding: 12px 16px; margin-bottom: 16px; display: grid; gap: 6px; }
+  /* Reading column: about 68 characters of text beside the spark and timestamp gutter. */
+  .summary, .segments { max-width: calc(68ch + 100px); }
+  .summary { padding: 12px 16px; margin: 0 0 24px 8px; display: grid; gap: 8px; }
   .summary summary { cursor: pointer; list-style-position: inside; }
   .summary summary h2 { display: inline; }
-  .summary h3 { font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-top: 6px; }
-  .summary ul { list-style: disc; padding-left: 18px; }
+  .summary h3 { font-size: 12.5px; font-weight: 650; color: var(--text-2); margin-top: 4px; }
+  .summary ul { list-style: disc; padding-left: 20px; }
 
   .segments { display: grid; gap: 2px; }
   .seg {
-    display: grid; grid-template-columns: 52px 1fr; gap: 8px;
-    padding: 8px 8px 8px 6px; border-radius: var(--r-control);
-    border-left: 3px solid transparent;
-    transition: background-color 150ms var(--ease);
+    display: grid; grid-template-columns: 16px 52px minmax(0, 1fr); gap: 8px;
+    padding: 8px; border-radius: var(--r-control);
+    transition: background-color 150ms var(--ease), box-shadow 150ms var(--ease);
   }
-  .seg.flagged { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); }
-  .seg.playing { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .seg.flagged { background: var(--fill-strong); }
+  .seg.playing { box-shadow: inset 0 0 0 2px var(--spark); }
+  .mark { display: flex; justify-content: center; padding-top: 4px; }
   .ts {
-    align-self: start; padding: 1px 4px; border: 0; border-radius: 4px; background: none;
+    align-self: start; padding: 2px 4px; border: 0; border-radius: 4px; background: none;
     font-size: 12.5px; color: var(--text-2); cursor: pointer;
   }
   .ts:hover:not(:disabled) { color: var(--accent); }
   .ts:disabled { cursor: default; }
-  .body { position: relative; min-width: 0; padding-right: 30px; }
-  .chip {
-    display: inline-block; margin-bottom: 2px; padding: 0 7px; border-radius: 999px;
-    background: var(--fill-strong); font-size: 12px; font-weight: 600; line-height: 18px;
-  }
+  .body { position: relative; min-width: 0; padding-right: 32px; }
+  .chip { display: block; margin-bottom: 2px; font-size: 12.5px; font-weight: 650; }
   .chip.anon { font-weight: 500; color: var(--text-2); }
-  .text { white-space: pre-wrap; }
+  .text { white-space: pre-wrap; line-height: 1.6; }
   .body textarea { margin-top: 2px; }
-  .edit { position: absolute; top: -2px; right: 0; opacity: 0; }
+  .edit { position: absolute; top: -4px; right: 0; opacity: 0; transition: opacity 150ms var(--ease); }
   .seg:hover .edit, .edit:focus-visible { opacity: 1; }
+  @media (hover: none) { .edit { opacity: 1; } }
 
   .side-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
-  .keys { margin-bottom: 10px; }
-  .zones { display: grid; gap: 8px; }
+  .keys { margin-bottom: 12px; }
+  .zones { display: grid; gap: 4px; }
   .speakers { display: grid; gap: 8px; }
-  .speakers ul { display: grid; gap: 10px; }
+  .speakers ul { display: grid; gap: 12px; }
   .speakers form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+
+  @media (max-width: 1000px) {
+    .columns { grid-template-columns: minmax(0, 1fr) 300px; }
+    .transcript { padding-left: 24px; }
+    .player { padding-inline: 24px; }
+  }
 </style>

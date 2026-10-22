@@ -7,7 +7,8 @@ export type Route =
   | { name: 'recording' }
   | { name: 'queue' }
   | { name: 'review'; id: string }
-  | { name: 'settings' };
+  | { name: 'settings' }
+  | { name: 'onboarding' };
 
 export type OwlState = 'idle' | 'listening' | 'thinking' | 'review' | 'success' | 'error';
 

@@ -125,8 +125,9 @@
   .pill.transcribing .dot { background: var(--accent); }
   @keyframes pulse { 50% { opacity: .35; } }
 
-  .new { justify-content: flex-start; width: 100%; background: var(--surface); }
-  .rec { width: 12px; height: 12px; border-radius: 50%; background: var(--rec); box-shadow: inset 0 0 0 1px var(--border); }
+  /* Labels wrap rather than overflow the sidebar ("Enregistrement en cours"). */
+  .new { justify-content: flex-start; width: 100%; background: var(--surface); white-space: normal; text-align: left; line-height: 1.3; padding-block: 6px; }
+  .rec { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--rec); box-shadow: inset 0 0 0 1px var(--border); }
 
   main { position: relative; min-width: 0; min-height: 0; background: var(--bg); }
   .notice {

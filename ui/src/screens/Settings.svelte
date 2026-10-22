@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { api, events, type ModelInfo, type OutputDevice, type Settings } from '../lib/api';
-  import { app, applySettings, attempt, notify, setMascot } from '../lib/state.svelte';
+  import { app, applySettings, attempt, go, notify, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
   import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
@@ -171,6 +171,13 @@
     draft.processing_mode = modeFor(MISTRAL_MODEL, summaryCloud);
   }
 
+  // Saved through the normal path so the flag survives a restart, then the welcome opens.
+  async function replayOnboarding() {
+    draft.onboarding_done = false;
+    await save();
+    if (!error) go({ name: 'onboarding' });
+  }
+
   const size = (mb: number) => {
     const s = formatSize(mb, app.lang);
     return t(`settings.size_${s.unit}`, { n: s.n });
@@ -188,103 +195,124 @@
   <div class="screen-body">
     {#if error}<p class="error" role="alert" bind:this={errorEl}>{error}</p>{/if}
 
-    <div class="sections">
-      <section class="card" aria-labelledby="s-dictation">
+    <div class="groups">
+      <section class="group" aria-labelledby="s-dictation">
         <h2 id="s-dictation">{t('settings.dictation')}</h2>
-        <fieldset>
-          <legend class="secondary">{t('settings.mode')}</legend>
-          {#each ['toggle', 'hold'] as const as mode (mode)}
-            <label class="choice">
-              <input type="radio" name="dictation-mode" value={mode} bind:group={draft.dictation.mode} />
-              <span><span class="strong">{t(`settings.${mode}`)}</span> <span class="secondary">{t(`settings.${mode}_hint`)}</span></span>
-            </label>
-          {/each}
-        </fieldset>
-        <label class="field"><span>{t('settings.model')}</span>
-          <select bind:value={draft.dictation.model} aria-describedby="dictation-model-hint">
-            {#if parakeet.length}
-              <optgroup label={t('settings.group_fast')}>
-                {#each parakeet as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
-              </optgroup>
-            {/if}
-            <optgroup label="Whisper">
-              {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
-            </optgroup>
-          </select>
-          <span id="dictation-model-hint" class="secondary">{t('settings.dictation_model_hint')}</span>
-        </label>
-        <label class="check"><input type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" /> {t('settings.show_overlay')}</label>
-        <p class="secondary sub" id="overlay-hint">{t('settings.show_overlay_hint')}</p>
-        <div class="two">
-          <label class="field"><span>{t('settings.delay_before')}</span><input type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} /></label>
-          <label class="field"><span>{t('settings.delay_after')}</span><input type="number" min="0" max="5000" step="50" bind:value={draft.dictation.paste_delay_after_ms} /></label>
-        </div>
-        <label class="check"><input type="checkbox" bind:checked={draft.dictation.keep_history} /> {t('settings.keep_history')}</label>
-      </section>
-
-      <section class="card" aria-labelledby="s-meeting">
-        <h2 id="s-meeting">{t('settings.meeting')}</h2>
-        <label class="field"><span>{t('settings.model')}</span>
-          <select value={draft.meeting.model} onchange={(e) => pickMeetingModel(e.currentTarget.value)}>
-            {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
-            <option value={MISTRAL_MODEL}>{t('settings.model_mistral')}</option>
-          </select>
-        </label>
-        {#if draft.meeting.model === MISTRAL_MODEL && !mistralOpen}{@render keyForm('mistral', t('mistral.key'))}{/if}
-        <label class="field">
-          <span>{t('settings.threshold')} <output class="tabular">{new Intl.NumberFormat(app.lang, { minimumFractionDigits: 2 }).format(draft.meeting.confidence_threshold)}</output></span>
-          <input type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} aria-describedby="threshold-hint" />
-          <span id="threshold-hint" class="secondary">{t('settings.threshold_hint')}</span>
-        </label>
-        <fieldset aria-describedby="outputs-hint">
-          <legend class="secondary">{t('settings.outputs')}</legend>
-          {#each outputChoices as o (o.id)}
-            <label class="check"><input type="checkbox" checked={!draft.meeting.excluded_outputs.includes(o.id)} onchange={() => toggleOutput(o.id)} /> {o.name}</label>
-          {:else}
-            <p class="secondary">{t('settings.outputs_none')}</p>
-          {/each}
-          <span id="outputs-hint" class="secondary">{t('settings.outputs_hint')}</span>
-        </fieldset>
-        <label class="field"><span>{t('settings.retention')}</span>
-          <select bind:value={draft.meeting.retention}>
-            {#each ['on_review', 'seven_days', 'forever'] as r (r)}<option value={r}>{t(`settings.retention.${r}`)}</option>{/each}
-          </select>
-        </label>
-      </section>
-
-      <section class="card" aria-labelledby="s-vocab">
-        <h2 id="s-vocab">{t('settings.vocabulary')}</h2>
-        <p class="secondary">{t('settings.vocabulary_hint')}</p>
-        {#if draft.vocabulary.length}
-          <ul class="terms">
-            {#each draft.vocabulary as v, i (v)}
-              <li>
-                <span>{v}</span>
-                <button class="btn ghost icon remove" aria-label={t('settings.term_remove', { term: v })} onclick={() => draft.vocabulary.splice(i, 1)}>
-                  <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 2 L10 10 M10 2 L2 10" /></svg>
-                </button>
-              </li>
+        <div class="box">
+          <fieldset class="line stack">
+            <legend class="secondary">{t('settings.mode')}</legend>
+            {#each ['toggle', 'hold'] as const as mode (mode)}
+              <label class="choice">
+                <input type="radio" name="dictation-mode" value={mode} bind:group={draft.dictation.mode} />
+                <span><span class="strong">{t(`settings.${mode}`)}</span> <span class="secondary">{t(`settings.${mode}_hint`)}</span></span>
+              </label>
             {/each}
-          </ul>
-        {:else}
-          <p class="secondary">{t('settings.vocabulary_empty')}</p>
-        {/if}
-        <form class="secret" onsubmit={addVocabulary}>
-          <label class="field grow"><span>{t('settings.term')}</span>
-            <input type="text" bind:value={term} autocomplete="off" aria-describedby="term-state" />
+          </fieldset>
+          <label class="line">
+            <span class="lbl">{t('settings.model')}<span id="dictation-model-hint" class="secondary">{t('settings.dictation_model_hint')}</span></span>
+            <select class="ctl" bind:value={draft.dictation.model} aria-describedby="dictation-model-hint">
+              {#if parakeet.length}
+                <optgroup label={t('settings.group_fast')}>
+                  {#each parakeet as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+                </optgroup>
+              {/if}
+              <optgroup label="Whisper">
+                {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+              </optgroup>
+            </select>
           </label>
-          <button class="btn" type="submit" disabled={!term.trim() || termDuplicate}>{t('settings.term_add')}</button>
-        </form>
-        <p class="secondary" id="term-state" role="status">{termDuplicate ? t('settings.term_duplicate') : ''}</p>
+          <label class="line">
+            <span class="lbl">{t('settings.show_overlay')}<span class="secondary" id="overlay-hint">{t('settings.show_overlay_hint')}</span></span>
+            <input type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
+          </label>
+          <label class="line">
+            <span class="lbl">{t('settings.delay_before')}</span>
+            <input class="num" type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} />
+          </label>
+          <label class="line">
+            <span class="lbl">{t('settings.delay_after')}</span>
+            <input class="num" type="number" min="0" max="5000" step="50" bind:value={draft.dictation.paste_delay_after_ms} />
+          </label>
+          <label class="line">
+            <span class="lbl">{t('settings.keep_history')}</span>
+            <input type="checkbox" bind:checked={draft.dictation.keep_history} />
+          </label>
+        </div>
       </section>
 
-      <section class="card" aria-labelledby="s-models">
+      <section class="group" aria-labelledby="s-meeting">
+        <h2 id="s-meeting">{t('settings.meeting')}</h2>
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.model')}</span>
+            <select class="ctl" value={draft.meeting.model} onchange={(e) => pickMeetingModel(e.currentTarget.value)}>
+              {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+              <option value={MISTRAL_MODEL}>{t('settings.model_mistral')}</option>
+            </select>
+          </label>
+          {#if draft.meeting.model === MISTRAL_MODEL && !mistralOpen}{@render keyForm('mistral', t('mistral.key'))}{/if}
+          <label class="line">
+            <span class="lbl">
+              <span>{t('settings.threshold')} <output class="tabular">{new Intl.NumberFormat(app.lang, { minimumFractionDigits: 2 }).format(draft.meeting.confidence_threshold)}</output></span>
+              <span id="threshold-hint" class="secondary">{t('settings.threshold_hint')}</span>
+            </span>
+            <input class="ctl" type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} aria-describedby="threshold-hint" />
+          </label>
+          <fieldset class="line stack" aria-describedby="outputs-hint">
+            <legend class="secondary">{t('settings.outputs')}</legend>
+            {#each outputChoices as o (o.id)}
+              <label class="check"><input type="checkbox" checked={!draft.meeting.excluded_outputs.includes(o.id)} onchange={() => toggleOutput(o.id)} /> {o.name}</label>
+            {:else}
+              <p class="secondary">{t('settings.outputs_none')}</p>
+            {/each}
+            <span id="outputs-hint" class="secondary">{t('settings.outputs_hint')}</span>
+          </fieldset>
+          <label class="line">
+            <span class="lbl">{t('settings.retention')}</span>
+            <select class="ctl" bind:value={draft.meeting.retention}>
+              {#each ['on_review', 'seven_days', 'forever'] as r (r)}<option value={r}>{t(`settings.retention.${r}`)}</option>{/each}
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="s-vocab">
+        <h2 id="s-vocab">{t('settings.vocabulary')}</h2>
+        <div class="box">
+          <div class="line stack">
+            <p class="secondary">{t('settings.vocabulary_hint')}</p>
+            {#if draft.vocabulary.length}
+              <ul class="terms">
+                {#each draft.vocabulary as v, i (v)}
+                  <li>
+                    <span>{v}</span>
+                    <button class="btn ghost icon remove" aria-label={t('settings.term_remove', { term: v })} onclick={() => draft.vocabulary.splice(i, 1)}>
+                      <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2 2 L10 10 M10 2 L2 10" /></svg>
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {:else}
+              <p class="secondary">{t('settings.vocabulary_empty')}</p>
+            {/if}
+          </div>
+          <form class="line secret" onsubmit={addVocabulary}>
+            <label class="field grow"><span>{t('settings.term')}</span>
+              <input type="text" bind:value={term} autocomplete="off" aria-describedby="term-state" />
+            </label>
+            <button class="btn" type="submit" disabled={!term.trim() || termDuplicate}>{t('settings.term_add')}</button>
+          </form>
+        </div>
+        <p class="secondary note" id="term-state" role="status">{termDuplicate ? t('settings.term_duplicate') : ''}</p>
+      </section>
+
+      <section class="group" aria-labelledby="s-models">
         <h2 id="s-models">{t('settings.models')}</h2>
-        <ul class="models">
+        <ul class="box">
           {#each models as m (m.id)}
             {@const p = progress[m.id]}
-            <li>
-              <div class="grow">
+            <li class="line">
+              <div class="lbl">
                 <span class="strong">{m.name}</span>
                 <span class="secondary">{t(`settings.kind.${m.kind}`)} · <span class="tabular">{size(m.size_mb)}</span></span>
                 {#if p !== undefined}
@@ -304,103 +332,149 @@
         </ul>
       </section>
 
-      <section class="card" aria-labelledby="s-shortcuts">
+      <section class="group" aria-labelledby="s-shortcuts">
         <h2 id="s-shortcuts">{t('settings.shortcuts')}</h2>
-        <p class="secondary">{t('settings.sc.hint')}</p>
-        {#each ['dictation', 'meeting_toggle', 'marker', 'review_queue'] as const as k (k)}
-          <ShortcutInput label={t(`settings.sc.${k}`)} bind:value={draft.shortcuts[k]} />
-        {/each}
+        <div class="box">
+          {#each ['dictation', 'meeting_toggle', 'marker', 'review_queue'] as const as k (k)}
+            <div class="line plain"><ShortcutInput label={t(`settings.sc.${k}`)} bind:value={draft.shortcuts[k]} /></div>
+          {/each}
+        </div>
+        <p class="secondary note">{t('settings.sc.hint')}</p>
       </section>
 
-      <section class="card" aria-labelledby="s-dest">
+      <section class="group" aria-labelledby="s-dest">
         <h2 id="s-dest">{t('settings.destinations')}</h2>
-        <label class="check"><input type="checkbox" bind:checked={draft.destinations.folder.enabled} /> {t('settings.folder_enabled')}</label>
-        <label class="field"><span>{t('settings.folder_path')}</span><input type="text" bind:value={draft.destinations.folder.path} disabled={!draft.destinations.folder.enabled} /></label>
-        <hr />
-        <label class="check"><input type="checkbox" bind:checked={draft.destinations.webhook.enabled} /> {t('settings.webhook_enabled')}</label>
-        <label class="field"><span>{t('settings.webhook_url')}</span><input type="url" bind:value={draft.destinations.webhook.url} placeholder="https://" disabled={!draft.destinations.webhook.enabled} /></label>
-        <form class="secret" onsubmit={(e) => { e.preventDefault(); if (secret) storeSecret(secret); }}>
-          <label class="field grow"><span>{t('settings.secret')}</span>
-            <input type="password" bind:value={secret} autocomplete="off" aria-describedby="secret-state" />
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.folder_enabled')}</span>
+            <input type="checkbox" bind:checked={draft.destinations.folder.enabled} />
           </label>
-          <button class="btn" type="submit" disabled={!secret}>{t('settings.secret_save')}</button>
-        </form>
-        <p class="secondary row" id="secret-state">
-          {t(hasSecret ? 'settings.secret_set' : 'settings.secret_none')}
-          {#if hasSecret}<button class="btn ghost small danger" onclick={() => storeSecret('')}>{t('settings.secret_clear')}</button>{/if}
-        </p>
+          <label class="line">
+            <span class="lbl">{t('settings.folder_path')}</span>
+            <input class="ctl" type="text" bind:value={draft.destinations.folder.path} disabled={!draft.destinations.folder.enabled} />
+          </label>
+        </div>
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.webhook_enabled')}</span>
+            <input type="checkbox" bind:checked={draft.destinations.webhook.enabled} />
+          </label>
+          <label class="line">
+            <span class="lbl">{t('settings.webhook_url')}</span>
+            <input class="ctl" type="url" bind:value={draft.destinations.webhook.url} placeholder="https://" disabled={!draft.destinations.webhook.enabled} />
+          </label>
+          <form class="line secret" onsubmit={(e) => { e.preventDefault(); if (secret) storeSecret(secret); }}>
+            <label class="field grow"><span>{t('settings.secret')}</span>
+              <input type="password" bind:value={secret} autocomplete="off" aria-describedby="secret-state" />
+            </label>
+            <button class="btn" type="submit" disabled={!secret}>{t('settings.secret_save')}</button>
+          </form>
+          <p class="line secondary" id="secret-state">
+            {t(hasSecret ? 'settings.secret_set' : 'settings.secret_none')}
+            {#if hasSecret}<button class="btn ghost small danger" onclick={() => storeSecret('')}>{t('settings.secret_clear')}</button>{/if}
+          </p>
+        </div>
       </section>
 
-      <section class="card" aria-labelledby="s-llm">
+      <section class="group" aria-labelledby="s-llm">
         <h2 id="s-llm">{t('settings.llm')}</h2>
-        <label class="check"><input type="checkbox" bind:checked={draft.llm.enabled} /> {t('settings.llm_enabled')}</label>
-        <fieldset disabled={!draft.llm.enabled}>
-          <legend class="secondary">{t('settings.llm_where')}</legend>
-          <label class="choice">
-            <input type="radio" name="llm-where" checked={!summaryCloud} onchange={useLocal} />
-            <span><span class="strong">{t('settings.llm_local')}</span> <span class="secondary">{t('settings.llm_local_hint')}</span></span>
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.llm_enabled')}</span>
+            <input type="checkbox" bind:checked={draft.llm.enabled} />
           </label>
-          <label class="choice">
-            <input type="radio" name="llm-where" checked={summaryCloud} onclick={pickCloud} />
-            <span><span class="strong">{t('settings.llm_cloud')}</span> <span class="secondary">{t('settings.llm_cloud_hint')}</span></span>
-          </label>
-        </fieldset>
-        {#if summaryCloud}
-          <label class="field"><span>{t('settings.llm_model')}</span>
-            <input type="text" list="cloud-models" bind:value={draft.llm.model} disabled={!draft.llm.enabled} autocomplete="off" aria-describedby="cloud-model-hint" />
-            <datalist id="cloud-models">{#each CLOUD_MODELS as m (m)}<option value={m}></option>{/each}</datalist>
-            <span id="cloud-model-hint" class="secondary">{t('settings.llm_cloud_model_hint')}</span>
-          </label>
-          {@render keyForm('llm', t('settings.api_key'))}
-        {:else}
-          <div class="two">
-            <label class="field"><span>{t('settings.base_url')}</span><input type="url" bind:value={draft.llm.base_url} disabled={!draft.llm.enabled} /></label>
-            <label class="field"><span>{t('settings.llm_model')}</span><input type="text" bind:value={draft.llm.model} disabled={!draft.llm.enabled} /></label>
-          </div>
-          <p class="secondary">{t('settings.llm_local_note')}</p>
-          {#if llmNotLocal}<p class="warn" role="status">{t('settings.llm_not_local')}</p>{/if}
-        {/if}
+          <fieldset class="line stack" disabled={!draft.llm.enabled}>
+            <legend class="secondary">{t('settings.llm_where')}</legend>
+            <label class="choice">
+              <input type="radio" name="llm-where" checked={!summaryCloud} onchange={useLocal} />
+              <span><span class="strong">{t('settings.llm_local')}</span> <span class="secondary">{t('settings.llm_local_hint')}</span></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="llm-where" checked={summaryCloud} onclick={pickCloud} />
+              <span><span class="strong">{t('settings.llm_cloud')}</span> <span class="secondary">{t('settings.llm_cloud_hint')}</span></span>
+            </label>
+          </fieldset>
+          {#if summaryCloud}
+            <label class="line">
+              <span class="lbl">{t('settings.llm_model')}<span id="cloud-model-hint" class="secondary">{t('settings.llm_cloud_model_hint')}</span></span>
+              <input class="ctl" type="text" list="cloud-models" bind:value={draft.llm.model} disabled={!draft.llm.enabled} autocomplete="off" aria-describedby="cloud-model-hint" />
+              <datalist id="cloud-models">{#each CLOUD_MODELS as m (m)}<option value={m}></option>{/each}</datalist>
+            </label>
+            {@render keyForm('llm', t('settings.api_key'))}
+          {:else}
+            <label class="line">
+              <span class="lbl">{t('settings.base_url')}</span>
+              <input class="ctl" type="url" bind:value={draft.llm.base_url} disabled={!draft.llm.enabled} />
+            </label>
+            <label class="line">
+              <span class="lbl">{t('settings.llm_model')}</span>
+              <input class="ctl" type="text" bind:value={draft.llm.model} disabled={!draft.llm.enabled} />
+            </label>
+            <div class="line stack">
+              <p class="secondary">{t('settings.llm_local_note')}</p>
+              {#if llmNotLocal}<p class="warn" role="status">{t('settings.llm_not_local')}</p>{/if}
+            </div>
+          {/if}
+        </div>
       </section>
 
-      <section class="card" aria-labelledby="s-lang">
+      <section class="group" aria-labelledby="s-lang">
         <h2 id="s-lang">{t('settings.language')}</h2>
-        <div class="two">
-          <label class="field"><span>{t('settings.ui_language')}</span>
-            <select bind:value={draft.ui_language}>
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.ui_language')}</span>
+            <select class="ctl" bind:value={draft.ui_language}>
               <option value="fr">Français</option>
               <option value="en">English</option>
             </select>
           </label>
-          <label class="field"><span>{t('settings.transcription_language')}</span>
-            <select bind:value={draft.transcription_language} aria-describedby={draft.meeting.model === MISTRAL_MODEL ? 'lang-mistral-hint' : undefined}>
+          <label class="line">
+            <span class="lbl">
+              {t('settings.transcription_language')}
+              {#if draft.meeting.model === MISTRAL_MODEL}<span id="lang-mistral-hint" class="secondary">{t('settings.transcription_language_mistral')}</span>{/if}
+            </span>
+            <select class="ctl" bind:value={draft.transcription_language} aria-describedby={draft.meeting.model === MISTRAL_MODEL ? 'lang-mistral-hint' : undefined}>
               {#each ['auto', 'fr', 'en'] as l (l)}<option value={l}>{t(`settings.lang.${l}`)}</option>{/each}
             </select>
-            {#if draft.meeting.model === MISTRAL_MODEL}<span id="lang-mistral-hint" class="secondary">{t('settings.transcription_language_mistral')}</span>{/if}
           </label>
         </div>
       </section>
 
-      <section class="card" aria-labelledby="s-misc">
+      <section class="group" aria-labelledby="s-misc">
         <h2 id="s-misc">{t('settings.misc')}</h2>
-        <label class="check"><input type="checkbox" bind:checked={draft.notification_sound} /> {t('settings.notification_sound')}</label>
-        <label class="check">
-          <input type="checkbox" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
-          {t('settings.mascot')}
-        </label>
-        <p class="secondary" id="mascot-hint">{t('settings.mascot_hint')}</p>
+        <div class="box">
+          <label class="line">
+            <span class="lbl">{t('settings.notification_sound')}</span>
+            <input type="checkbox" bind:checked={draft.notification_sound} />
+          </label>
+          <label class="line">
+            <span class="lbl">{t('settings.mascot')}<span class="secondary" id="mascot-hint">{t('settings.mascot_hint')}</span></span>
+            <input type="checkbox" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
+          </label>
+        </div>
+      </section>
+
+      <section class="group" aria-labelledby="s-welcome">
+        <h2 id="s-welcome">{t('settings.welcome')}</h2>
+        <div class="box">
+          <div class="line">
+            <p class="lbl secondary" id="welcome-hint">{t('settings.welcome_hint')}</p>
+            <button class="btn" aria-describedby="welcome-hint" disabled={saving} onclick={replayOnboarding}>{t('settings.welcome_again')}</button>
+          </div>
+        </div>
       </section>
     </div>
   </div>
 </section>
 
 {#snippet keyForm(kind: 'llm' | 'mistral', label: string)}
-  <form class="secret" onsubmit={(e) => { e.preventDefault(); if (keys[kind].trim()) storeKey(kind, keys[kind]); }}>
+  <form class="line secret" onsubmit={(e) => { e.preventDefault(); if (keys[kind].trim()) storeKey(kind, keys[kind]); }}>
     <label class="field grow"><span>{label}</span>
       <input type="password" bind:value={keys[kind]} autocomplete="off" aria-describedby="{kind}-key-state" />
     </label>
     <button class="btn" type="submit" disabled={!keys[kind]}>{t('settings.key_save')}</button>
   </form>
-  <p class="secondary row" id="{kind}-key-state">
+  <p class="line secondary" id="{kind}-key-state">
     {t(hasKeys[kind] ? 'settings.key_set' : 'settings.key_none')}
     {#if hasKeys[kind]}<button class="btn ghost small danger" onclick={() => storeKey(kind, '')}>{t('settings.key_clear')}</button>{/if}
   </p>
@@ -439,41 +513,49 @@
 </Sheet>
 
 <style>
-  .sections { display: grid; gap: 16px; max-width: 680px; }
-  .card { padding: 16px 18px; display: grid; gap: 12px; }
-  fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
-  legend { padding: 0; margin-bottom: 4px; }
+  /* macOS-like settings: a title per group, then one grouped box of label/control lines. */
+  .groups { display: grid; gap: 32px; max-width: 680px; }
+  .group { display: grid; gap: 8px; }
+  .group > h2 { padding-left: 4px; }
+  .box { background: var(--fill); border-radius: var(--r-card); }
+  .box > * + * { border-top: 1px solid var(--border); }
+  .line {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    min-height: 44px; padding: 8px 16px; margin: 0;
+  }
+  .lbl { flex: 1; min-width: 0; display: grid; gap: 2px; }
+  .ctl { width: 280px; flex: none; }
+  .num { width: 112px; flex: none; text-align: right; }
+  .line > input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; }
+  .stack { display: grid; justify-content: stretch; gap: 8px; padding-block: 12px; }
+  .plain { display: block; }
+  fieldset { border: 0; min-width: 0; }
+  legend { float: left; width: 100%; padding: 0; }
   .choice { display: flex; gap: 8px; align-items: baseline; }
   .check { display: flex; gap: 8px; align-items: center; }
-  .strong { font-weight: 500; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .strong { font-weight: 550; }
   .grow { flex: 1; min-width: 0; }
-  hr { border: 0; border-top: 1px solid var(--border); margin: 2px 0; width: 100%; }
-  output { color: var(--text); font-weight: 500; margin-left: 4px; }
-  .models { display: grid; }
-  .models li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
-  .models li:first-child { border-top: 0; }
-  .models .grow { display: grid; }
+  output { color: var(--text); font-weight: 550; margin-left: 4px; }
   progress { width: 100%; height: 4px; margin-top: 4px; accent-color: var(--accent); }
   .installed { font-size: 12.5px; color: var(--ok); }
-  .secret { display: flex; gap: 8px; align-items: end; }
-  .row { display: flex; align-items: center; gap: 8px; }
+  .secret { align-items: end; padding-block: 12px; }
   .warn { color: var(--warn); font-size: 13px; }
-  .sub { margin-top: -8px; padding-left: 24px; }
-  .terms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .note { padding: 0 4px; }
+  /* The empty live region stays in the tree (so it announces) but takes no room. */
+  .note:empty { margin-top: -8px; }
+  .terms { display: flex; flex-wrap: wrap; gap: 4px; }
   .terms li {
     display: inline-flex; align-items: center; gap: 2px;
-    padding: 2px 2px 2px 10px; border-radius: var(--r-control);
-    background: var(--fill); border: 1px solid var(--border);
+    padding: 2px 2px 2px 12px; border-radius: var(--r-control);
+    background: var(--surface); border: 1px solid var(--border);
   }
   .remove { width: 24px; min-height: 24px; }
   .remove path { stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
-  /* Empty live region stays in the tree (so it announces) but takes no room. */
-  #term-state:empty { margin-top: -12px; }
   .bullets { list-style: disc; padding-left: 20px; display: grid; gap: 4px; }
   .error {
-    max-width: 680px; margin-bottom: 16px; padding: 10px 14px; border-radius: var(--r-card);
+    max-width: 680px; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--r-card);
     color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
     background: color-mix(in srgb, var(--danger) 8%, var(--surface));
   }
+  @media (max-width: 860px) { .ctl { width: 220px; } }
 </style>
