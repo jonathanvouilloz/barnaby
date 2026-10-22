@@ -5,3 +5,4 @@ models/
 *.wav
 *.flac
 .env
+design/shots/
