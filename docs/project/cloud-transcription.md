@@ -41,6 +41,7 @@ Hors périmètre : la diarisation par Mistral (`diarize`, format de réponse non
 
 La réunion passe en `failed` avec un code, affiché par l'interface (i18n) :
 - `mistral_key_missing` : pas de clé dans le trousseau ;
+- `mistral_mode_mismatch` : Mistral est choisi mais la réunion n'a pas été créée en mode `api` (son audio ne doit pas quitter la machine) ;
 - `mistral_auth` : réponse 401 ou 403 ;
 - `mistral_quota` : réponse 429 ;
 - `mistral_unreachable` : pas de réseau ou délai dépassé ;

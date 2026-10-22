@@ -139,6 +139,7 @@
 
   async function storeKey(kind: 'llm' | 'mistral', value: string): Promise<boolean> {
     const set = kind === 'llm' ? api.setLlmApiKey : api.setMistralApiKey;
+    value = value.trim();
     if ((await attempt(() => set(value))) === undefined) return false;
     hasKeys[kind] = value !== '';
     keys[kind] = '';
@@ -160,6 +161,7 @@
 
   function cancelMistral() {
     mistralOpen = false;
+    keys.mistral = '';
     draft.meeting.model = mistralFallback;
   }
 
@@ -370,9 +372,10 @@
             </select>
           </label>
           <label class="field"><span>{t('settings.transcription_language')}</span>
-            <select bind:value={draft.transcription_language}>
+            <select bind:value={draft.transcription_language} aria-describedby={draft.meeting.model === MISTRAL_MODEL ? 'lang-mistral-hint' : undefined}>
               {#each ['auto', 'fr', 'en'] as l (l)}<option value={l}>{t(`settings.lang.${l}`)}</option>{/each}
             </select>
+            {#if draft.meeting.model === MISTRAL_MODEL}<span id="lang-mistral-hint" class="secondary">{t('settings.transcription_language_mistral')}</span>{/if}
           </label>
         </div>
       </section>
@@ -391,7 +394,7 @@
 </section>
 
 {#snippet keyForm(kind: 'llm' | 'mistral', label: string)}
-  <form class="secret" onsubmit={(e) => { e.preventDefault(); if (keys[kind]) storeKey(kind, keys[kind]); }}>
+  <form class="secret" onsubmit={(e) => { e.preventDefault(); if (keys[kind].trim()) storeKey(kind, keys[kind]); }}>
     <label class="field grow"><span>{label}</span>
       <input type="password" bind:value={keys[kind]} autocomplete="off" aria-describedby="{kind}-key-state" />
     </label>
@@ -416,7 +419,7 @@
   </label>
   {#snippet actions()}
     <button class="btn" onclick={cancelMistral}>{t('common.cancel')}</button>
-    <button class="btn primary" disabled={!keys.mistral} onclick={activateMistral}>{t('mistral.confirm')}</button>
+    <button class="btn primary" disabled={!keys.mistral.trim()} onclick={activateMistral}>{t('mistral.confirm')}</button>
   {/snippet}
 </Sheet>
 

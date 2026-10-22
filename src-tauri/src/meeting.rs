@@ -10,7 +10,7 @@ use anyhow::{bail, Result};
 use barnaby_core::{
     destination, llm::OpenAiStructurer, mistral::{MistralTranscriber, MISTRAL_MODEL}, net::NetPolicy,
     pipeline::Pipeline, retention, send::send_meeting,
-    AudioRetention, MeetingState, Participant, Settings, Structurer, Transcriber,
+    AudioRetention, MeetingState, Participant, ProcessingMode, Settings, Structurer, Transcriber,
 };
 use barnaby_engine::Recorder;
 use serde_json::json;
@@ -149,12 +149,16 @@ fn process(app: &App, id: Uuid) {
         let _ = app.db().set_state(id, MeetingState::Failed, Some(code));
         app.emit_meeting(id);
     };
-    let transcriber: Arc<dyn Transcriber> = if settings.meeting.model == MISTRAL_MODEL {
-        let Some(api_key) = app.mistral_api_key() else { return fail("mistral_key_missing") };
-        Arc::new(MistralTranscriber { api_key, vocabulary: settings.vocabulary.clone(), policy: NetPolicy { mode } })
-    } else {
-        let Ok(inner) = app.transcriber(&settings.meeting.model) else { return fail("model_missing") };
-        Arc::new(MeetingTranscriber { inner, gate: app.gate.clone() })
+    let transcriber: Arc<dyn Transcriber> = match uses_mistral(&settings.meeting.model, mode) {
+        Err(code) => return fail(code),
+        Ok(true) => {
+            let Some(api_key) = app.mistral_api_key() else { return fail("mistral_key_missing") };
+            Arc::new(MistralTranscriber { api_key, vocabulary: settings.vocabulary.clone(), policy: NetPolicy { mode } })
+        }
+        Ok(false) => {
+            let Ok(inner) = app.transcriber(&settings.meeting.model) else { return fail("model_missing") };
+            Arc::new(MeetingTranscriber { inner, gate: app.gate.clone() })
+        }
     };
     let Ok(diarizer) = app.diarizer() else { return fail("diarization_model_missing") };
     let structurer = settings.llm.enabled.then(|| {
@@ -183,6 +187,15 @@ fn process(app: &App, id: Uuid) {
     }
 }
 
+/// Mistral only for a meeting recorded in `api` mode: a local or hybrid one was promised its audio stays here.
+fn uses_mistral(model: &str, mode: ProcessingMode) -> Result<bool, &'static str> {
+    match (model == MISTRAL_MODEL, mode) {
+        (false, _) => Ok(false),
+        (true, ProcessingMode::Api) => Ok(true),
+        (true, _) => Err("mistral_mode_mismatch"),
+    }
+}
+
 fn send(app: &App, id: Uuid) {
     let settings = app.settings();
     let destinations = destination::from_settings(&settings.destinations, app.webhook_secret());
@@ -203,4 +216,17 @@ fn notify(app: &App, title: &str, ok: bool, settings: &Settings) {
         n = n.sound("default");
     }
     let _ = n.show();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_api_meetings_reach_mistral() {
+        assert_eq!(uses_mistral(MISTRAL_MODEL, ProcessingMode::Api), Ok(true));
+        assert_eq!(uses_mistral(MISTRAL_MODEL, ProcessingMode::Local), Err("mistral_mode_mismatch"));
+        assert_eq!(uses_mistral(MISTRAL_MODEL, ProcessingMode::Hybrid), Err("mistral_mode_mismatch"));
+        assert_eq!(uses_mistral("whisper-small", ProcessingMode::Api), Ok(false));
+    }
 }
