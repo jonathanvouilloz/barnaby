@@ -6,3 +6,5 @@ models/
 *.flac
 .env
 design/shots/
+.impeccable/review/
+barnaby.zip

@@ -72,3 +72,15 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Écarté : OpenRouter et Deepgram (un seul fournisseur) ; la diarisation par Mistral (format non documenté) ; la dictée en ligne (l'audio quitterait la machine à chaque phrase).
 - Pourquoi : Whisper small est inutilisable sur les réunions réelles ; Voxtral coûte environ 0,18 $ par heure.
 - À rouvrir si : la qualité Mistral déçoit sur les réunions de Jon, ou si une coupure réseau en pleine réunion gêne sans repli automatique.
+
+## 2026-10-22 — Refonte « Things, version chouette » et onboarding
+- Choix : interface aérée inspirée de Things 3, palette de la chouette (neutres chauds, encre `#0f0c2f`, bleu étincelle `#0170ec` pour les actions, orange `#fcaa4f` pour l'enregistrement), Valley Sans embarquée, étincelle ✦ comme seul signe de ce qui attend une action, chouette (découpes de la planche) aux moments clés seulement, tutoiement dans l'interface. Onboarding en 6 étapes, chacune passable, remplaçant la fenêtre « Modèles à installer » ; ce qui manque reste signalé (✦ sur Réglages).
+- Écarté : directions « carnet à onglets » et « carte du ciel » (sombre par défaut) ; test du son système dans l'onboarding ; vidéo Kling tant qu'elle a un fond blanc et un filigrane ; sélecteur de micro (reporté).
+- Pourquoi : Jon jugeait l'ancien look vieux et classique ; il a choisi cette direction, la place de la chouette, le tutoiement et le contenu de l'onboarding.
+- À rouvrir si : le rendu dans WebView2 ou WebKitGTK diffère des captures Chromium, ou si l'onboarding bloque des utilisateurs réels.
+- Revue : après le test Windows de Jon.
+
+## 2026-10-22 — Texte de consentement construit depuis les réglages
+- Choix : le texte à lire aux participants dit la vérité selon le modèle (local ou Mistral, « selon ses conditions »), le résumé en ligne et la durée de conservation réelle ; il reste au vouvoiement et toujours visible sur l'écran « Nouvelle réunion ».
+- Pourquoi : la revue d'accessibilité et de consentement a trouvé que l'ancien texte promettait un audio local et supprimé, faux avec Mistral ou une conservation longue.
+- À rouvrir si : un nouveau fournisseur ou une nouvelle règle de conservation apparaît.

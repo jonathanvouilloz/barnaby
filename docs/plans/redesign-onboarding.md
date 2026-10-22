@@ -41,11 +41,11 @@
 **Interfaces:**
 - Produces: `Settings.onboarding_done: bool` (`#[serde(default)]`, défaut `false`) ; commandes `start_mic_test() -> CmdResult<()>` (erreur `capture.no_mic` ou `capture.permission_denied`) et `stop_mic_test()` ; événement `mic-level` (f32 0..1, même échelle que `dictation-level`, 20 par seconde) ; côté UI `api.startMicTest()`, `api.stopMicTest()`, `events.micLevel(cb)`.
 
-- [ ] **Step 1:** Test dans `model.rs` : un JSON de réglages sans `onboarding_done` se lit avec `false` ; les défauts valent `false`.
-- [ ] **Step 2:** Échec attendu, puis ajouter le champ (Rust et `api.ts`, même commit).
-- [ ] **Step 3:** `start_mic_test` ouvre un `DictationRecorder` dans un fil qui émet `mic-level` toutes les 50 ms jusqu'à `stop_mic_test` (un `Sender` d'arrêt dans `App`, sur le modèle de `dictation::Session`). Un second `start` pendant un test en cours ne fait rien. Le micro n'est jamais enregistré.
-- [ ] **Step 4:** `mock.ts` : les deux commandes, et un `mic-level` simulé (onde lente) tant que le test tourne.
-- [ ] **Step 5:** Vérifications Rust et UI, commit `add onboarding flag and mic test`.
+- [x] **Step 1:** Test dans `model.rs` : un JSON de réglages sans `onboarding_done` se lit avec `false` ; les défauts valent `false`.
+- [x] **Step 2:** Échec attendu, puis ajouter le champ (Rust et `api.ts`, même commit).
+- [x] **Step 3:** `start_mic_test` ouvre un `DictationRecorder` dans un fil qui émet `mic-level` toutes les 50 ms jusqu'à `stop_mic_test` (un `Sender` d'arrêt dans `App`, sur le modèle de `dictation::Session`). Un second `start` pendant un test en cours ne fait rien. Le micro n'est jamais enregistré.
+- [x] **Step 4:** `mock.ts` : les deux commandes, et un `mic-level` simulé (onde lente) tant que le test tourne.
+- [x] **Step 5:** Vérifications Rust et UI, commit `add onboarding flag and mic test`.
 
 ### Task 2: Fondations visuelles
 
@@ -57,11 +57,11 @@
 **Interfaces:**
 - Produces: tous les tokens des Global Constraints dans `app.css` ; classes `.btn` (`primary`, `ghost`, `danger`, `small`, `icon`), `.field`, `.card`, `.screen`, `.screen-head`, `.screen-body`, `.secondary`, `.empty` restylées en gardant leurs noms ; `<Spark size={number} active={boolean} label?={string} />` (✦ en SVG, couleur `--spark` ; quand `active` passe de vrai à faux, une animation de 240 ms : rotation de 90° et éclat, puis disparition) ; `<Icon name="home|review|settings|record|mic|spark|check|chevron" />` (SVG 16px, trait 1.75, `currentColor`) ; `Owl.svelte` garde son API (`state`, `size`).
 
-- [ ] **Step 1:** Test : aucun fichier `.svelte` sous `ui/src` ne contient de couleur littérale (`#rgb`, `#rrggbb`, `rgb(`) hors `var(...)` et hors `Owl.svelte` qui lit ses propres tokens. Échoue aujourd'hui s'il en existe ; sinon il protège la suite.
-- [ ] **Step 2:** `bun add @fontsource-variable/valley-sans@5.3.1`, import dans `main.ts`, tokens clair et sombre, styles de base.
-- [ ] **Step 3:** Coquille : barre latérale translucide (`backdrop-filter`) aux tons `--sidebar`, nom « Barnaby » avec la petite étincelle, entrées avec icône colorée (Accueil `--accent`, Relecture `--spark` avec compteur ✦ à droite, Réglages `--text-2`), bouton « Nouvelle réunion » en bas (pastille `--rec` à gauche). La pastille d'état actuelle reste (enregistrement : point `--rec` qui pulse). La chouette ne figure plus dans la barre latérale (elle vit aux moments clés).
-- [ ] **Step 4:** `Owl.svelte` redessiné d'après `design/references/owl-sheet.png` : tête ronde à deux aigrettes, disque facial crème, grands yeux encre avec reflet, bec orange, ventre clair, pattes orange, trait encre ; une expression par état (`idle` neutre, `listening` yeux ouverts et étincelle, `thinking` yeux vers le haut, `review` tête penchée, `success` yeux plissés de joie, `error` bouche ronde). Animations douces (clignement, petite oscillation), coupées sous réduction des mouvements.
-- [ ] **Step 5:** `bun run check && bun test`, commit `new visual foundation: tokens, font, shell, owl, spark`.
+- [x] **Step 1:** Test : aucun fichier `.svelte` sous `ui/src` ne contient de couleur littérale (`#rgb`, `#rrggbb`, `rgb(`) hors `var(...)` et hors `Owl.svelte` qui lit ses propres tokens. Échoue aujourd'hui s'il en existe ; sinon il protège la suite.
+- [x] **Step 2:** `bun add @fontsource-variable/valley-sans@5.3.1`, import dans `main.ts`, tokens clair et sombre, styles de base.
+- [x] **Step 3:** Coquille : barre latérale translucide (`backdrop-filter`) aux tons `--sidebar`, nom « Barnaby » avec la petite étincelle, entrées avec icône colorée (Accueil `--accent`, Relecture `--spark` avec compteur ✦ à droite, Réglages `--text-2`), bouton « Nouvelle réunion » en bas (pastille `--rec` à gauche). La pastille d'état actuelle reste (enregistrement : point `--rec` qui pulse). La chouette ne figure plus dans la barre latérale (elle vit aux moments clés).
+- [x] **Step 4:** `Owl.svelte` redessiné d'après `design/references/owl-sheet.png` : tête ronde à deux aigrettes, disque facial crème, grands yeux encre avec reflet, bec orange, ventre clair, pattes orange, trait encre ; une expression par état (`idle` neutre, `listening` yeux ouverts et étincelle, `thinking` yeux vers le haut, `review` tête penchée, `success` yeux plissés de joie, `error` bouche ronde). Animations douces (clignement, petite oscillation), coupées sous réduction des mouvements.
+- [x] **Step 5:** `bun run check && bun test`, commit `new visual foundation: tokens, font, shell, owl, spark`.
 
 ### Task 3: Écrans du quotidien
 
@@ -71,30 +71,30 @@
 **Interfaces:**
 - Consumes: tokens, classes, `Spark`, `Icon`, `Owl` (tâche 2).
 
-- [ ] **Step 1:** Accueil : titre 28px, liste des réunions groupées par jour comme dans Things (en-tête de jour discret, lignes sans bordure, survol `--fill`), état en clair à droite, ✦ sur les réunions à relire ; dictées récentes en dessous ; écran vide avec la chouette `idle` et une phrase. Action principale « Nouvelle réunion » en haut à droite.
-- [ ] **Step 2:** Nouvelle réunion et Enregistrement : formulaire aéré ; pendant l'enregistrement, niveaux micro et système en barres arrondies, minuteur en chiffres tabulaires, bouton d'arrêt `--rec`.
-- [ ] **Step 3:** File de relecture : liste avec ✦ et nombre de passages ; vide : chouette `success` et « Rien à relire ».
-- [ ] **Step 4:** Overlay de dictée : mêmes couleurs et police, forme inchangée.
-- [ ] **Step 5:** Vérifications UI, commit `restyle home, meeting and queue screens`.
+- [x] **Step 1:** Accueil : titre 28px, liste des réunions groupées par jour comme dans Things (en-tête de jour discret, lignes sans bordure, survol `--fill`), état en clair à droite, ✦ sur les réunions à relire ; dictées récentes en dessous ; écran vide avec la chouette `idle` et une phrase. Action principale « Nouvelle réunion » en haut à droite.
+- [x] **Step 2:** Nouvelle réunion et Enregistrement : formulaire aéré ; pendant l'enregistrement, niveaux micro et système en barres arrondies, minuteur en chiffres tabulaires, bouton d'arrêt `--rec`.
+- [x] **Step 3:** File de relecture : liste avec ✦ et nombre de passages ; vide : chouette `success` et « Rien à relire ».
+- [x] **Step 4:** Overlay de dictée : mêmes couleurs et police, forme inchangée.
+- [x] **Step 5:** Vérifications UI, commit `restyle home, meeting and queue screens`.
 
 ### Task 4: Relecture et réglages
 
 **Files:**
 - Modify: `ui/src/screens/Review.svelte`, `ReviewZone.svelte`, `Settings.svelte`
 
-- [ ] **Step 1:** Relecture : transcript en colonne de lecture confortable (68 caractères environ), passages douteux surlignés `--fill-strong` avec ✦ en marge, passage en cours entouré `--spark` ; panneau des questions à droite, une question à la fois, actions claires ; quand un passage est résolu, son ✦ joue l'animation de `Spark`.
-- [ ] **Step 2:** Réglages : sections en groupes façon réglages macOS (titre de section, lignes label/contrôle alignées, séparateurs fins), pas de carte dans une carte ; bouton « Revoir l'accueil » qui remet `onboarding_done` à faux et ouvre l'onboarding (route `onboarding`, ajoutée en tâche 6 : dans cette tâche, le bouton appelle `go({ name: 'onboarding' })` et la route est déclarée dans `Route`).
-- [ ] **Step 3:** Vérifications UI, commit `restyle review and settings`.
+- [x] **Step 1:** Relecture : transcript en colonne de lecture confortable (68 caractères environ), passages douteux surlignés `--fill-strong` avec ✦ en marge, passage en cours entouré `--spark` ; panneau des questions à droite, une question à la fois, actions claires ; quand un passage est résolu, son ✦ joue l'animation de `Spark`.
+- [x] **Step 2:** Réglages : sections en groupes façon réglages macOS (titre de section, lignes label/contrôle alignées, séparateurs fins), pas de carte dans une carte ; bouton « Revoir l'accueil » qui remet `onboarding_done` à faux et ouvre l'onboarding (route `onboarding`, ajoutée en tâche 6 : dans cette tâche, le bouton appelle `go({ name: 'onboarding' })` et la route est déclarée dans `Route`).
+- [x] **Step 3:** Vérifications UI, commit `restyle review and settings`.
 
 ### Task 5: Tutoiement
 
 **Files:**
 - Modify: `ui/src/lib/i18n.ts`, `crates/core` ou `src-tauri` seulement si un texte visible y vit (notifications de `dictation.rs` et `meeting.rs`).
 
-- [ ] **Step 1:** Toutes les chaînes françaises passent au tutoiement, ton complice et simple (phrases complètes, pas de jargon, pas de majuscule à chaque mot). Anglais : même ton, direct et chaleureux. Les clés ne changent pas.
-- [ ] **Step 2:** Notifications système en Rust (`dictation.rs` `alert`, `meeting.rs` `notify`) : même passage.
-- [ ] **Step 3:** Skill `fr-typography`, puis relecture des octets (› et $, voir Global Constraints).
-- [ ] **Step 4:** Vérifications UI et Rust, commit `switch French copy to tu`.
+- [x] **Step 1:** Toutes les chaînes françaises passent au tutoiement, ton complice et simple (phrases complètes, pas de jargon, pas de majuscule à chaque mot). Anglais : même ton, direct et chaleureux. Les clés ne changent pas.
+- [x] **Step 2:** Notifications système en Rust (`dictation.rs` `alert`, `meeting.rs` `notify`) : même passage.
+- [x] **Step 3:** Skill `fr-typography`, puis relecture des octets (› et $, voir Global Constraints).
+- [x] **Step 4:** Vérifications UI et Rust, commit `switch French copy to tu`.
 
 ### Task 6: Onboarding
 
@@ -107,23 +107,23 @@
 - Consumes: `api.startMicTest/stopMicTest`, `events.micLevel`, `Settings.onboarding_done` (tâche 1) ; `missingRequired` (`models.ts`) ; `MISTRAL_MODEL`, `modeFor`, la feuille Mistral de `Settings.svelte` (extraire en composant partagé `ui/src/lib/MistralSheet.svelte` si les deux écrans s'en servent) ; `ShortcutInput` ; `Owl`, `Spark`.
 - Produces (`steps.ts`, pur) : `export type Step = 'welcome' | 'mic' | 'models' | 'dictation' | 'tour' | 'done'` ; `export const STEPS: Step[]` dans cet ordre ; `export function shouldOnboard(settings: Settings, missing: ModelInfo[]): 'show' | 'skip' | 'mark_done'` (`show` si pas fait et des modèles manquent, `mark_done` si pas fait et rien ne manque, `skip` si fait) ; `export function modelsFor(choice: 'local' | 'cloud', models: ModelInfo[], settings: Settings): ModelInfo[]` (`missingRequired` avec `meeting.model` remplacé par `MISTRAL_MODEL` pour `cloud`).
 
-- [ ] **Step 1: tests** dans `lib.test.ts` : `shouldOnboard` sur les trois cas ; `modelsFor('cloud', …)` n'inclut aucun Whisper de réunion mais inclut le modèle de dictée et la séparation des voix ; `modelsFor('local', …)` inclut le modèle de réunion ; un modèle déjà installé n'est jamais proposé (reprise après échec).
-- [ ] **Step 2:** Échec attendu, puis `steps.ts`.
-- [ ] **Step 3:** `Onboarding.svelte` plein écran (sans barre latérale), une étape à la fois, indicateur de progression (points), « Retour » et « Passer » sur chaque étape, « Continuer » en action principale ; transition horizontale de 240 ms entre étapes.
+- [x] **Step 1: tests** dans `lib.test.ts` : `shouldOnboard` sur les trois cas ; `modelsFor('cloud', …)` n'inclut aucun Whisper de réunion mais inclut le modèle de dictée et la séparation des voix ; `modelsFor('local', …)` inclut le modèle de réunion ; un modèle déjà installé n'est jamais proposé (reprise après échec).
+- [x] **Step 2:** Échec attendu, puis `steps.ts`.
+- [x] **Step 3:** `Onboarding.svelte` plein écran (sans barre latérale), une étape à la fois, indicateur de progression (points), « Retour » et « Passer » sur chaque étape, « Continuer » en action principale ; transition horizontale de 240 ms entre étapes.
   - **Bienvenue** : chouette `idle` grande, titre, une phrase, la promesse locale.
   - **Micro** : `startMicTest` à l'entrée, `stopMicTest` à la sortie et au démontage ; barre de niveau ; ✦ s'anime la première fois que le niveau dépasse 0,3 (« Je t'entends ») ; erreur `capture.*` : texte d'aide et étape passable.
   - **Modèles** : deux cartes de choix (« Sur mon ordinateur », « En ligne pour les réunions ») ; le choix en ligne ouvre la feuille Mistral ; liste des modèles à télécharger avec tailles et progression (`events.modelProgress`), téléchargés un par un ; un échec s'arrête et affiche « Réessayer ». Le choix enregistre `meeting.model` et `processing_mode` via `modeFor`.
   - **Test de dictée** : `ShortcutInput` pour le raccourci de dictée (enregistré dans les réglages), zone de texte focalisée, consigne « Garde le curseur ici, appuie sur ton raccourci et parle » ; `events.dictationDone` (ou le changement de contenu de la zone) déclenche le succès avec la chouette `success`.
   - **Tour** : trois panneaux (notes pendant l'appel, relecture des passages douteux, envoi et résumé), chacun avec une petite illustration en SVG dans le monde (lignes, ✦), son raccourci affiché (`accelerator.ts`).
   - **Fin** : chouette `success`, « Tout est prêt », bouton vers l'accueil ; enregistre `onboarding_done = true`.
-- [ ] **Step 4:** `App.svelte` : au démarrage, `shouldOnboard` décide (`mark_done` enregistre le réglage sans rien montrer) ; route `onboarding` sans barre latérale. Supprimer `ModelSetup.svelte`.
-- [ ] **Step 5:** Chaînes `onboarding.*` en fr (tutoiement) et en, `fr-typography` puis relecture des octets.
-- [ ] **Step 6:** Vérifications UI, commit `add first-run onboarding`.
+- [x] **Step 4:** `App.svelte` : au démarrage, `shouldOnboard` décide (`mark_done` enregistre le réglage sans rien montrer) ; route `onboarding` sans barre latérale. Supprimer `ModelSetup.svelte`.
+- [x] **Step 5:** Chaînes `onboarding.*` en fr (tutoiement) et en, `fr-typography` puis relecture des octets.
+- [x] **Step 6:** Vérifications UI, commit `add first-run onboarding`.
 
 ### Task 7: Revue visuelle et DESIGN.md (contrôleur)
 
-- [ ] **Step 1:** Lancer `cd ui && bun run dev` (mode navigateur avec `mock.ts`), capturer chaque écran en clair et en sombre à 1440×900 et 900×700 dans `.impeccable/review/` (Playwright). Lancer `impeccable detect --json` sur les fichiers changés.
-- [ ] **Step 2:** `impeccable-finish-reviewer` avec le contrat de direction, les captures, `refs.md` ; un seul lot de corrections, une seule recapture.
-- [ ] **Step 3:** `review-ui` sur les captures (accessibilité, dark patterns, finition).
-- [ ] **Step 4:** `impeccable-documenter` écrit `DESIGN.md` et `.impeccable/design.json` depuis le build.
-- [ ] **Step 5:** Mettre à jour `docs/project/handoff.md` et `decisions.md`.
+- [x] **Step 1:** Lancer `cd ui && bun run dev` (mode navigateur avec `mock.ts`), capturer chaque écran en clair et en sombre à 1440×900 et 900×700 dans `.impeccable/review/` (Playwright). Lancer `impeccable detect --json` sur les fichiers changés.
+- [x] **Step 2:** `impeccable-finish-reviewer` avec le contrat de direction, les captures, `refs.md` ; un seul lot de corrections, une seule recapture.
+- [x] **Step 3:** `review-ui` sur les captures (accessibilité, dark patterns, finition).
+- [x] **Step 4:** `impeccable-documenter` écrit `DESIGN.md` et `.impeccable/design.json` depuis le build.
+- [x] **Step 5:** Mettre à jour `docs/project/handoff.md` et `decisions.md`.

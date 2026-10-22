@@ -40,7 +40,7 @@
 **Interfaces:**
 - Produces: `pub fn blocks(samples: &[f32], block_s: f64) -> Vec<(usize, usize)>` et `pub fn wav_bytes(samples: &[f32]) -> anyhow::Result<Vec<u8>>` dans `barnaby_core::audio`.
 
-- [ ] **Step 1:** Déplacer `blocks`, `SEARCH_S` et les tests `blocks_cover_audio_and_cut_in_silence` / `short_audio_is_one_block` de `sched.rs` vers `audio.rs`, en ajoutant le paramètre `block_s` (les tests passent `30.0`). Ajouter :
+- [x] **Step 1:** Déplacer `blocks`, `SEARCH_S` et les tests `blocks_cover_audio_and_cut_in_silence` / `short_audio_is_one_block` de `sched.rs` vers `audio.rs`, en ajoutant le paramètre `block_s` (les tests passent `30.0`). Ajouter :
 
 ```rust
 #[test]
@@ -59,10 +59,10 @@ fn wav_bytes_round_trip() {
 }
 ```
 
-- [ ] **Step 2:** `cargo test -p barnaby-core audio` : échec (fonctions absentes).
-- [ ] **Step 3:** Implémenter. `wav_bytes` écrit dans un `Cursor<Vec<u8>>` avec le même `WavSpec` que `write_wav` (factoriser le spec en une fonction privée). `sched.rs` appelle `audio::blocks(samples, BLOCK_S)`.
-- [ ] **Step 4:** `cargo test -p barnaby-core audio` et `cargo test -p barnaby` (tests de `sched`) : verts.
-- [ ] **Step 5:** Commit `move block splitting to core, add in-memory wav`.
+- [x] **Step 2:** `cargo test -p barnaby-core audio` : échec (fonctions absentes).
+- [x] **Step 3:** Implémenter. `wav_bytes` écrit dans un `Cursor<Vec<u8>>` avec le même `WavSpec` que `write_wav` (factoriser le spec en une fonction privée). `sched.rs` appelle `audio::blocks(samples, BLOCK_S)`.
+- [x] **Step 4:** `cargo test -p barnaby-core audio` et `cargo test -p barnaby` (tests de `sched`) : verts.
+- [x] **Step 5:** Commit `move block splitting to core, add in-memory wav`.
 
 ### Task 2: Client Mistral
 
@@ -77,7 +77,7 @@ fn wav_bytes_round_trip() {
   - `pub struct MistralTranscriber { pub api_key: String, pub vocabulary: Vec<String>, pub policy: NetPolicy }`, `impl Transcriber` (`name()` = `MISTRAL_MODEL`).
   - Dans `provider.rs` : `#[derive(Debug, thiserror::Error)] #[error("{0}")] pub struct Coded(pub &'static str);` et `pub fn error_code(err: &anyhow::Error) -> Option<&'static str>` (cherche `Coded` dans la chaîne).
 
-- [ ] **Step 1: tests** dans `mistral.rs` (fonctions pures, pas de réseau) :
+- [x] **Step 1: tests** dans `mistral.rs` (fonctions pures, pas de réseau) :
 
 ```rust
 #[test]
@@ -110,13 +110,13 @@ fn local_mode_blocks_before_sending() {
 
 Et dans `pipeline.rs` : un test où le transcripteur factice renvoie `Err(Coded("mistral_quota").into())` ; la réunion passe en `failed` avec le code `mistral_quota` (suivre le modèle des tests de pipeline existants).
 
-- [ ] **Step 2:** `cargo test -p barnaby-core mistral pipeline` : échec.
-- [ ] **Step 3: implémenter.**
+- [x] **Step 2:** `cargo test -p barnaby-core mistral pipeline` : échec.
+- [x] **Step 3: implémenter.**
   - `fn parse(body: &str, offset: f64, duration: f64) -> Result<Transcript>` (structs serde privés, champs inconnus ignorés, `segments` en `#[serde(default)]`), `fn bias_terms(vocabulary: &[String]) -> Vec<&str>`, `fn status_code(status: u16) -> &'static str`.
   - `transcribe` : `policy.check(URL)?` d'abord ; puis pour chaque `blocks(samples, 600.0)` : `Form::new().text("model", "voxtral-mini-latest").text("timestamp_granularities", "segment")`, un `.text("context_bias", t)` par terme, `.part("file", Part::bytes(&wav).file_name("audio.wav").mime_str("audio/wav")?)` ; `net::agent(Duration::from_secs(600))`, `.send(form)`. Erreur `ureq::Error::StatusCode(s)` → `Coded(status_code(s))` (log du statut) ; autre erreur de transport → `Coded("mistral_unreachable")`. Langue : la première non vide des morceaux.
   - `pipeline.rs`, dans le calcul du code d'échec : `net::BLOCKED` d'abord, puis `provider::error_code(&e)`, sinon `{step}_failed` comme aujourd'hui.
-- [ ] **Step 4:** `cargo test -p barnaby-core` puis `cargo clippy -p barnaby-core --all-targets -j2 -- -D warnings` : verts et propres.
-- [ ] **Step 5:** Commit `add Mistral Voxtral transcriber`.
+- [x] **Step 4:** `cargo test -p barnaby-core` puis `cargo clippy -p barnaby-core --all-targets -j2 -- -D warnings` : verts et propres.
+- [x] **Step 5:** Commit `add Mistral Voxtral transcriber`.
 
 ### Task 3: Branchement côté application
 
@@ -127,12 +127,12 @@ Et dans `pipeline.rs` : un test où le transcripteur factice renvoie `Err(Coded(
 - Consumes: `MistralTranscriber`, `MISTRAL_MODEL` (tâche 2).
 - Produces: commandes Tauri `set_mistral_api_key(key: String) -> CmdResult<()>` et `has_mistral_api_key() -> bool` ; `App::mistral_api_key() -> Option<String>` ; constante `MISTRAL_API_KEY_USER = "mistral-api-key"`.
 
-- [ ] **Step 1:** Ajouter la constante, `App::mistral_api_key()` et les deux commandes sur le modèle de `set_llm_api_key` / `has_llm_api_key`.
-- [ ] **Step 2:** Dans `meeting::process`, construire le transcripteur :
+- [x] **Step 1:** Ajouter la constante, `App::mistral_api_key()` et les deux commandes sur le modèle de `set_llm_api_key` / `has_llm_api_key`.
+- [x] **Step 2:** Dans `meeting::process`, construire le transcripteur :
   - si `settings.meeting.model == MISTRAL_MODEL` : sans clé → `fail("mistral_key_missing")` ; sinon `Arc::new(MistralTranscriber { api_key, vocabulary: settings.vocabulary.clone(), policy: NetPolicy { mode } })`, sans `MeetingTranscriber` ;
   - sinon : chemin actuel (`app.transcriber` + `MeetingTranscriber`).
-- [ ] **Step 3:** `cargo clippy --workspace --all-targets -j2 -- -D warnings` et `cargo test --workspace -j2` : propres et verts.
-- [ ] **Step 4:** Commit `wire Mistral transcription into meeting processing`.
+- [x] **Step 3:** `cargo clippy --workspace --all-targets -j2 -- -D warnings` et `cargo test --workspace -j2` : propres et verts.
+- [x] **Step 4:** Commit `wire Mistral transcription into meeting processing`.
 
 ### Task 4: Interface
 
@@ -143,7 +143,7 @@ Et dans `pipeline.rs` : un test où le transcripteur factice renvoie `Err(Coded(
 - Consumes: commandes de la tâche 3.
 - Produces: `api.setMistralApiKey(key)`, `api.hasMistralApiKey()` ; dans `settings.ts` : `export const MISTRAL_MODEL = 'mistral-voxtral'` et `export function modeFor(meetingModel: string, summaryCloud: boolean): ProcessingMode`.
 
-- [ ] **Step 1: test** dans `lib.test.ts` :
+- [x] **Step 1: test** dans `lib.test.ts` :
 
 ```ts
 test('processing mode follows meeting model and summary', () => {
@@ -154,24 +154,24 @@ test('processing mode follows meeting model and summary', () => {
 });
 ```
 
-- [ ] **Step 2:** `cd ui && bun test` : échec.
-- [ ] **Step 3: implémenter.**
+- [x] **Step 2:** `cd ui && bun test` : échec.
+- [x] **Step 3: implémenter.**
   - `modeFor` dans `settings.ts`. Dans `Settings.svelte`, l'état « résumé en ligne » devient `summaryCloud = $derived(!isLoopbackUrl(draft.llm.base_url))` à la place de `processing_mode !== 'local'` ; `useLocal`, `useCloud` et le changement de modèle de réunion affectent `draft.processing_mode = modeFor(draft.meeting.model, summaryCloud)`. L'avertissement `llmNotLocal` disparaît s'il ne peut plus se produire.
   - Liste des modèles de réunion : les modèles Whisper puis une option `MISTRAL_MODEL`, libellé `settings.model_mistral`.
   - Choisir Mistral sans clé enregistrée (`hasMistralApiKey()` faux) ouvre une `Sheet` dédiée : ce qui part (l'audio des réunions, le vocabulaire), chez qui (Mistral, France), le prix (environ 0,18 $ par heure), un champ clé, « Annuler » remet le modèle précédent, « Activer » enregistre la clé puis garde Mistral. Bouton « Activer » désactivé tant que le champ est vide.
   - Avec Mistral choisi et une clé enregistrée : un champ pour remplacer la clé, comme pour la clé OpenRouter.
   - `mock.ts` : les deux commandes.
   - `i18n.ts` (fr et en) : `settings.model_mistral`, les textes de la fenêtre (`mistral.*`), et `error.mistral_key_missing`, `error.mistral_auth`, `error.mistral_quota`, `error.mistral_unreachable`, `error.mistral_failed`, chacun disant quoi faire (ex. auth : « Clé Mistral refusée. Vérifiez-la dans Réglages › Réunion, puis réessayez. »).
-- [ ] **Step 4:** `cd ui && bun run check && bun test` : 0 erreur, tests verts. Relire le texte français, puis skill `fr-typography` sur les nouvelles chaînes.
-- [ ] **Step 5:** Commit `add Mistral option to meeting settings`.
+- [x] **Step 4:** `cd ui && bun run check && bun test` : 0 erreur, tests verts. Relire le texte français, puis skill `fr-typography` sur les nouvelles chaînes.
+- [x] **Step 5:** Commit `add Mistral option to meeting settings`.
 
 ### Task 5: Documents
 
 **Files:**
 - Modify: `docs/SPEC.md` (section 6, ligne `api` : Mistral Voxtral pour la transcription des réunions, diarisation sherpa-onnx), `docs/project/decisions.md` (entrée datée : Mistral en direct, réunions seulement, pas de basculement automatique), `docs/project/cloud-transcription.md` (la fenêtre s'ouvre tant qu'aucune clé n'est enregistrée ; le test manuel se fait sur une nouvelle réunion).
 
-- [ ] **Step 1:** Modifier les trois fichiers.
-- [ ] **Step 2:** Commit `docs: record Mistral transcription decision`.
+- [x] **Step 1:** Modifier les trois fichiers.
+- [x] **Step 2:** Commit `docs: record Mistral transcription decision`.
 
 ## Vérification finale
 
