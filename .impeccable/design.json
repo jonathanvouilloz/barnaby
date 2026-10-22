@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-22T12:41:27+00:00",
+  "title": "Design System: Barnaby",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Bleu étincelle",
+        "canonical": "oklch(56.8% 0.206 257.6)",
+        "tonalRamp": [
+          "oklch(15% 0.206 257.6)",
+          "oklch(25% 0.206 257.6)",
+          "oklch(35% 0.206 257.6)",
+          "oklch(45% 0.206 257.6)",
+          "oklch(55% 0.206 257.6)",
+          "oklch(68% 0.206 257.6)",
+          "oklch(82% 0.206 257.6)",
+          "oklch(95% 0.206 257.6)"
+        ]
+      },
+      "accent-text": {
+        "role": "primary",
+        "displayName": "Bleu texte",
+        "canonical": "oklch(50.7% 0.185 257.7)",
+        "tonalRamp": [
+          "oklch(15% 0.185 257.7)",
+          "oklch(25% 0.185 257.7)",
+          "oklch(35% 0.185 257.7)",
+          "oklch(45% 0.185 257.7)",
+          "oklch(55% 0.185 257.7)",
+          "oklch(68% 0.185 257.7)",
+          "oklch(82% 0.185 257.7)",
+          "oklch(95% 0.185 257.7)"
+        ]
+      },
+      "rec": {
+        "role": "secondary",
+        "displayName": "Orange bec",
+        "canonical": "oklch(80.2% 0.143 65.9)",
+        "tonalRamp": [
+          "oklch(15% 0.143 65.9)",
+          "oklch(25% 0.143 65.9)",
+          "oklch(35% 0.143 65.9)",
+          "oklch(45% 0.143 65.9)",
+          "oklch(55% 0.143 65.9)",
+          "oklch(68% 0.143 65.9)",
+          "oklch(82% 0.143 65.9)",
+          "oklch(95% 0.143 65.9)"
+        ]
+      },
+      "warm": {
+        "role": "secondary",
+        "displayName": "Orange cuit",
+        "canonical": "oklch(57.2% 0.137 57.7)",
+        "tonalRamp": [
+          "oklch(15% 0.137 57.7)",
+          "oklch(25% 0.137 57.7)",
+          "oklch(35% 0.137 57.7)",
+          "oklch(45% 0.137 57.7)",
+          "oklch(55% 0.137 57.7)",
+          "oklch(68% 0.137 57.7)",
+          "oklch(82% 0.137 57.7)",
+          "oklch(95% 0.137 57.7)"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Blanc papier",
+        "canonical": "oklch(99.4% 0.000 89.9)",
+        "tonalRamp": [
+          "oklch(15% 0.000 89.9)",
+          "oklch(25% 0.000 89.9)",
+          "oklch(35% 0.000 89.9)",
+          "oklch(45% 0.000 89.9)",
+          "oklch(55% 0.000 89.9)",
+          "oklch(68% 0.000 89.9)",
+          "oklch(82% 0.000 89.9)",
+          "oklch(95% 0.000 89.9)"
+        ]
+      },
+      "owl-field": {
+        "role": "neutral",
+        "displayName": "Crème chouette",
+        "canonical": "oklch(94.6% 0.024 71.5)",
+        "tonalRamp": [
+          "oklch(15% 0.024 71.5)",
+          "oklch(25% 0.024 71.5)",
+          "oklch(35% 0.024 71.5)",
+          "oklch(45% 0.024 71.5)",
+          "oklch(55% 0.024 71.5)",
+          "oklch(68% 0.024 71.5)",
+          "oklch(82% 0.024 71.5)",
+          "oklch(95% 0.024 71.5)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "oklch(18.4% 0.067 281.4)",
+        "tonalRamp": [
+          "oklch(15% 0.067 281.4)",
+          "oklch(25% 0.067 281.4)",
+          "oklch(35% 0.067 281.4)",
+          "oklch(45% 0.067 281.4)",
+          "oklch(55% 0.067 281.4)",
+          "oklch(68% 0.067 281.4)",
+          "oklch(82% 0.067 281.4)",
+          "oklch(95% 0.067 281.4)"
+        ]
+      },
+      "text-2": {
+        "role": "neutral",
+        "displayName": "Taupe sombre",
+        "canonical": "oklch(48.8% 0.030 45.6)",
+        "tonalRamp": [
+          "oklch(15% 0.030 45.6)",
+          "oklch(25% 0.030 45.6)",
+          "oklch(35% 0.030 45.6)",
+          "oklch(45% 0.030 45.6)",
+          "oklch(55% 0.030 45.6)",
+          "oklch(68% 0.030 45.6)",
+          "oklch(82% 0.030 45.6)",
+          "oklch(95% 0.030 45.6)"
+        ]
+      },
+      "danger": {
+        "role": "neutral",
+        "displayName": "Rouge échec",
+        "canonical": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "oklch(15% 0.178 28.7)",
+          "oklch(25% 0.178 28.7)",
+          "oklch(35% 0.178 28.7)",
+          "oklch(45% 0.178 28.7)",
+          "oklch(55% 0.178 28.7)",
+          "oklch(68% 0.178 28.7)",
+          "oklch(82% 0.178 28.7)",
+          "oklch(95% 0.178 28.7)"
+        ]
+      },
+      "warn": {
+        "role": "neutral",
+        "displayName": "Ambre zone",
+        "canonical": "oklch(53.1% 0.119 65.1)",
+        "tonalRamp": [
+          "oklch(15% 0.119 65.1)",
+          "oklch(25% 0.119 65.1)",
+          "oklch(35% 0.119 65.1)",
+          "oklch(45% 0.119 65.1)",
+          "oklch(55% 0.119 65.1)",
+          "oklch(68% 0.119 65.1)",
+          "oklch(82% 0.119 65.1)",
+          "oklch(95% 0.119 65.1)"
+        ]
+      },
+      "ok": {
+        "role": "neutral",
+        "displayName": "Vert prêt",
+        "canonical": "oklch(51.2% 0.129 148.9)",
+        "tonalRamp": [
+          "oklch(15% 0.129 148.9)",
+          "oklch(25% 0.129 148.9)",
+          "oklch(35% 0.129 148.9)",
+          "oklch(45% 0.129 148.9)",
+          "oklch(55% 0.129 148.9)",
+          "oklch(68% 0.129 148.9)",
+          "oklch(82% 0.129 148.9)",
+          "oklch(95% 0.129 148.9)"
+        ]
+      },
+      "dark-surface": {
+        "role": "neutral",
+        "displayName": "Encre levée",
+        "canonical": "oklch(22.4% 0.076 282.8)",
+        "tonalRamp": [
+          "oklch(15% 0.076 282.8)",
+          "oklch(25% 0.076 282.8)",
+          "oklch(35% 0.076 282.8)",
+          "oklch(45% 0.076 282.8)",
+          "oklch(55% 0.076 282.8)",
+          "oklch(68% 0.076 282.8)",
+          "oklch(82% 0.076 282.8)",
+          "oklch(95% 0.076 282.8)"
+        ]
+      },
+      "dark-text-2": {
+        "role": "neutral",
+        "displayName": "Taupe clair",
+        "canonical": "oklch(73.5% 0.032 59.1)",
+        "tonalRamp": [
+          "oklch(15% 0.032 59.1)",
+          "oklch(25% 0.032 59.1)",
+          "oklch(35% 0.032 59.1)",
+          "oklch(45% 0.032 59.1)",
+          "oklch(55% 0.032 59.1)",
+          "oklch(68% 0.032 59.1)",
+          "oklch(82% 0.032 59.1)",
+          "oklch(95% 0.032 59.1)"
+        ]
+      },
+      "dark-owl-field": {
+        "role": "neutral",
+        "displayName": "Kraft",
+        "canonical": "oklch(86.4% 0.022 56.1)",
+        "tonalRamp": [
+          "oklch(15% 0.022 56.1)",
+          "oklch(25% 0.022 56.1)",
+          "oklch(35% 0.022 56.1)",
+          "oklch(45% 0.022 56.1)",
+          "oklch(55% 0.022 56.1)",
+          "oklch(68% 0.022 56.1)",
+          "oklch(82% 0.022 56.1)",
+          "oklch(95% 0.022 56.1)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Titre d'écran et d'onboarding."
+      },
+      "counter": {
+        "displayName": "Chrono",
+        "purpose": "Chrono d'enregistrement, chiffres tabulaires."
+      },
+      "headline": {
+        "displayName": "Titre de section",
+        "purpose": "Sections et résumé repliable."
+      },
+      "body": {
+        "displayName": "Corps",
+        "purpose": "Listes et réglages ; transcription à 1.6 d'interligne, 68 caractères."
+      },
+      "label": {
+        "displayName": "Libellé",
+        "purpose": "Libellés de champ, locuteurs, texte secondaire."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-pop",
+        "value": "0 8px 24px rgb(15 12 47 / .16)",
+        "dark": "0 8px 24px rgb(0 0 0 / .4)",
+        "purpose": "Notification en bas d'écran."
+      },
+      {
+        "name": "shadow-sheet",
+        "value": "0 18px 50px rgb(15 12 47 / .22)",
+        "dark": "0 18px 50px rgb(0 0 0 / .5)",
+        "purpose": "Feuilles modales, sur --scrim (rgb(15 12 47 / .28), sombre rgb(0 0 0 / .45))."
+      },
+      {
+        "name": "shadow-float",
+        "value": "0 1px 2px rgb(15 12 47 / .14), 0 4px 10px rgb(15 12 47 / .12)",
+        "dark": "0 1px 2px rgb(0 0 0 / .3), 0 4px 10px rgb(0 0 0 / .25)",
+        "purpose": "Pastilles d'interrupteur et de curseur, carte de zone, overlay de dictée."
+      },
+      {
+        "name": "sidebar-material",
+        "value": "backdrop-filter: blur(30px) saturate(1.8)",
+        "purpose": "Barre latérale seulement."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.2, .7, .3, 1)",
+        "purpose": "Courbe unique des transitions."
+      },
+      {
+        "name": "state",
+        "value": "150ms",
+        "purpose": "Survol, pression, bascules, chevron."
+      },
+      {
+        "name": "enter",
+        "value": "200ms",
+        "purpose": "Feuille et notification qui montent de 6 à 8px."
+      },
+      {
+        "name": "settle",
+        "value": "240ms",
+        "purpose": "Étincelle qui tourne de 90° et s'éteint ; saut de la chouette en succès."
+      },
+      {
+        "name": "pulse",
+        "value": "1.4s ease-in-out infinite",
+        "purpose": "Point d'enregistrement seulement."
+      },
+      {
+        "name": "breathe",
+        "value": "5s ease-in-out infinite",
+        "purpose": "Respiration de la chouette."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Coupe toute animation et transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "1000px",
+        "purpose": "Colonne de relecture à 260px, marges à 24px."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Bouton discret par défaut.",
+      "html": "<button class=\"ds-btn\">Réessayer</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border:1px solid var(--border);border-radius:var(--r-control);background:var(--surface);color:var(--text);font:550 14px var(--font);cursor:pointer;transition:background-color 150ms var(--ease)}.ds-btn:hover{background:var(--fill)}.ds-btn:active{background:var(--fill-strong)}.ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Une seule action pleine par écran.",
+      "html": "<button class=\"ds-btn-primary\">Valider et envoyer</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;min-height:32px;padding:4px 12px;border:1px solid transparent;border-radius:var(--r-control);background:var(--accent);color:var(--on-accent);font:550 14px var(--font);cursor:pointer;transition:background-color 150ms var(--ease)}.ds-btn-primary:hover{background:color-mix(in srgb,var(--accent) 88%,var(--text))}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Bouton enregistrement",
+      "kind": "button",
+      "refersTo": "button-record",
+      "description": "Arrêter l'enregistrement : orange, texte encre.",
+      "html": "<button class=\"ds-btn-rec\">Arrêter</button>",
+      "css": ".ds-btn-rec{min-height:32px;padding:4px 12px;border:1px solid transparent;border-radius:var(--r-control);background:var(--rec);color:var(--on-rec);font:550 14px var(--font);cursor:pointer}.ds-btn-rec:hover{background:color-mix(in srgb,var(--rec) 88%,var(--on-rec))}.ds-btn-rec:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Champ",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Contour 3:1, libellé au-dessus.",
+      "html": "<label class=\"ds-field\"><span>Nom de Locuteur A</span><input value=\"Locuteur A\"></label>",
+      "css": ".ds-field{display:grid;gap:4px;font-family:var(--font)}.ds-field span{font-size:12.5px;font-weight:550;color:var(--text-2)}.ds-field input{min-height:32px;padding:4px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border-strong);border-radius:var(--r-control);font:14px var(--font)}.ds-field input:focus-visible{outline:2px solid var(--accent);outline-offset:0}"
+    },
+    {
+      "name": "Interrupteur",
+      "kind": "custom",
+      "refersTo": "switch",
+      "description": "Tout booléen : case native role=switch.",
+      "html": "<input type=\"checkbox\" role=\"switch\" class=\"ds-switch\" checked aria-label=\"Mascotte\">",
+      "css": ".ds-switch{appearance:none;position:relative;width:32px;height:18px;margin:0;border-radius:9px;background:var(--border-strong);cursor:pointer;transition:background-color 150ms var(--ease)}.ds-switch::before{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fdfdfd;box-shadow:var(--shadow-float);transition:transform 150ms var(--ease)}.ds-switch:checked{background:var(--accent)}.ds-switch:checked::before{transform:translateX(14px)}.ds-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    },
+    {
+      "name": "Navigation latérale",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Lignes de 32px, icône colorée par fonction, compteur à étincelle.",
+      "html": "<nav class=\"ds-nav\"><a class=\"cur\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"color:var(--warm)\"><path d=\"M2.75 7 8 2.75 13.25 7v6.25h-3.5v-3.5h-3.5v3.5h-3.5Z\"/></svg>Accueil</a><a><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" style=\"color:var(--spark)\"><path d=\"M3 4h10M3 8h5M3 12h3.5M9.5 11.25l1.75 1.75 3-3.25\"/></svg>Relecture<span class=\"n\"><svg viewBox=\"0 0 16 16\" width=\"10\" height=\"10\" style=\"fill:var(--spark)\"><path d=\"M8 .5C8.6 5 11 7.4 15.5 8 11 8.6 8.6 11 8 15.5 7.4 11 5 8.6.5 8 5 7.4 7.4 5 8 .5Z\"/></svg>2</span></a></nav>",
+      "css": ".ds-nav{display:grid;gap:4px;width:208px;padding:12px;background:var(--sidebar);backdrop-filter:blur(30px) saturate(1.8);font-family:var(--font)}.ds-nav a{display:flex;align-items:center;gap:8px;min-height:32px;padding:4px 8px;border-radius:var(--r-control);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;transition:background-color 150ms var(--ease)}.ds-nav a:hover{background:var(--fill)}.ds-nav a.cur{background:var(--fill-strong);font-weight:650}.ds-nav .n{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--text-2)}"
+    },
+    {
+      "name": "Étincelle",
+      "kind": "custom",
+      "refersTo": "spark",
+      "description": "Signature : marque ce qui attend une action, tourne et s'éteint quand c'est réglé.",
+      "html": "<svg class=\"ds-spark\" viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" aria-hidden=\"true\"><path d=\"M8 .5C8.6 5 11 7.4 15.5 8 11 8.6 8.6 11 8 15.5 7.4 11 5 8.6.5 8 5 7.4 7.4 5 8 .5Z\"/></svg>",
+      "css": ".ds-spark{fill:var(--spark);overflow:visible;transform-origin:center;cursor:pointer}.ds-spark:hover{animation:ds-settle 240ms var(--ease) forwards}@keyframes ds-settle{45%{transform:rotate(40deg) scale(1.45)}100%{transform:rotate(90deg) scale(.3);opacity:0}}"
+    },
+    {
+      "name": "Lecteur audio",
+      "kind": "custom",
+      "refersTo": "audio-player",
+      "description": "Piste fine remplie de bleu, une étincelle par zone à relire.",
+      "html": "<div class=\"ds-player\"><button aria-label=\"Lire\"><svg viewBox=\"0 0 16 16\" width=\"16\" height=\"16\" fill=\"currentColor\"><path d=\"M5 3.25v9.5L12.5 8Z\"/></svg></button><span>00:31 / 01:40</span><div class=\"track\"><i style=\"width:31%\"></i></div></div>",
+      "css": ".ds-player{display:flex;align-items:center;gap:12px;font:14px var(--font);font-variant-numeric:tabular-nums;color:var(--text)}.ds-player button{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border);border-radius:var(--r-control);background:var(--surface);color:var(--text);cursor:pointer}.ds-player button:hover{background:var(--fill)}.ds-player button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-player .track{flex:1;height:4px;border-radius:2px;background:var(--fill-strong)}.ds-player .track i{display:block;height:100%;border-radius:2px;background:var(--accent)}"
+    },
+    {
+      "name": "Feuille",
+      "kind": "card",
+      "refersTo": "sheet",
+      "description": "Dialogue modal natif.",
+      "html": "<div class=\"ds-sheet\"><h2>Tout effacer ?</h2><p>Les dictées seront supprimées.</p><div class=\"a\"><button>Annuler</button></div></div>",
+      "css": ".ds-sheet{width:min(480px,100%);padding:20px 24px;border:1px solid var(--border);border-radius:var(--r-sheet);background:var(--surface);color:var(--text);box-shadow:var(--shadow-sheet);font:14px/1.5 var(--font)}.ds-sheet h2{margin:0;font-size:15px;font-weight:650}.ds-sheet p{margin:12px 0 20px}.ds-sheet .a{display:flex;justify-content:flex-end;gap:8px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Things, version chouette",
+    "overview": "Une app de bureau calme et aérée, dans la lignée de Things : beaucoup de blanc, des titres d'écran grands et gras, des lignes de liste sans bordure, une barre latérale translucide aux tons crème. Une seule chose attire l'œil sur un écran : ce qui attend une décision, marqué par l'étincelle bleue. Le reste s'efface.\n\nLes neutres sont chauds (encre, crème, taupe), jamais le gris froid d'Apple. La chouette, dessinée à la main, n'apparaît qu'aux moments clés ; partout ailleurs, son étincelle suffit. Le thème clair est le défaut, le sombre suit le système et pose tout sur un fond encre.\n\nTokens dans `ui/src/app.css` ; les valeurs du frontmatter en sont la copie, le CSS fait foi.",
+    "keyCharacteristics": [
+      "Contenu blanc, navigation translucide crème, texte encre.",
+      "Un bleu pour l'action et la sélection, un orange pour l'enregistrement.",
+      "Une police, Valley Sans, embarquée.",
+      "L'étincelle comme signature de ce qui attend.",
+      "Plat ; les ombres sont réservées à ce qui flotte."
+    ],
+    "rules": [
+      {
+        "name": "The Two Accents Rule",
+        "body": "Le bleu agit et sélectionne, l'orange enregistre. Jamais l'un à la place de l'autre.",
+        "section": "colors"
+      },
+      {
+        "name": "The Blue Text Rule",
+        "body": "Un texte bleu prend accent-text, jamais accent.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm Neutral Rule",
+        "body": "Aucun gris froid : tout neutre est un mélange d'encre ou de taupe.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Time Rule",
+        "body": "Horodatages, durées et compteurs en chiffres tabulaires.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Valley Sans partout, aucune seconde police.",
+        "section": "typography"
+      },
+      {
+        "name": "The Glass Is Navigation Rule",
+        "body": "Le matériau translucide sert la barre latérale, jamais le contenu.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** garder une seule action pleine par écran, en bleu étincelle.",
+      "**Do** marquer de l'étincelle tout ce qui attend une décision, et seulement cela.",
+      "**Do** faire porter au mouvement un changement d'état : 150ms pour le survol et les bascules, 200ms pour ce qui apparaît, 240ms pour l'étincelle et le saut de la chouette, courbe `--ease`. Seuls le point d'enregistrement et la respiration de la chouette bouclent. Tout s'arrête avec `prefers-reduced-motion`.",
+      "**Do** tenir l'AA sur tout texte et 3:1 sur tout contour de contrôle, dans les deux thèmes.",
+      "**Do** donner 40px de zone cliquable à un petit contrôle isolé."
+    ],
+    "donts": [
+      "**Don't** construire un tableau de bord gris à cartes, ni le look « outil d'IA » sombre à néon.",
+      "**Don't** poser d'eyebrow (petit label au-dessus d'un titre) ni de dégradé décoratif.",
+      "**Don't** mettre la chouette ailleurs qu'aux moments clés ; ailleurs, l'étincelle suffit.",
+      "**Don't** utiliser un caractère (✦, flèche, puce) comme icône : icônes et étincelle sont des SVG.",
+      "**Don't** reprendre le gros contour de la chouette dans l'interface : il reste à la mascotte."
+    ]
+  }
+}
