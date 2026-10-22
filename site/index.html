@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr-CH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Barnaby, tu parles et il écrit pour toi</title>
+  <meta name="description" content="Au lieu de taper, tu parles et Barnaby écrit pour toi. Il écrit aussi tout ce qui se dit pendant tes réunions. Gratuit, sur ton ordinateur.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" type="image/png" href="img/idle.png">
+  <link rel="preload" href="fonts/valley-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Barnaby">
+  <meta property="og:locale" content="fr_CH">
+  <meta property="og:title" content="Barnaby, tu parles et il écrit pour toi">
+  <meta property="og:description" content="Au lieu de taper, tu parles et Barnaby écrit pour toi. Il écrit aussi tout ce qui se dit pendant tes réunions. Gratuit, sur ton ordinateur.">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Barnaby",
+    "description": "App de bureau gratuite et open source : dictée dans n’importe quel champ de texte et transcription des réunions, sur l’ordinateur de l’utilisateur.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Windows, Linux",
+    "inLanguage": "fr",
+    "isAccessibleForFree": true,
+    "license": "https://opensource.org/licenses/MIT",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CHF" },
+    "downloadUrl": "https://github.com/jonathanvouilloz/barnaby/releases/latest",
+    "codeRepository": "https://github.com/jonathanvouilloz/barnaby",
+    "author": { "@type": "Person", "name": "Jonathan Vouilloz", "url": "https://github.com/jonathanvouilloz" }
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#contenu">Aller au contenu</a>
+
+  <header class="top">
+    <a class="brand" href="./" aria-label="Barnaby, accueil">
+      <span class="owl owl-sm"><img src="img/idle.png" alt="" width="28" height="28"></span>
+      Barnaby
+    </a>
+    <nav aria-label="Principale">
+      <a href="#installer" id="nav-download">Télécharger</a>
+      <a href="#questions">Questions</a>
+      <a class="icon-link" href="https://github.com/jonathanvouilloz/barnaby" aria-label="Code source sur GitHub">
+        <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .5-.2.5-.4v-1.5c-2.2.5-2.7-1-2.7-1-.4-.9-.9-1.2-.9-1.2-.7-.5.1-.5.1-.5.8.1 1.2.8 1.2.8.7 1.3 1.9.9 2.3.7.1-.5.3-.9.5-1.1-1.8-.2-3.6-.9-3.6-4 0-.9.3-1.6.8-2.1-.1-.2-.4-1 .1-2.1 0 0 .7-.2 2.2.8a7.6 7.6 0 0 1 4 0c1.5-1 2.2-.8 2.2-.8.4 1.1.2 1.9.1 2.1.5.6.8 1.3.8 2.1 0 3.1-1.9 3.8-3.6 4 .3.3.6.8.6 1.5v2.2c0 .2.1.5.6.4A8 8 0 0 0 8 .2Z"/></svg>
+      </a>
+    </nav>
+  </header>
+
+  <main id="contenu">
+    <section class="hero">
+      <div class="hero-owl">
+        <img id="hero-owl" src="img/owl-still.webp" alt="Barnaby, une petite chouette" width="480" height="562">
+      </div>
+      <h1>Arrête de taper.<br> Parle.</h1>
+      <p class="lead">Tu parles, et Barnaby écrit pour toi, dans n’importe quelle app. Il écrit aussi tout ce qui se dit pendant tes réunions.</p>
+      <div class="cta">
+        <a class="button" id="download" href="#installer">Télécharger Barnaby</a>
+        <a class="quiet" href="#installer">Autres systèmes</a>
+      </div>
+      <p class="platforms">Gratuit, pour Windows et Linux. Bientôt sur Mac.</p>
+    </section>
+
+    <figure class="demo" aria-labelledby="demo-caption">
+      <div class="window">
+        <p class="field"><span id="typed">Salut Léa, je te confirme la réunion de jeudi à 14 h. J’apporte les maquettes.</span><span class="caret" aria-hidden="true"></span></p>
+        <div class="bubble" aria-hidden="true">
+          <span class="owl owl-xs"><img id="bubble-owl" src="img/idle.png" alt="" width="24" height="24"></span>
+          <span class="bars"><i></i><i></i><i></i><i></i><i></i></span>
+        </div>
+      </div>
+      <figcaption id="demo-caption">Tu appuies sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd>, tu parles, tu appuies encore. Le texte apparaît là où tu écrivais.</figcaption>
+    </figure>
+
+    <!-- Jon's video. Set the YouTube id in src, then remove `hidden`. -->
+    <section class="video" hidden>
+      <h2 class="visually-hidden">Barnaby en vidéo</h2>
+      <iframe src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Barnaby présenté par Jon" loading="lazy" allow="encrypted-media; picture-in-picture; fullscreen" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </section>
+
+    <section aria-labelledby="usage">
+      <h2 id="usage">Ce que fait Barnaby</h2>
+      <div class="pair">
+        <div>
+          <h3>Il écrit ce que tu dis</h3>
+          <p>Un mail, un message, un document : au lieu de taper, tu parles. Ton texte apparaît là où tu écrivais.</p>
+        </div>
+        <div>
+          <h3>Il écrit tes réunions</h3>
+          <p>En visio ou autour d’une table, Barnaby écoute la réunion. À la fin, tu as tout le texte et, si tu veux, un résumé avec les décisions et les choses à faire.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="values">
+      <h2 id="values" class="visually-hidden">Ce qui compte</h2>
+      <div class="grid">
+        <div>
+          <h3>Gratuit</h3>
+          <p>Pas de compte, pas d’abonnement, pas de version payante cachée.</p>
+        </div>
+        <div>
+          <h3>Open source</h3>
+          <p>Le code est sur GitHub, sous licence MIT.</p>
+        </div>
+        <div>
+          <h3>Sur ta machine</h3>
+          <p>Par défaut, ta voix ne quitte pas ton ordinateur.</p>
+          <p>Passer en ligne, c’est ton choix.</p>
+        </div>
+        <div>
+          <h3>Il te dit quand il doute</h3>
+          <p>Chaque passage incertain porte une étincelle <svg class="spark" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 .5C8.6 5 11 7.4 15.5 8 11 8.6 8.6 11 8 15.5 7.4 11 5 8.6.5 8 5 7.4 7.4 5 8 .5Z"/></svg>. Tu relis ces quelques minutes au lieu de tout réécouter.</p>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="how">
+      <div class="heading-row">
+        <h2 id="how">Une réunion avec Barnaby</h2>
+        <span class="owl owl-peek" aria-hidden="true"><img src="img/listening.png" alt="" width="48" height="48"></span>
+      </div>
+      <ol class="steps shots">
+        <li>
+          <h3>Barnaby écoute</h3>
+          <p>Tu lances l’enregistrement. Barnaby capte ton micro et le son de l’ordinateur, jusqu’à la fin de la réunion.</p>
+          <picture>
+            <source srcset="img/app/record-dark.webp" media="(prefers-color-scheme : dark)">
+            <img src="img/app/record-light.webp" alt="L'écran d'enregistrement : le chrono, le niveau du micro et du son de l'ordinateur, et un champ pour prendre des notes." width="1360" height="550" loading="lazy">
+          </picture>
+        </li>
+        <li>
+          <h3>Barnaby écrit tout</h3>
+          <p>À la fin, il écrit toute la réunion, avec une ligne par personne qui parle.</p>
+          <picture>
+            <source srcset="img/app/transcript-dark.webp" media="(prefers-color-scheme : dark)">
+            <img src="img/app/transcript-light.webp" alt="Le texte d'une réunion : chaque phrase avec son heure et la personne qui parle." width="1140" height="690" loading="lazy">
+          </picture>
+        </li>
+        <li>
+          <h3>Tu vérifies, puis tu envoies</h3>
+          <p>Les passages dont il n’est pas sûr portent une étincelle. Tu les vérifies, puis tu ranges la réunion dans un dossier ou tu l’envoies à ton outil.</p>
+          <picture>
+            <source srcset="img/app/review-dark.webp" media="(prefers-color-scheme : dark)">
+            <img src="img/app/review-light.webp" alt="La relecture : les passages incertains sont marqués d'une étincelle, et une carte propose de valider ou de corriger chacun." width="1360" height="730" loading="lazy">
+          </picture>
+        </li>
+      </ol>
+      <p class="note">Captures de l’app, avec une réunion d’exemple.</p>
+    </section>
+
+    <section id="installer" aria-labelledby="install">
+      <h2 id="install">L’installer</h2>
+      <ol class="steps">
+        <li>
+          <h3>Télécharge Barnaby</h3>
+          <p>Choisis ton système, puis ouvre le fichier téléchargé.</p>
+          <p class="downloads">
+            <a class="button small" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe">Pour Windows</a>
+            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb">Pour Linux (Ubuntu, Debian)</a>
+          </p>
+        </li>
+        <li>
+          <h3>Laisse-toi guider</h3>
+          <p>Au premier lancement, Barnaby t’explique tout, étape par étape, et prépare ce dont il a besoin.</p>
+        </li>
+        <li>
+          <h3>Parle</h3>
+          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd>, parle, puis appuie encore sur les mêmes touches.</p>
+        </li>
+        <li>
+          <h3>Enregistre une réunion</h3>
+          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>R</kbd> pour commencer, et encore une fois pour finir. Barnaby te prévient quand la réunion est prête.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="questions" aria-labelledby="faq">
+      <div class="heading-row">
+        <h2 id="faq">Questions</h2>
+        <span class="owl owl-peek" aria-hidden="true"><img src="img/thinking.png" alt="" width="48" height="48"></span>
+      </div>
+      <details>
+        <summary>C’est vraiment gratuit ?</summary>
+        <p>Oui. La seule chose payante est optionnelle : écrire les réunions en ligne avec Mistral, plus rapide sur un petit ordinateur. Mistral te facture alors environ 0,18 $ par heure de réunion.</p>
+      </details>
+      <details>
+        <summary>Où vont mes enregistrements ?</summary>
+        <p>Ils restent sur ton ordinateur. Par défaut, le son d’une réunion est effacé dès que tu as fini de la relire. Rien ne part en ligne sans que tu l’aies choisi.</p>
+      </details>
+      <details>
+        <summary>Il me faut quel ordinateur ?</summary>
+        <p>La dictée marche bien sur un ordinateur ordinaire. Pour les réunions, un ordinateur modeste met du temps à tout écrire. Dans ce cas, Mistral le fait plus vite, en ligne.</p>
+      </details>
+      <details>
+        <summary>Pourquoi Windows affiche un avertissement à l’installation ?</summary>
+        <p>C’est normal : l’installeur n’est pas signé, car la signature coûte cher pour un projet gratuit. Clique sur « Informations complémentaires », puis sur « Exécuter quand même ».</p>
+      </details>
+      <details>
+        <summary>Et les personnes que j’enregistre ?</summary>
+        <p>Préviens-les. Avant chaque réunion, Barnaby te propose un court texte à leur lire, qui dit ce qui est enregistré et où ça va.</p>
+      </details>
+      <details id="mac">
+        <summary>Et sur Mac ?</summary>
+        <p>Pas encore. Il faut d’abord apprendre à Barnaby à capter le son d’un Mac. C’est prévu.</p>
+      </details>
+    </section>
+
+    <section aria-labelledby="thanks">
+      <div class="heading-row">
+        <h2 id="thanks">Merci</h2>
+        <span class="owl owl-peek" aria-hidden="true"><img src="img/success.png" alt="" width="48" height="48"></span>
+      </div>
+      <p>Barnaby tient debout grâce à d’autres projets ouverts. <a href="https://handy.computer/">Handy</a> a montré la voie de la dictée libre. Les voix passent par <a href="https://github.com/ggml-org/whisper.cpp">whisper.cpp</a>, <a href="https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3">Parakeet</a>, <a href="https://github.com/k2-fsa/sherpa-onnx">sherpa-onnx</a>, <a href="https://github.com/pyannote/pyannote-audio">pyannote</a> et <a href="https://github.com/snakers4/silero-vad">Silero VAD</a>. L’app est construite avec <a href="https://tauri.app/">Tauri</a>, et la transcription en ligne passe par <a href="https://mistral.ai/">Mistral</a>.</p>
+    </section>
+
+    <!-- Donations. Add the link, then remove `hidden`. -->
+    <section class="donate" aria-labelledby="support" hidden>
+      <h2 id="support">Soutenir le projet</h2>
+      <p>Barnaby restera gratuit. Pour soutenir la suite, tu peux <a href="DON_URL">offrir un café à Jon</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <span class="owl owl-sm"><img src="img/success.png" alt="" width="28" height="28"></span>
+    <p>Fait par Jon, dans sa chambre. Code sous licence MIT, chouette sous licence CC BY 4.0.</p>
+    <p><a href="https://github.com/jonathanvouilloz/barnaby">GitHub</a></p>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

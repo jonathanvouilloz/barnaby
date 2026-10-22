@@ -84,3 +84,9 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : le texte à lire aux participants dit la vérité selon le modèle (local ou Mistral, « selon ses conditions »), le résumé en ligne et la durée de conservation réelle ; il reste au vouvoiement et toujours visible sur l'écran « Nouvelle réunion ».
 - Pourquoi : la revue d'accessibilité et de consentement a trouvé que l'ancien texte promettait un audio local et supprimé, faux avec Mistral ou une conservation longue.
 - À rouvrir si : un nouveau fournisseur ou une nouvelle règle de conservation apparaît.
+
+## 2026-10-22 — Site de présentation en HTML et CSS seuls
+- Choix : une page statique dans `site/` (HTML, CSS, sans étape de compilation), hébergée sur Cloudflare sous un sous-domaine de Jon Labs ; Valley Sans reprise du paquet de l'app. Cadrage : `docs/project/site.md`.
+- Écarté : Astro (outil plus gros que le besoin) ; SvelteKit statique (JavaScript inutile pour une page sans interaction).
+- Pourquoi : une seule page de texte, en français, sans interaction ; le plus léger pour le visiteur et posable n'importe où.
+- À rouvrir si : le site passe à plusieurs pages ou à l'anglais (alors Astro).

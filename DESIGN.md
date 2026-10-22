@@ -251,6 +251,20 @@ Cinq poses raster (`ui/src/assets/owl/` : idle, listening, thinking, success, er
 ### Icons
 Jeu maison de dix icônes 16px (accueil, relecture, réglages, enregistrer, micro, étincelle, coche, chevron, lecture, pause), trait 1.75 en `currentColor`, pleines pour enregistrer, étincelle, lecture et pause. La couleur vient de la fonction, pas de l'icône.
 
+## Site de présentation
+
+Le site (`site/`, HTML et CSS statiques) porte le monde de l'app. Ses tokens sont copiés de `ui/src/app.css`, qui fait foi ; seule s'ajoute `--shadow-window`, l'ombre de la fenêtre de démo. Ce qui diffère de l'app :
+
+- **Typographie web** : corps 17px/1.6 (16px sous 600px) ; h1 clamp(42px, 7.4vw, 68px), 760, 1.04, centré ; chapeau 18 à 21px/500 en text-2 ; h2 44px/740 (32px sous 600px) ; h3 22px/700 (24px dans la grille des valeurs). Paragraphes à 68 caractères au plus.
+- **Colonne** : une seule colonne de 680px, marges de 20px de chaque côté ; deux colonnes à l'intérieur (paires, valeurs), une seule sous 600px.
+- **Rythme** : chaque section après le hero s'ouvre sur un filet (border), 56px au-dessus et 56px en dessous (44px sous 600px) ; pied de page à 80px, sous un filet.
+- **Téléchargement** : un seul bouton plein bleu (lien direct vers le fichier du système), 52px de haut, rayon 12px, 18px/650, ombre float ; il s'éclaircit au survol et descend d'1px à la pression. À côté, un lien discret encre. Sous 600px, le bouton prend toute la largeur.
+- **Touches** (`kbd`) : fond blanc, trait fort, bas de 2px, rayon 6px, 600 à 0.86em.
+- **Démo de dictée (signature)** : un champ de texte blanc (filet, rayon carte, ombre window) où la phrase s'écrit mot à mot derrière un curseur bleu ; en bas, la bulle de dictée, pilule encre portant la chouette (30px) et cinq barres orange bec (rec) qui s'animent pendant l'écoute. La chouette passe d'écoute à succès. Avec `prefers-reduced-motion`, le texte est entier et rien ne bouge.
+- **Chouette** : en grand au centre du hero (232px, 170px sur téléphone), la boucle animée détourée (`img/owl-loop.webm`, VP9 avec transparence ; image fixe sous Safari et en mouvement réduit), posée sur la page en clair et sur un disque crème en sombre. Ailleurs, une chouette de 56px surgit à côté de trois titres, une fois, avec un petit saut. 36px dans la marque et le pied de page. Poses copiées de `ui/src/assets/owl/`.
+- **Captures de l'app** : une par étape de « Une réunion avec Barnaby », données d'exemple, version claire et sombre (`picture`), filet, rayon carte et ombre window.
+- **Étapes** : numéros dans un disque de 32px en lavis fort, chiffres tabulaires. Questions : `details` entre filets, chevron dessiné qui tourne de 180°.
+
 ## Do's and Don'ts
 
 ### Do:
