@@ -94,7 +94,7 @@ Chaque étape passe par un trait `Provider` commun (`transcribe`, `diarize`, `id
 | Mode | Transcription | Diarisation | Identification | Structuration |
 |---|---|---|---|---|
 | `local` | whisper.cpp ou Parakeet | sherpa-onnx | embeddings locaux | Ollama |
-| `api` | Deepgram | intégrée (Deepgram) | intégrée ou embeddings | OpenRouter (modèle au choix) |
+| `api` | Mistral Voxtral (réunions) | sherpa-onnx | embeddings locaux | OpenRouter (modèle au choix) |
 | `hybrid` | local | sherpa-onnx | local | OpenRouter (texte uniquement) |
 
 Le mode Dictée utilise toujours la transcription du mode choisi, mais **sans diarisation ni structuration**.

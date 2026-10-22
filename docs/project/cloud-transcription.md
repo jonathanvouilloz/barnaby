@@ -19,7 +19,7 @@ Hors périmètre : la diarisation par Mistral (`diarize`, format de réponse non
 ## Ce que voit l'utilisateur
 
 1. Réglages › Réunion : la liste des modèles de transcription gagne l'entrée « Mistral Voxtral (en ligne) ».
-2. Au premier choix de cette entrée, la fenêtre d'avertissement existante (`cloud.*`, `Settings.svelte`) s'ouvre, avec un texte propre à ce cas : l'audio des réunions part chez Mistral (France), à environ 0,18 $ par heure. Elle demande la clé Mistral.
+2. Tant qu'aucune clé n'est enregistrée, chaque choix de cette entrée ouvre la fenêtre d'avertissement existante (`cloud.*`, `Settings.svelte`), avec un texte propre à ce cas : l'audio des réunions part chez Mistral (France), à environ 0,18 $ par heure. Elle demande la clé Mistral.
 3. La clé va dans le trousseau de l'OS, sous un nouvel identifiant `mistral-api-key`, par la commande existante d'enregistrement de secret.
 4. Ce choix met `processing_mode` à `api`. Revenir à un modèle local remet `hybrid` si le résumé en ligne est actif, sinon `local`. Une réunion garde le mode de sa création (comportement actuel).
 5. L'écran « Modèles à installer » ne réclame pas de téléchargement pour cette entrée.
@@ -28,7 +28,8 @@ Hors périmètre : la diarisation par Mistral (`diarize`, format de réponse non
 
 - Nouveau `MistralTranscriber` dans `crates/core` (à côté de `llm.rs`, qui fait déjà des appels HTTP sous `NetPolicy`). Il implémente `Transcriber`.
 - Appel : `POST https://api.mistral.ai/v1/audio/transcriptions`, multipart, `model=voxtral-mini-latest`, `timestamp_granularities=segment`, fichier WAV 16 kHz mono encodé en mémoire.
-- `language` n'est pas envoyé : Mistral le refuse avec `timestamp_granularities`. La langue vient de la réponse.
+- Le réglage `language` est ignoré pour ces réunions : Mistral refuse `language` avec `timestamp_granularities`. La langue vient de la réponse.
+- Les blocs de moins d'une seconde (fin de réunion, par exemple) ne sont pas envoyés.
 - `context_bias` : les termes du vocabulaire de l'utilisateur, 100 au plus. Mistral annonce un support expérimental hors anglais ; la correction locale (`vocabulary::correct`) s'applique ensuite comme aujourd'hui.
 - Découpage : morceaux d'environ 10 minutes, coupés au passage le plus calme des dernières secondes. La fonction `blocks` de `src-tauri/src/sched.rs` passe dans `crates/core/src/audio.rs` avec la durée en paramètre ; `MeetingTranscriber` (30 s) et `MistralTranscriber` (600 s) l'utilisent tous deux. Les horodatages de chaque morceau sont décalés de son début.
 - Le `MistralTranscriber` n'est pas enveloppé dans `MeetingTranscriber` : il n'occupe pas le processeur, il ne prend donc pas le verrou qui donne la priorité à la dictée.
@@ -54,7 +55,7 @@ Le bouton « Réessayer » existant relance le traitement ; l'audio reste sur le
 - Construction de la requête : champs multipart attendus, vocabulaire tronqué à 100.
 - Codes d'erreur selon le statut HTTP.
 - Le test de l'invariant 3 (pas de réseau en mode `local`) couvre le nouveau client.
-- Test manuel de Jon : retraiter la réunion mal transcrite avec sa clé.
+- Test manuel de Jon : une nouvelle réunion avec sa clé (une réunion déjà transcrite garde son étape de transcription).
 
 ## À vérifier pendant le plan
 

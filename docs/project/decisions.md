@@ -66,3 +66,9 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Pourquoi : au premier test Windows, Google Meet n'était pas enregistré alors que YouTube l'était. Seule la sortie par défaut était écoutée, et Meet joue souvent sur la sortie de communication ou mains libres.
 - Écarté : la capture par processus de Windows (build 20348 ou plus, API bas niveau absente de cpal) ; la documentation ne dit pas si elle couvre toutes les sorties.
 - À rouvrir si : un cas réel échoue encore (plan B : capture par processus), ou si un son joué sur une autre sortie gêne la transcription.
+
+## 2026-10-22 — Réunions : transcription Mistral Voxtral en option
+- Choix : API Mistral en direct, clé propre (`mistral-api-key`, trousseau), réunions seulement. Le modèle `mistral-voxtral` met `processing_mode` à `api`. La diarisation reste locale (sherpa-onnx). Pas de basculement automatique vers le local : une erreur met la réunion en `failed`, « Réessayer » relance.
+- Écarté : OpenRouter et Deepgram (un seul fournisseur) ; la diarisation par Mistral (format non documenté) ; la dictée en ligne (l'audio quitterait la machine à chaque phrase).
+- Pourquoi : Whisper small est inutilisable sur les réunions réelles ; Voxtral coûte environ 0,18 $ par heure.
+- À rouvrir si : la qualité Mistral déçoit sur les réunions de Jon, ou si une coupure réseau en pleine réunion gêne sans repli automatique.
