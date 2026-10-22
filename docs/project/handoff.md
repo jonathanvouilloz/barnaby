@@ -2,39 +2,41 @@
 Mise à jour : 2026-10-22
 
 ## Où on en est
-- Branche `phase-1` poussée (`af7dc5f`), CI verte (run 39782732984, installeurs Windows et Linux en Artifacts). `main` ne contient que la spec.
-- Jon a testé le build sur Windows (onboarding, dictée, réunion Mistral) : tout fonctionne.
-- Fait cette session :
-  - transcription des réunions en ligne avec Mistral Voxtral (plan `docs/plans/cloud-transcription.md`, spec `docs/project/cloud-transcription.md`) ;
-  - refonte visuelle « Things, version chouette » et onboarding au premier lancement (plan `docs/plans/redesign-onboarding.md`, spec `docs/project/redesign-onboarding.md`, système dans `DESIGN.md`, références dans `design/references/refs.md`, produit dans `PRODUCT.md`).
-- Chaque tâche a eu sa revue ; revue finale de branche, revue visuelle (impeccable) et revue d'accessibilité (review-ui) faites, corrections appliquées et revérifiées.
+- `phase-1` fusionnée dans `main` (PR #1). Release `v0.2.0` publiée avec `Barnaby-windows-setup.exe`, `Barnaby-windows.msi`, `Barnaby-linux-amd64.deb`, `Barnaby-macos-arm64.dmg`. Les builds du tag sont passés (run 39829286125), mais GitHub n'a pas lancé le job `release` (quota Actions du compte) : release créée à la main avec `gh release create` à partir de ces artefacts.
+- Version macOS faite (plan `docs/plans/macos.md`, décision du 2026-10-22) : tap Core Audio global pour le son système, `.dmg` signé ad hoc, macOS 14.2+ sur puce Apple. Revue de code indépendante faite, corrections appliquées (collage par position de touche, arrêt hors du fil principal, droit micro, raccourci ⌘⇧Espace).
+- Site de présentation fait dans `site/` (cadrage `docs/project/site.md`, section Site de `DESIGN.md`), validé par Jon ; pas encore en ligne.
 
 ## Prochaine action
-1. Logo : icône d'app et petit logo de la barre latérale tirés de la chouette (découpe propre de la tête dans `design/references/owl-sheet.png`, ou image propre fournie par Jon), puis `cd src-tauri && bunx @tauri-apps/cli icon <fichier>` et `icons/tray*.png`.
-2. Barre de titre : retirer la barre système (`decorations: false` sous Windows et Linux, barre transparente sous macOS), barre latérale sur toute la hauteur avec chouette + « Barnaby », zones de glissement, boutons réduire/agrandir/fermer redessinés (Snap Layouts de Windows 11, double-clic).
-3. Onboarding, étape Modèles : badge « Recommandé pour ton ordinateur » (local ou Mistral) selon la mémoire et le nombre de cœurs.
-4. Son de fin de traitement : renommer le réglage en « Jouer un son quand une réunion est prête à relire », puis tester avec une vraie réunion ; si muet sous Windows, corriger le nom du son (`n.sound("default")` dans `src-tauri/src/meeting.rs`).
-5. Site : landing page très simple qui présente le produit (passer par `kickoff-project` pour le cadrage, puis `choose-stack`).
-6. Ensuite : PR `phase-1` → `main` (accord de Jon pour fusionner).
+1. Jon teste le `.dmg` sur un Mac : installation, dictée (⌘⇧Espace), réunion avec du son système (visio), permissions.
+2. Reprendre la liste de l'app : logo (icône et barre latérale), barre de titre sans décoration, badge « Recommandé » à l'étape Modèles, renommer le réglage du son de fin, puis le test du son sous Windows.
 
-## Vérifications (2026-10-22, VPS, sur `bdcade5`)
-- `cd ui && bun run check` : 0 erreur, 0 avertissement. `bun test` : 40 ok, 0 échec.
-- `. ~/sysroot/env.sh && cargo clippy --workspace --all-targets -j2 -- -D warnings` : propre.
-- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 44 (cœur), 17 (moteur, 6 ignorés), 3 (app), tous verts.
-- `impeccable detect --json ui/src` : aucune alerte. Captures de tous les écrans (clair, sombre, 1440 et 900 px) dans `design/shots/` (non versionné).
-- Non vérifié : aucun appel réel à Mistral ; aucun test dans la vraie fenêtre Tauri (WebView2, WebKitGTK) : raccourci global, collage dans la zone de test, curseurs et listes déroulantes stylés ; animations vues seulement en mouvement réduit.
+## Vérifications (2026-10-22)
+- CI run 39829286125 (tag `v0.2.0`) : checks, build Ubuntu, Windows et macOS-14 verts ; artefacts `.deb`, `.exe`/`.msi`, `.dmg` (14 Mo) ; job `release` non démarré (facturation).
+- `gh api …/releases/latest` : `v0.2.0` avec les quatre fichiers.
+- Local : `cargo clippy --workspace --all-targets -- -D warnings` propre ; `cargo test -p barnaby-core` 44 ok ; `cd ui && bun test` 40 ok, `bun run check` 0 erreur.
+- Module macOS vérifié à part : `cargo check --target aarch64-apple-darwin` sans erreur (crate isolée, pas de SDK Apple ici).
+- Release v0.1.0 : lien direct testé sans connexion GitHub → 404, car le dépôt est privé.
+- Non vérifié : rien n'a tourné sur un vrai Mac (tap, agrégat privé visible par cpal, overlay transparent, collage, permissions) ; contenu du `.dmg` non inspecté.
 
 ## État non commité
-- `barnaby.zip` à la racine (dépôt de Jon, non versionné ; son contenu est copié dans `design/references/`).
+- Rien hors `barnaby.zip` (dépôt de Jon, non versionné). `main` et `phase-1` au même commit.
 
 ## Bloquants et actions du propriétaire
-- Logo : dire si la découpe de la planche suffit ou envoyer une image propre.
-- Chouette : fournir une version détourée (fond transparent, sans filigrane Kling) de la boucle vidéo pour l'onboarding ; en attendant, l'app utilise des découpes de la planche. Logo final et nouvelle icône d'app à fournir.
-- À trancher : sélecteur de micro dans l'onboarding (aujourd'hui le micro par défaut du système) ; tour des fonctions en démonstration animée plutôt qu'en trois panneaux ; bouton « Retranscrire » pour refaire une ancienne réunion avec Mistral.
-- Outil impeccable : le tirage de direction n'a pas imprimé de « seed reference » ; le contrat garde `seed: none (unavailable)`.
+- GitHub Actions : « recent account payments have failed or your spending limit needs to be increased ». Sur un dépôt privé, le build macOS compte 10 fois ses minutes et chaque push lance les trois builds. Régler la facturation, ou décider de ne lancer les builds qu'au tag (et à la demande).
+- Site : adresse finale (jonlabs.ch/barnaby ou un domaine) pour la balise canonique, `og:url` et `og:image` ; vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`).
+- Le jour du lancement : rendre le dépôt public, sinon tous les liens de téléchargement renvoient 404.
+- Logo : découpe de `design/references/owl-sheet.png` ou image propre fournie par Jon.
+- À trancher : sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral.
+- Réunion à un seul micro (analyse du 2026-10-22) : sans son système, tout le monde est étiqueté « Moi », ce qui fausse les tâches du résumé ; `whisper-small` par défaut est faible en salle. Correctifs proposés, pas encore décidés.
+
+## En production
+- GitHub : releases `v0.1.0` (Windows, Linux) et `v0.2.0` (plus macOS), dépôt privé.
+- Site : non déployé (prévu sur Cloudflare).
 
 ## Pièges connus
-- VPS sans sudo : sourcer `~/sysroot/env.sh` avant toute compilation ; un seul cargo à la fois (2 CPU) ; jamais `pkill -f vite` ni `cargo fmt` (le dépôt n'est pas formaté, il réécrit 20 fichiers).
-- Captures : `bun run dev` (mode navigateur avec `ui/src/lib/mock.ts`), Playwright depuis `~/.npm/_npx/fd3bca3c548369c0/node_modules/playwright`.
-- Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt. sherpa-onnx lié dynamiquement (rpath `$ORIGIN/../lib/barnaby`). Overlay Windows : ne jamais le cacher, seulement le déplacer.
-- Pas encore traité : AppImage, `injected_into` vide sous Windows, écho haut-parleur qui fausse « me », ~1 Go de RAM par heure de réunion, sur-correction du vocabulaire, purge des 7 jours faite seulement au démarrage et à l'envoi, téléchargement de modèle bloqué si le serveur cesse d'envoyer en plein fichier (on peut passer l'étape).
+- VPS sans sudo : sourcer `~/sysroot/env.sh` avant toute compilation ; un seul cargo à la fois (2 CPU) ; jamais `pkill -f vite` ni `cargo fmt`.
+- Captures : `bun run dev` (mock), Playwright depuis `~/.npm/_npx/fd3bca3c548369c0/node_modules/playwright`. Le port 8765 est pris par une autre session.
+- `fr-typography` abîme le JSON-LD et l'attribut `allow` de l'iframe dans `site/index.html` : les remettre après chaque passage.
+- macOS : un test qui ouvre le tap attend une permission que personne n'accepte en CI (511 s puis échec) ; exclure les vraies sorties dans les tests. Signature ad hoc : chaque mise à jour peut faire perdre les permissions accordées.
+- sherpa-onnx lié dynamiquement sous Windows et Linux (rpath `$ORIGIN/../lib/barnaby`), statiquement sous macOS. Overlay Windows : ne jamais le cacher, seulement le déplacer.
+- Pas encore traité : AppImage, `injected_into` vide hors Linux, écho haut-parleur qui fausse « Moi », ~1 Go de RAM par heure de réunion, purge des 7 jours seulement au démarrage et à l'envoi, téléchargement de modèle bloqué si le serveur cesse d'envoyer.
