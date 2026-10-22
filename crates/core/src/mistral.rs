@@ -40,6 +40,10 @@ impl Transcriber for MistralTranscriber {
             segments: Vec::new(),
         };
         for (start, end) in blocks(samples, BLOCK_S) {
+            // Mistral may reject a near-empty file (400), which would fail the whole meeting.
+            if end - start < SAMPLE_RATE as usize {
+                continue;
+            }
             let wav = wav_bytes(&samples[start..end])?;
             let mut form = Form::new()
                 .text("model", "voxtral-mini-latest")
@@ -63,7 +67,10 @@ impl Transcriber for MistralTranscriber {
                         log::warn!("mistral status {status}");
                         Coded(status_code(status))
                     }
-                    _ => Coded("mistral_unreachable"),
+                    e => {
+                        log::warn!("mistral transport error: {e}");
+                        Coded("mistral_unreachable")
+                    }
                 })?;
             let rate = f64::from(SAMPLE_RATE);
             let block = parse(&body, start as f64 / rate, (end - start) as f64 / rate)?;
@@ -228,5 +235,22 @@ mod tests {
         assert_eq!(t.name(), MISTRAL_MODEL);
         let err = t.transcribe(&[0.0; 16_000], None).unwrap_err();
         assert!(crate::net::is_blocked(&err));
+    }
+
+    #[test]
+    fn short_audio_sends_nothing() {
+        let t = MistralTranscriber {
+            api_key: "k".into(),
+            vocabulary: vec![],
+            policy: NetPolicy {
+                mode: ProcessingMode::Api,
+            },
+        };
+        // The URL is fixed and remote: an attempted request would fail this test offline.
+        for samples in [&[][..], &[0.0; 8_000][..]] {
+            let out = t.transcribe(samples, None).unwrap();
+            assert_eq!(out.language, "auto");
+            assert!(out.segments.is_empty());
+        }
     }
 }
