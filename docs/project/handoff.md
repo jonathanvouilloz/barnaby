@@ -15,22 +15,20 @@ Mise à jour : 2026-10-22
 - `gh api …/releases/latest` : `v0.2.0` avec les quatre fichiers.
 - Local : `cargo clippy --workspace --all-targets -- -D warnings` propre ; `cargo test -p barnaby-core` 44 ok ; `cd ui && bun test` 40 ok, `bun run check` 0 erreur.
 - Module macOS vérifié à part : `cargo check --target aarch64-apple-darwin` sans erreur (crate isolée, pas de SDK Apple ici).
-- Release v0.1.0 : lien direct testé sans connexion GitHub → 404, car le dépôt est privé.
+- Dépôt public depuis le 2026-10-22 : liens `releases/latest/download/…` (dmg, exe, deb) → 200 sans connexion ; Actions relancées (run 39871635953).
 - Non vérifié : rien n'a tourné sur un vrai Mac (tap, agrégat privé visible par cpal, overlay transparent, collage, permissions) ; contenu du `.dmg` non inspecté.
 
 ## État non commité
 - Rien hors `barnaby.zip` (dépôt de Jon, non versionné). `main` et `phase-1` au même commit.
 
 ## Bloquants et actions du propriétaire
-- GitHub Actions : « recent account payments have failed or your spending limit needs to be increased ». Sur un dépôt privé, le build macOS compte 10 fois ses minutes et chaque push lance les trois builds. Régler la facturation, ou décider de ne lancer les builds qu'au tag (et à la demande).
 - Site : adresse finale (jonlabs.ch/barnaby ou un domaine) pour la balise canonique, `og:url` et `og:image` ; vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`).
-- Le jour du lancement : rendre le dépôt public, sinon tous les liens de téléchargement renvoient 404.
 - Logo : découpe de `design/references/owl-sheet.png` ou image propre fournie par Jon.
 - À trancher : sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral.
 - Réunion à un seul micro (analyse du 2026-10-22) : sans son système, tout le monde est étiqueté « Moi », ce qui fausse les tâches du résumé ; `whisper-small` par défaut est faible en salle. Correctifs proposés, pas encore décidés.
 
 ## En production
-- GitHub : releases `v0.1.0` (Windows, Linux) et `v0.2.0` (plus macOS), dépôt privé.
+- GitHub : releases `v0.1.0` (Windows, Linux) et `v0.2.0` (plus macOS), dépôt public.
 - Site : non déployé (prévu sur Cloudflare).
 
 ## Pièges connus
