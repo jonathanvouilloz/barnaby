@@ -4,7 +4,7 @@
   import { app, applySettings, attempt, notify, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
-  import { addTerm, isLoopbackUrl, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
+  import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
   import Sheet from '../lib/Sheet.svelte';
 
@@ -18,9 +18,11 @@
   let secret = $state('');
   let errorEl = $state<HTMLElement>();
   let term = $state('');
-  let hasKey = $state(false);
-  let apiKey = $state('');
+  let keys = $state({ llm: '', mistral: '' });
+  let hasKeys = $state({ llm: false, mistral: false });
   let disclosureOpen = $state(false);
+  let mistralOpen = $state(false);
+  let mistralFallback = ''; // meeting model restored when the Mistral sheet is cancelled
   let outputs = $state<OutputDevice[]>([]);
 
   const CLOUD_MODELS = ['qwen/qwen3-235b-a22b-2507', 'deepseek/deepseek-chat-v3.1', 'z-ai/glm-4.6'];
@@ -28,7 +30,8 @@
   const dirty = $derived(JSON.stringify(draft) !== JSON.stringify(app.settings));
   const whisper = $derived(models.filter((m) => m.kind === 'whisper'));
   const parakeet = $derived(models.filter((m) => m.kind === 'parakeet'));
-  const cloud = $derived(draft.processing_mode !== 'local');
+  // Not derived from the URL: typing a server address would flip the view at the first keystroke.
+  let summaryCloud = $state(draft.processing_mode === 'hybrid' || (draft.processing_mode === 'api' && !isLoopbackUrl(draft.llm.base_url)));
   const termDuplicate = $derived(term.trim() !== '' && addTerm(draft.vocabulary, term) === null);
   // An excluded output stays listed while unplugged, so the choice survives.
   const outputChoices = $derived([
@@ -45,7 +48,8 @@
     loadModels();
     attempt(api.listOutputs).then((v) => (outputs = v ?? []));
     attempt(api.hasWebhookSecret).then((v) => (hasSecret = v ?? false));
-    attempt(api.hasLlmApiKey).then((v) => (hasKey = v ?? false));
+    attempt(api.hasLlmApiKey).then((v) => (hasKeys.llm = v ?? false));
+    attempt(api.hasMistralApiKey).then((v) => (hasKeys.mistral = v ?? false));
     const off = events.modelProgress(({ id, progress: p }) => {
       progress[id] = p;
       if (p >= 1) {
@@ -106,19 +110,21 @@
   }
 
   function useLocal() {
-    draft.processing_mode = 'local';
+    summaryCloud = false;
+    draft.processing_mode = modeFor(draft.meeting.model, false);
     draft.llm.base_url = OLLAMA_URL;
   }
 
   function useCloud() {
-    draft.processing_mode = 'hybrid';
+    summaryCloud = true;
+    draft.processing_mode = modeFor(draft.meeting.model, true);
     draft.llm.base_url = OPENROUTER_URL;
     // An Ollama tag (no vendor prefix) would be refused by OpenRouter.
     if (!draft.llm.model.includes('/')) draft.llm.model = CLOUD_MODELS[0];
   }
 
   function pickCloud(e: MouseEvent) {
-    if (cloud) return;
+    if (summaryCloud) return;
     if (draft.cloud_disclosure_acknowledged) return useCloud();
     // Keep the radio on "local" until the user has read what leaves the machine.
     e.preventDefault();
@@ -131,11 +137,36 @@
     useCloud();
   }
 
-  async function storeKey(value: string) {
-    if ((await attempt(() => api.setLlmApiKey(value))) === undefined) return;
-    hasKey = value !== '';
-    apiKey = '';
+  async function storeKey(kind: 'llm' | 'mistral', value: string): Promise<boolean> {
+    const set = kind === 'llm' ? api.setLlmApiKey : api.setMistralApiKey;
+    if ((await attempt(() => set(value))) === undefined) return false;
+    hasKeys[kind] = value !== '';
+    keys[kind] = '';
     notify(t(value ? 'settings.key_saved' : 'settings.key_cleared'));
+    return true;
+  }
+
+  function pickMeetingModel(id: string) {
+    const previous = draft.meeting.model;
+    draft.meeting.model = id;
+    if (id === MISTRAL_MODEL && !hasKeys.mistral) {
+      // Audio leaves the machine: nothing changes until a key is given.
+      mistralFallback = previous;
+      mistralOpen = true;
+      return;
+    }
+    draft.processing_mode = modeFor(id, summaryCloud);
+  }
+
+  function cancelMistral() {
+    mistralOpen = false;
+    draft.meeting.model = mistralFallback;
+  }
+
+  async function activateMistral() {
+    if (!(await storeKey('mistral', keys.mistral))) return;
+    mistralOpen = false;
+    draft.processing_mode = modeFor(MISTRAL_MODEL, summaryCloud);
   }
 
   const size = (mb: number) => {
@@ -192,10 +223,12 @@
       <section class="card" aria-labelledby="s-meeting">
         <h2 id="s-meeting">{t('settings.meeting')}</h2>
         <label class="field"><span>{t('settings.model')}</span>
-          <select bind:value={draft.meeting.model}>
+          <select value={draft.meeting.model} onchange={(e) => pickMeetingModel(e.currentTarget.value)}>
             {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}
+            <option value={MISTRAL_MODEL}>{t('settings.model_mistral')}</option>
           </select>
         </label>
+        {#if draft.meeting.model === MISTRAL_MODEL && !mistralOpen}{@render keyForm('mistral', t('mistral.key'))}{/if}
         <label class="field">
           <span>{t('settings.threshold')} <output class="tabular">{new Intl.NumberFormat(app.lang, { minimumFractionDigits: 2 }).format(draft.meeting.confidence_threshold)}</output></span>
           <input type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} aria-describedby="threshold-hint" />
@@ -302,30 +335,21 @@
         <fieldset disabled={!draft.llm.enabled}>
           <legend class="secondary">{t('settings.llm_where')}</legend>
           <label class="choice">
-            <input type="radio" name="llm-where" checked={!cloud} onchange={useLocal} />
+            <input type="radio" name="llm-where" checked={!summaryCloud} onchange={useLocal} />
             <span><span class="strong">{t('settings.llm_local')}</span> <span class="secondary">{t('settings.llm_local_hint')}</span></span>
           </label>
           <label class="choice">
-            <input type="radio" name="llm-where" checked={cloud} onclick={pickCloud} />
+            <input type="radio" name="llm-where" checked={summaryCloud} onclick={pickCloud} />
             <span><span class="strong">{t('settings.llm_cloud')}</span> <span class="secondary">{t('settings.llm_cloud_hint')}</span></span>
           </label>
         </fieldset>
-        {#if cloud}
+        {#if summaryCloud}
           <label class="field"><span>{t('settings.llm_model')}</span>
             <input type="text" list="cloud-models" bind:value={draft.llm.model} disabled={!draft.llm.enabled} autocomplete="off" aria-describedby="cloud-model-hint" />
             <datalist id="cloud-models">{#each CLOUD_MODELS as m (m)}<option value={m}></option>{/each}</datalist>
             <span id="cloud-model-hint" class="secondary">{t('settings.llm_cloud_model_hint')}</span>
           </label>
-          <form class="secret" onsubmit={(e) => { e.preventDefault(); if (apiKey) storeKey(apiKey); }}>
-            <label class="field grow"><span>{t('settings.api_key')}</span>
-              <input type="password" bind:value={apiKey} autocomplete="off" aria-describedby="key-state" />
-            </label>
-            <button class="btn" type="submit" disabled={!apiKey}>{t('settings.key_save')}</button>
-          </form>
-          <p class="secondary row" id="key-state">
-            {t(hasKey ? 'settings.key_set' : 'settings.key_none')}
-            {#if hasKey}<button class="btn ghost small danger" onclick={() => storeKey('')}>{t('settings.key_clear')}</button>{/if}
-          </p>
+          {@render keyForm('llm', t('settings.api_key'))}
         {:else}
           <div class="two">
             <label class="field"><span>{t('settings.base_url')}</span><input type="url" bind:value={draft.llm.base_url} disabled={!draft.llm.enabled} /></label>
@@ -365,6 +389,36 @@
     </div>
   </div>
 </section>
+
+{#snippet keyForm(kind: 'llm' | 'mistral', label: string)}
+  <form class="secret" onsubmit={(e) => { e.preventDefault(); if (keys[kind]) storeKey(kind, keys[kind]); }}>
+    <label class="field grow"><span>{label}</span>
+      <input type="password" bind:value={keys[kind]} autocomplete="off" aria-describedby="{kind}-key-state" />
+    </label>
+    <button class="btn" type="submit" disabled={!keys[kind]}>{t('settings.key_save')}</button>
+  </form>
+  <p class="secondary row" id="{kind}-key-state">
+    {t(hasKeys[kind] ? 'settings.key_set' : 'settings.key_none')}
+    {#if hasKeys[kind]}<button class="btn ghost small danger" onclick={() => storeKey(kind, '')}>{t('settings.key_clear')}</button>{/if}
+  </p>
+{/snippet}
+
+<Sheet open={mistralOpen} title={t('mistral.title')} onclose={cancelMistral}>
+  <p>{t('mistral.intro')}</p>
+  <ul class="bullets">
+    <li>{t('mistral.sent_audio')}</li>
+    <li>{t('mistral.sent_vocabulary')}</li>
+  </ul>
+  <p>{t('mistral.price')}</p>
+  <p class="secondary">{t('mistral.terms')}</p>
+  <label class="field"><span>{t('mistral.key')}</span>
+    <input type="password" bind:value={keys.mistral} autocomplete="off" />
+  </label>
+  {#snippet actions()}
+    <button class="btn" onclick={cancelMistral}>{t('common.cancel')}</button>
+    <button class="btn primary" disabled={!keys.mistral} onclick={activateMistral}>{t('mistral.confirm')}</button>
+  {/snippet}
+</Sheet>
 
 <Sheet open={disclosureOpen} title={t('cloud.title')} onclose={() => (disclosureOpen = false)}>
   <p>{t('cloud.intro')}</p>

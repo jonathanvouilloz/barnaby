@@ -92,6 +92,8 @@ export const api = {
   /** Cloud LLM key (OpenRouter), stored in the OS keyring. Empty string clears it. */
   setLlmApiKey: (key: string) => invoke<void>('set_llm_api_key', { key }),
   hasLlmApiKey: () => invoke<boolean>('has_llm_api_key'),
+  setMistralApiKey: (key: string) => invoke<void>('set_mistral_api_key', { key }),
+  hasMistralApiKey: () => invoke<boolean>('has_mistral_api_key'),
 
   listMeetings: () => invoke<Meeting[]>('list_meetings'),
   getMeeting: (id: string) => invoke<MeetingDetail>('get_meeting', { id }),

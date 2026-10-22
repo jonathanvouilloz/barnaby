@@ -1,3 +1,5 @@
+import type { ProcessingMode } from './api';
+
 /** Mirrors the backend NetPolicy for local mode: only loopback hosts are allowed. */
 export function isLoopbackUrl(url: string): boolean {
   try {
@@ -17,3 +19,10 @@ export function addTerm(list: string[], raw: string): string[] | null {
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1';
 export const OLLAMA_URL = 'http://localhost:11434/v1';
+export const MISTRAL_MODEL = 'mistral-voxtral';
+
+/** Cloud transcription sends audio, so it outranks a cloud summary; otherwise the summary decides. */
+export function modeFor(meetingModel: string, summaryCloud: boolean): ProcessingMode {
+  if (meetingModel === MISTRAL_MODEL) return 'api';
+  return summaryCloud ? 'hybrid' : 'local';
+}

@@ -29,6 +29,7 @@ let settings: Settings = {
 };
 let webhookSecret = '';
 let llmApiKey = '';
+let mistralApiKey = '';
 
 const team: Participant[] = [
   { id: 'p_camille', name: 'Camille Martin', email: 'camille.martin@exemple.fr', confirmed: true },
@@ -209,6 +210,8 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     case 'has_webhook_secret': return webhookSecret !== '';
     case 'set_llm_api_key': llmApiKey = a.key; return null;
     case 'has_llm_api_key': return llmApiKey !== '';
+    case 'set_mistral_api_key': mistralApiKey = a.key; return null;
+    case 'has_mistral_api_key': return mistralApiKey !== '';
     case 'list_meetings': return clone(meetings);
     case 'get_meeting': {
       const d = details.get(a.id);

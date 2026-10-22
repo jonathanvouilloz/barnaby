@@ -3,7 +3,7 @@ import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments } from './review';
-import { addTerm, isLoopbackUrl } from './settings';
+import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 
@@ -149,4 +149,11 @@ describe('addTerm', () => {
     expect(addTerm(['Barnaby'], '   ')).toBeNull();
     expect(addTerm(['Barnaby'], 'barnaby')).toBeNull();
   });
+});
+
+test('processing mode follows meeting model and summary', () => {
+  expect(modeFor(MISTRAL_MODEL, false)).toBe('api');
+  expect(modeFor(MISTRAL_MODEL, true)).toBe('api');
+  expect(modeFor('whisper-small', true)).toBe('hybrid');
+  expect(modeFor('whisper-small', false)).toBe('local');
 });
