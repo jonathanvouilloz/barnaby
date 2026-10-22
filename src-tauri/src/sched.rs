@@ -4,7 +4,7 @@
 use std::sync::{Arc, Condvar, Mutex};
 
 use barnaby_core::{
-    audio::{rms, rms_windows}, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
+    audio::{self, rms}, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
 
 #[derive(Default)]
 pub struct Gate {
@@ -46,8 +46,6 @@ impl Drop for GateGuard<'_> {
 }
 
 const BLOCK_S: f64 = 30.0;
-/// The cut is placed at the quietest 100 ms of the block's last seconds, to avoid splitting words.
-const SEARCH_S: f64 = 5.0;
 /// Below this a block is treated as silence (about -50 dBFS).
 const SPEECH_RMS: f32 = 3e-3;
 
@@ -65,7 +63,7 @@ impl Transcriber for MeetingTranscriber {
     fn transcribe(&self, samples: &[f32], language: Option<&str>) -> anyhow::Result<Transcript> {
         let mut segments = Vec::new();
         let mut detected = None;
-        for (start, end) in blocks(samples) {
+        for (start, end) in audio::blocks(samples, BLOCK_S) {
             let offset = start as f64 / SAMPLE_RATE as f64;
             let block = &samples[start..end];
             let part = {
@@ -83,49 +81,9 @@ impl Transcriber for MeetingTranscriber {
     }
 }
 
-fn blocks(samples: &[f32]) -> Vec<(usize, usize)> {
-    let rate = SAMPLE_RATE as usize;
-    let (block, search, win) = ((BLOCK_S as usize) * rate, (SEARCH_S as usize) * rate, rate / 10);
-    let mut out = Vec::new();
-    let mut start = 0;
-    while samples.len() - start > block {
-        let tail_start = start + block - search;
-        let quietest = rms_windows(&samples[tail_start..start + block], 0.1)
-            .iter()
-            .enumerate()
-            .min_by(|a, b| a.1.total_cmp(b.1))
-            .map_or(search, |(i, _)| i * win + win / 2);
-        let cut = tail_start + quietest;
-        out.push((start, cut));
-        start = cut;
-    }
-    out.push((start, samples.len()));
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn blocks_cover_audio_and_cut_in_silence() {
-        let rate = SAMPLE_RATE as usize;
-        let mut samples = vec![0.5f32; 70 * rate];
-        // Silence at 27.0–27.2 s: the first cut must land there.
-        samples[27 * rate..27 * rate + rate / 5].fill(0.0);
-        let b = blocks(&samples);
-        assert_eq!(b.first().unwrap().0, 0);
-        assert_eq!(b.last().unwrap().1, samples.len());
-        assert!(b.windows(2).all(|w| w[0].1 == w[1].0));
-        let cut_s = b[0].1 as f64 / rate as f64;
-        assert!((27.0..27.2).contains(&cut_s), "cut at {cut_s}");
-    }
-
-    #[test]
-    fn short_audio_is_one_block() {
-        assert_eq!(blocks(&[0.0; 100]), vec![(0, 100)]);
-        assert_eq!(blocks(&[]), vec![(0, 0)]);
-    }
 
     #[test]
     fn urgent_waiter_goes_first() {

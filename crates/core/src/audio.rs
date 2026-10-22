@@ -31,23 +31,35 @@ pub fn read_wav(path: &Path) -> Result<Vec<f32>> {
     Ok(resample(&mono, spec.sample_rate, SAMPLE_RATE))
 }
 
-/// Linear interpolation; good enough for speech going into whisper.
-/// Writes 16 kHz mono i16 (used for the review player's mixed track).
-pub fn write_wav(path: &Path, samples: &[f32]) -> Result<()> {
-    let spec = hound::WavSpec {
-        channels: 1,
-        sample_rate: SAMPLE_RATE,
-        bits_per_sample: 16,
-        sample_format: SampleFormat::Int,
-    };
-    let mut w = hound::WavWriter::create(path, spec)?;
+fn wav_spec() -> hound::WavSpec {
+    hound::WavSpec { channels: 1, sample_rate: SAMPLE_RATE, bits_per_sample: 16, sample_format: SampleFormat::Int }
+}
+
+fn write_samples<W: Write + Seek>(w: &mut hound::WavWriter<W>, samples: &[f32]) -> Result<()> {
     for s in samples {
         w.write_sample((s.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)?;
     }
+    Ok(())
+}
+
+/// Writes 16 kHz mono i16 (used for the review player's mixed track).
+pub fn write_wav(path: &Path, samples: &[f32]) -> Result<()> {
+    let mut w = hound::WavWriter::create(path, wav_spec())?;
+    write_samples(&mut w, samples)?;
     w.finalize()?;
     Ok(())
 }
 
+/// Same format as `write_wav`, in memory (for uploads).
+pub fn wav_bytes(samples: &[f32]) -> Result<Vec<u8>> {
+    let mut cursor = std::io::Cursor::new(Vec::new());
+    let mut w = hound::WavWriter::new(&mut cursor, wav_spec())?;
+    write_samples(&mut w, samples)?;
+    w.finalize()?;
+    Ok(cursor.into_inner())
+}
+
+/// Linear interpolation; good enough for speech going into whisper.
 pub fn resample(samples: &[f32], from: u32, to: u32) -> Vec<f32> {
     if from == to || samples.is_empty() {
         return samples.to_vec();
@@ -138,6 +150,30 @@ pub fn rms_windows(samples: &[f32], window_s: f64) -> Vec<f32> {
     samples.chunks(n).map(rms).collect()
 }
 
+/// The cut is placed at the quietest 100 ms of the block's last seconds, to avoid splitting words.
+const SEARCH_S: f64 = 5.0;
+
+/// Splits into blocks of about `block_s` seconds, cutting at quiet points; ranges are contiguous.
+pub fn blocks(samples: &[f32], block_s: f64) -> Vec<(usize, usize)> {
+    let rate = SAMPLE_RATE as usize;
+    let (block, search, win) = ((block_s as usize) * rate, (SEARCH_S as usize) * rate, rate / 10);
+    let mut out = Vec::new();
+    let mut start = 0;
+    while samples.len() - start > block {
+        let tail_start = start + block - search;
+        let quietest = rms_windows(&samples[tail_start..start + block], 0.1)
+            .iter()
+            .enumerate()
+            .min_by(|a, b| a.1.total_cmp(b.1))
+            .map_or(search, |(i, _)| i * win + win / 2);
+        let cut = tail_start + quietest;
+        out.push((start, cut));
+        start = cut;
+    }
+    out.push((start, samples.len()));
+    out
+}
+
 /// Samples between `start` and `end` seconds, clamped to the track.
 pub fn slice(samples: &[f32], start: f64, end: f64) -> &[f32] {
     let idx = |t: f64| ((t.max(0.0) * SAMPLE_RATE as f64) as usize).min(samples.len());
@@ -163,6 +199,41 @@ pub(crate) fn write_test_wav(path: &Path, samples: &[f32]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn blocks_cover_audio_and_cut_in_silence() {
+        let rate = SAMPLE_RATE as usize;
+        let mut samples = vec![0.5f32; 70 * rate];
+        // Silence at 27.0–27.2 s: the first cut must land there.
+        samples[27 * rate..27 * rate + rate / 5].fill(0.0);
+        let b = blocks(&samples, 30.0);
+        assert_eq!(b.first().unwrap().0, 0);
+        assert_eq!(b.last().unwrap().1, samples.len());
+        assert!(b.windows(2).all(|w| w[0].1 == w[1].0));
+        let cut_s = b[0].1 as f64 / rate as f64;
+        assert!((27.0..27.2).contains(&cut_s), "cut at {cut_s}");
+    }
+
+    #[test]
+    fn short_audio_is_one_block() {
+        assert_eq!(blocks(&[0.0; 100], 30.0), vec![(0, 100)]);
+        assert_eq!(blocks(&[], 30.0), vec![(0, 0)]);
+    }
+
+    #[test]
+    fn blocks_of_600_s() {
+        let b = blocks(&vec![0.1; 16_000 * 1300], 600.0);
+        assert_eq!(b.len(), 3);
+        assert!(b.windows(2).all(|w| w[0].1 == w[1].0));
+        assert!(b[0].1 <= 600 * 16_000 && b[0].1 >= 595 * 16_000);
+    }
+
+    #[test]
+    fn wav_bytes_round_trip() {
+        let bytes = wav_bytes(&[0.0, 0.5, -0.5]).unwrap();
+        let r = hound::WavReader::new(std::io::Cursor::new(bytes)).unwrap();
+        assert_eq!((r.spec().sample_rate, r.spec().channels, r.len()), (16_000, 1, 3));
+    }
 
     fn tmp(name: &str) -> std::path::PathBuf {
         std::env::temp_dir().join(format!("barnaby-{}-{name}", uuid::Uuid::new_v4()))
