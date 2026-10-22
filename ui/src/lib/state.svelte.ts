@@ -1,5 +1,7 @@
-import { api, events, type Dictation, type DictationStatus, type Meeting, type Settings } from './api';
+import { api, events, type Dictation, type DictationStatus, type Meeting, type ModelInfo, type Settings } from './api';
 import { bindLocale, has, t, type Lang } from './i18n';
+import { keyLabel } from './accelerator';
+import { missingRequired } from './models';
 
 export type Route =
   | { name: 'home' }
@@ -10,7 +12,7 @@ export type Route =
   | { name: 'settings' }
   | { name: 'onboarding' };
 
-export type OwlState = 'idle' | 'listening' | 'thinking' | 'review' | 'success' | 'error';
+export type OwlState = 'idle' | 'listening' | 'thinking' | 'success' | 'error';
 
 const MASCOT_KEY = 'barnaby.mascot';
 
@@ -31,7 +33,7 @@ export const app = $state({
   dictationStatus: 'idle' as DictationStatus,
   recordingId: null as string | null,
   notice: '',
-  celebrate: false,
+  models: [] as ModelInfo[],
   mascot: readMascot(),
 });
 
@@ -73,23 +75,22 @@ export function applySettings(s: Settings) {
   document.documentElement.lang = s.ui_language;
 }
 
-/** Backend error codes map to `error.<code>` (a `:detail` suffix, e.g. `send_failed:webhook`, is dropped); unknown codes are shown as is. */
+/** Backend error codes map to `error.<code>`; unknown codes are shown as is.
+ *  The `:detail` suffix is offered as `{keys}` (`shortcut_conflict:Ctrl+D: …` names the refused shortcut). */
 export function errorText(code: string | null): string {
-  const key = `error.${code?.split(':')[0]}`;
-  return code && has(key) ? t(key) : (code ?? '');
+  const [name, detail = ''] = code?.split(':') ?? [];
+  const key = `error.${name}`;
+  return code && has(key) ? t(key, { keys: keyLabel(detail, app.lang) }) : (code ?? '');
 }
 
 export const reviewCount = () => app.meetings.filter((m) => m.state === 'needs_review').length;
 
-export function owlState(): OwlState {
-  if (app.recordingId || app.dictationStatus === 'recording') return 'listening';
-  if (app.celebrate) return 'success';
-  if (app.dictationStatus === 'transcribing' || app.meetings.some((m) => ['captured', 'queued', 'processing', 'sending'].includes(m.state)))
-    return 'thinking';
-  if (app.meetings.some((m) => m.state === 'failed')) return 'error';
-  if (reviewCount() > 0) return 'review';
-  return 'idle';
+export async function refreshModels() {
+  app.models = (await attempt(api.listModels)) ?? app.models;
 }
+
+/** Models the app needs and lacks (often after a skipped onboarding step), marked with a spark until installed. */
+export const missingModels = () => (app.settings ? missingRequired(app.models, app.settings) : []);
 
 export async function refreshMeetings() {
   const list = await attempt(api.listMeetings);
@@ -98,7 +99,6 @@ export async function refreshMeetings() {
 
 function onMeeting(m: Meeting) {
   const i = app.meetings.findIndex((x) => x.id === m.id);
-  const previous = i === -1 ? undefined : app.meetings[i].state;
   if (i === -1) app.meetings.unshift(m);
   else app.meetings[i] = m;
 
@@ -109,20 +109,18 @@ function onMeeting(m: Meeting) {
     app.recordingId = null;
     if (app.route.name === 'recording') go({ name: 'home' });
   }
-  if (m.state === 'sent' && previous !== 'sent') {
-    app.celebrate = true;
-    setTimeout(() => (app.celebrate = false), 2400);
-  }
 }
 
 export async function init() {
-  const [settings, meetings, dictations, recording] = await Promise.all([
+  const [settings, meetings, dictations, recording, models] = await Promise.all([
     attempt(api.getSettings),
     attempt(api.listMeetings),
     attempt(api.listDictations),
     attempt(api.currentRecording),
+    attempt(api.listModels),
   ]);
   if (settings) applySettings(settings);
+  app.models = models ?? [];
   app.meetings = meetings ?? [];
   app.dictations = dictations ?? [];
   if (recording) {
@@ -136,7 +134,11 @@ export async function init() {
     events.dictationDone((d) => {
       if (app.settings?.dictation.keep_history !== false) app.dictations.unshift(d);
     }),
+    // A download may finish on any screen, even after its onboarding step was skipped.
+    events.modelProgress(({ progress }) => progress >= 1 && refreshModels()),
     events.navigate((route) => {
+      // The tray and shortcuts do not cut the onboarding short; a real recording still takes over (onMeeting).
+      if (app.route.name === 'onboarding') return;
       if (route === 'review') go({ name: 'queue' });
       else if (route === 'home' || route === 'settings' || route === 'new') go({ name: route });
     }),

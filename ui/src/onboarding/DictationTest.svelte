@@ -3,7 +3,7 @@
   import { onMount, tick } from 'svelte';
   import { api, events } from '../lib/api';
   import { t } from '../lib/i18n';
-  import { app, applySettings } from '../lib/state.svelte';
+  import { app, applySettings, errorText } from '../lib/state.svelte';
   import Owl from '../lib/Owl.svelte';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
 
@@ -39,7 +39,7 @@
       applySettings(next);
       area?.focus();
     } catch (e) {
-      error = String(e);
+      error = errorText(String(e));
       shortcut = app.settings!.shortcuts.dictation;
     }
   }

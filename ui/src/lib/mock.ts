@@ -203,8 +203,9 @@ function handle(cmd: string, a: Record<string, any>): unknown {
       const s = a.settings as Settings;
       const values = Object.values(s.shortcuts);
       const dup = values.find((v, i) => values.indexOf(v) !== i);
-      if (dup) throw `Le raccourci ${dup} est utilisé deux fois.`;
-      if (values.includes('Ctrl+Alt+Delete')) throw 'Ctrl+Alt+Delete est réservé par le système.';
+      // Same code as the backend (shortcuts.rs): the refused accelerator, then the OS reason.
+      if (dup) throw `shortcut_conflict:${dup}: registered twice`;
+      if (values.includes('Ctrl+Alt+Delete')) throw 'shortcut_conflict:Ctrl+Alt+Delete: reserved by the system';
       settings = clone(s);
       return null;
     }
@@ -276,10 +277,11 @@ function handle(cmd: string, a: Record<string, any>): unknown {
       return new Promise((done) => {
         const timer = setInterval(() => {
           p = Math.min(1, p + 0.07);
+          // Like the backend: 1.0 is sent once the file is in place.
+          if (p >= 1) m.installed = true;
           emit('model-progress', { id: m.id, progress: p });
           if (p >= 1) {
             clearInterval(timer);
-            m.installed = true;
             done(null);
           }
         }, 150);

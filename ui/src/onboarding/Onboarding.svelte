@@ -2,7 +2,7 @@
   // First run, full window: one step at a time, each one skippable.
   import { fly } from 'svelte/transition';
   import { api } from '../lib/api';
-  import { app, applySettings, attempt, go } from '../lib/state.svelte';
+  import { app, applySettings, attempt, go, refreshModels } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import Owl from '../lib/Owl.svelte';
   import { STEPS } from './steps';
@@ -34,6 +34,7 @@
     const next = { ...$state.snapshot(app.settings!), onboarding_done: true };
     if ((await attempt(() => api.saveSettings(next))) !== undefined) {
       applySettings(next);
+      refreshModels();
       go({ name: 'home' });
     }
     finishing = false;
@@ -88,12 +89,13 @@
   </div>
 
   <footer>
-    {#if i > 0}<button class="btn ghost" disabled={downloading} onclick={() => move(-1)}>{t('common.back')}</button>{/if}
+    {#if i > 0}<button class="btn ghost" disabled={downloading && step === 'models'} onclick={() => move(-1)}>{t('common.back')}</button>{/if}
     <span class="grow">{#if !ready}<span id="continue-hint" class="secondary">{t(`onboarding.${step}.unlock`)}</span>{/if}</span>
     {#if last}
       <button class="btn primary" disabled={finishing} onclick={finish}>{t('onboarding.done.go')}</button>
     {:else}
-      <button class="btn ghost" disabled={downloading} onclick={() => move(1)}>{t('onboarding.skip')}</button>
+      <!-- Passer stays live during a download: it goes on, and Réglages › Modèles shows its progress. -->
+      <button class="btn ghost" onclick={() => move(1)}>{t('onboarding.skip')}</button>
       <button id="onboarding-continue" class="btn primary" disabled={!ready} aria-describedby={ready ? undefined : 'continue-hint'} onclick={() => move(1)}>{t('onboarding.continue')}</button>
     {/if}
   </footer>

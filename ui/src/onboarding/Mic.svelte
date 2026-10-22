@@ -2,7 +2,7 @@
   // Live mic level; nothing is recorded. The test must stop whenever this step goes away.
   import { onMount } from 'svelte';
   import { api, events } from '../lib/api';
-  import { has, t } from '../lib/i18n';
+  import { t } from '../lib/i18n';
   import Spark from '../lib/Spark.svelte';
 
   let { ready = $bindable() }: { ready: boolean } = $props();
@@ -42,7 +42,7 @@
 
 {#if error}
   <div class="problem" role="alert">
-    <p>{has(error) ? t(error) : t('onboarding.mic.failed')}</p>
+    <p>{error === 'capture.permission_denied' ? t(error) : t('onboarding.mic.failed')}</p>
     <p class="secondary">{t('onboarding.mic.help')}</p>
     <button class="btn" onclick={start}>{t('common.retry')}</button>
   </div>

@@ -246,7 +246,7 @@ Dialogue natif de 480px au plus, rayon feuille, ombre sheet sur voile ; il monte
 L'étincelle à quatre branches (SVG, couleur `--spark`) marque tout ce qui attend une action : ligne à relire, segment signalé, compteur, repère sur la piste. Quand la chose est réglée, elle tourne de 90° et s'éteint en 240ms. Elle n'est jamais décorative.
 
 ### Owl
-Six poses raster (`ui/src/assets/owl/` : idle, listening, thinking, review, success, error) sur un disque crème. Elle respire lentement (5s) ; en succès elle saute une fois. Désactivable dans les réglages. Moments clés seulement : onboarding (160px), écrans vides (72px), fin de traitement, erreurs (32px à côté du message).
+Cinq poses raster (`ui/src/assets/owl/` : idle, listening, thinking, success, error) sur un disque crème. Elle respire lentement (5s) ; en succès elle saute une fois. Désactivable dans les réglages. Moments clés seulement : onboarding (160px), écrans vides (72px), fin de traitement, erreurs (32px à côté du message).
 
 ### Icons
 Jeu maison de dix icônes 16px (accueil, relecture, réglages, enregistrer, micro, étincelle, coche, chevron, lecture, pause), trait 1.75 en `currentColor`, pleines pour enregistrer, étincelle, lecture et pause. La couleur vient de la fonction, pas de l'icône.

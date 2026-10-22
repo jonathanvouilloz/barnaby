@@ -9,6 +9,7 @@ const fr: Record<string, string> = {
   'nav.review': 'Relecture',
   'nav.settings': 'Réglages',
   'nav.review_badge': '{n} à relire',
+  'nav.models_missing': 'Modèles manquants',
 
   'status.idle': 'Prêt',
   'status.recording': 'Dictée en cours',
@@ -87,6 +88,7 @@ const fr: Record<string, string> = {
   'error.mistral_unreachable': 'Mistral ne répond pas. Vérifie ta connexion à Internet, puis réessaie.',
   'error.mistral_failed': 'Mistral n’a pas pu transcrire la réunion. Réessaie plus tard, ou choisis un modèle local dans Réglages › Réunion.',
   'error.generic': 'Une erreur s’est produite : {message}',
+  'error.shortcut_conflict': 'Le raccourci {keys} est déjà pris par une autre application. Choisis-en un autre.',
 
   'common.copy': 'Copier',
   'common.copied': 'Copié',
@@ -97,7 +99,6 @@ const fr: Record<string, string> = {
   'common.retry': 'Réessayer',
 
   'home.title': 'Accueil',
-  'home.start': 'Démarrer une réunion',
   'home.meetings': 'Réunions récentes',
   'home.meetings_empty': 'Aucune réunion pour l’instant. Lances-en une ici ou avec {shortcut}.',
   'home.zones': 'Zones traitées : {done}/{total}',
@@ -259,6 +260,7 @@ const fr: Record<string, string> = {
   'settings.delete_name': 'Supprimer {name}',
   'settings.downloading': 'Téléchargement : {pct} %',
   'settings.installed': 'Installé',
+  'settings.model_needed': 'Nécessaire, pas encore installé',
   'settings.installing': 'Installation…',
   'settings.size_mb': '{n} Mo',
   'settings.size_gb': '{n} Go',
@@ -344,7 +346,6 @@ const fr: Record<string, string> = {
   'owl.idle': 'au repos',
   'owl.listening': 'à l’écoute',
   'owl.thinking': 'en réflexion',
-  'owl.review': 'relecture en attente',
   'owl.success': 'envoi réussi',
   'owl.error': 'alerte',
 };
@@ -355,6 +356,7 @@ const en: Record<string, string> = {
   'nav.review': 'Review',
   'nav.settings': 'Settings',
   'nav.review_badge': '{n} to review',
+  'nav.models_missing': 'Missing models',
 
   'status.idle': 'Ready',
   'status.recording': 'Dictating',
@@ -433,6 +435,7 @@ const en: Record<string, string> = {
   'error.mistral_unreachable': 'Mistral is not responding. Check your internet connection, then retry.',
   'error.mistral_failed': 'Mistral could not transcribe the meeting. Retry later, or pick a local model in Settings › Meeting.',
   'error.generic': 'Something went wrong: {message}',
+  'error.shortcut_conflict': 'The shortcut {keys} is already taken by another app. Pick another one.',
 
   'common.copy': 'Copy',
   'common.copied': 'Copied',
@@ -443,7 +446,6 @@ const en: Record<string, string> = {
   'common.retry': 'Retry',
 
   'home.title': 'Home',
-  'home.start': 'Start a meeting',
   'home.meetings': 'Recent meetings',
   'home.meetings_empty': 'No meetings yet. Start one here or with {shortcut}.',
   'home.zones': 'Items resolved: {done}/{total}',
@@ -605,6 +607,7 @@ const en: Record<string, string> = {
   'settings.delete_name': 'Delete {name}',
   'settings.downloading': 'Downloading: {pct}%',
   'settings.installed': 'Installed',
+  'settings.model_needed': 'Needed, not installed yet',
   'settings.installing': 'Installing…',
   'settings.size_mb': '{n} MB',
   'settings.size_gb': '{n} GB',
@@ -690,7 +693,6 @@ const en: Record<string, string> = {
   'owl.idle': 'idle',
   'owl.listening': 'listening',
   'owl.thinking': 'thinking',
-  'owl.review': 'review pending',
   'owl.success': 'sent',
   'owl.error': 'alert',
 };

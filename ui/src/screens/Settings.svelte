@@ -1,19 +1,21 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { api, events, type ModelInfo, type OutputDevice, type Settings } from '../lib/api';
-  import { app, applySettings, attempt, go, notify, setMascot } from '../lib/state.svelte';
+  import { app, applySettings, attempt, errorText, go, missingModels, notify, refreshModels, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
   import { addTerm, cloudSummary, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
   import Sheet from '../lib/Sheet.svelte';
   import MistralSheet from '../lib/MistralSheet.svelte';
+  import Spark from '../lib/Spark.svelte';
 
   // Explicit save: shortcuts are re-registered by the backend and may be refused as a whole.
   let draft = $state<Settings>($state.snapshot(app.settings!));
   let saving = $state(false);
   let error = $state('');
-  let models = $state<ModelInfo[]>([]);
+  const models = $derived(app.models);
+  const missing = $derived(new Set(missingModels().map((m) => m.id)));
   let progress = $state<Record<string, number>>({});
   let hasSecret = $state(false);
   let secret = $state('');
@@ -41,22 +43,16 @@
   ]);
   const llmNotLocal = $derived(draft.llm.enabled && draft.processing_mode === 'local' && !isLoopbackUrl(draft.llm.base_url));
 
-  async function loadModels() {
-    models = (await attempt(api.listModels)) ?? models;
-  }
-
   onMount(() => {
-    loadModels();
+    refreshModels();
     attempt(api.listOutputs).then((v) => (outputs = v ?? []));
     attempt(api.hasWebhookSecret).then((v) => (hasSecret = v ?? false));
     attempt(api.hasLlmApiKey).then((v) => (hasKeys.llm = v ?? false));
     attempt(api.hasMistralApiKey).then((v) => (hasKeys.mistral = v ?? false));
     const off = events.modelProgress(({ id, progress: p }) => {
-      progress[id] = p;
-      if (p >= 1) {
-        delete progress[id];
-        loadModels();
-      }
+      // Done: the app shell reloads the catalog (state.svelte.ts).
+      if (p >= 1) delete progress[id];
+      else progress[id] = p;
     });
     return () => off.then((f) => f());
   });
@@ -79,7 +75,7 @@
       applySettings(next);
       notify(t('settings.saved'));
     } catch (e) {
-      error = String(e);
+      error = errorText(String(e));
       await tick();
       errorEl?.scrollIntoView({ block: 'nearest' });
     }
@@ -92,7 +88,7 @@
   }
 
   async function removeModel(m: ModelInfo) {
-    if ((await attempt(() => api.deleteModel(m.id))) !== undefined) loadModels();
+    if ((await attempt(() => api.deleteModel(m.id))) !== undefined) refreshModels();
   }
 
   async function storeSecret(value: string) {
@@ -314,7 +310,7 @@
             {@const p = progress[m.id]}
             <li class="line">
               <div class="lbl">
-                <span class="strong">{m.name}</span>
+                <span class="strong">{m.name} <Spark size={10} active={missing.has(m.id)} label={t('settings.model_needed')} /></span>
                 <span class="secondary">{t(`settings.kind.${m.kind}`)} · <span class="tabular">{size(m.size_mb)}</span></span>
                 {#if p !== undefined}
                   <progress max="1" value={p} aria-label={t('settings.downloading', { pct: Math.round(p * 100) })}></progress>
@@ -460,7 +456,7 @@
         <div class="box">
           <div class="line">
             <p class="lbl secondary" id="welcome-hint">{t('settings.welcome_hint')}</p>
-            <button class="btn" aria-describedby="welcome-hint" disabled={saving} onclick={replayOnboarding}>{t('settings.welcome_again')}</button>
+            <button class="btn" aria-describedby="welcome-hint" disabled={saving || dirty || app.recordingId !== null} onclick={replayOnboarding}>{t('settings.welcome_again')}</button>
           </div>
         </div>
       </section>

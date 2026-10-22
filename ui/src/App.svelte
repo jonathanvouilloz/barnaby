@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from './lib/api';
-  import { app, applySettings, attempt, go, init, reviewCount, type Route } from './lib/state.svelte';
+  import { app, applySettings, go, init, missingModels, reviewCount, type Route } from './lib/state.svelte';
   import { missingRequired } from './lib/models';
   import { t } from './lib/i18n';
   import Icon, { type IconName } from './lib/Icon.svelte';
@@ -21,9 +21,9 @@
   onMount(async () => {
     await init();
     const s = app.settings;
-    const models = s && !s.onboarding_done ? await attempt(api.listModels) : undefined;
-    if (s && models) {
-      const decision = shouldOnboard(s, missingRequired(models, s));
+    // An empty catalog means the model list failed: no decision rather than a wrong one.
+    if (s && !s.onboarding_done && app.models.length) {
+      const decision = shouldOnboard(s, missingRequired(app.models, s));
       if (decision === 'show' && !app.recordingId) go({ name: 'onboarding' });
       if (decision === 'mark_done') {
         const next = { ...$state.snapshot(s), onboarding_done: true };
@@ -73,6 +73,9 @@
             >
               <span class="icon {item.icon}"><Icon name={item.icon} /></span>
               <span class="label">{t(item.key)}</span>
+              {#if item.route === 'settings'}
+                <Spark size={10} active={missingModels().length > 0} label={t('nav.models_missing')} />
+              {/if}
               {#if item.route === 'queue' && reviewCount() > 0}
                 <span class="count tabular" aria-label={t('nav.review_badge', { n: reviewCount() })}><Spark size={10} />{reviewCount()}</span>
               {/if}

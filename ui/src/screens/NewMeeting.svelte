@@ -91,15 +91,17 @@
         </form>
       </section>
 
-      <!-- Always here, so a change of model or retention shows in the text participants hear. -->
-      <section class="consent" aria-labelledby="consent-title">
-        <div>
-          <h2 id="consent-title">{t('consent.reminder')}</h2>
-          <p class="secondary">{t('consent.body')}</p>
-        </div>
-        <blockquote class="template">{template}</blockquote>
-        <div><button class="btn small" onclick={copyTemplate}>{t('consent.copy')}</button></div>
-      </section>
+      <!-- Here once acknowledged, so a change of model or retention shows in the text participants hear; before that, the sheet shows it. -->
+      {#if !consentNeeded}
+        <section class="consent" aria-labelledby="consent-title">
+          <div>
+            <h2 id="consent-title">{t('consent.reminder')}</h2>
+            <p class="secondary">{t('consent.body')}</p>
+          </div>
+          <blockquote class="template">{template}</blockquote>
+          <div><button class="btn small" onclick={copyTemplate}>{t('consent.copy')}</button></div>
+        </section>
+      {/if}
     </div>
   </div>
 </section>

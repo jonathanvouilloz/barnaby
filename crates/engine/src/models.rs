@@ -4,6 +4,7 @@
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use anyhow::{anyhow, ensure, Context, Result};
 use sha2::{Digest, Sha256};
@@ -149,7 +150,14 @@ fn fetch(models_dir: &Path, entry: &ModelEntry, progress: &dyn Fn(f32)) -> Resul
 }
 
 fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<()> {
-    let mut resp = ureq::get(entry.url).call().with_context(|| format!("download {}", entry.id))?;
+    // No global timeout: a 1.6 GB model must not be cut; only a dead server or connection is.
+    let mut resp = ureq::get(entry.url)
+        .config()
+        .timeout_connect(Some(Duration::from_secs(30)))
+        .timeout_recv_response(Some(Duration::from_secs(60)))
+        .build()
+        .call()
+        .with_context(|| format!("download {}", entry.id))?;
     let expected = u64::from(entry.size_mb) * 1_000_000;
     let length = resp.body().content_length();
     let total = length.unwrap_or(expected).max(1);

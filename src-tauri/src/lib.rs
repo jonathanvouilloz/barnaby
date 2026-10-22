@@ -73,9 +73,10 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Closing hides to the tray: shortcuts must keep working.
+            // Closing hides to the tray: shortcuts must keep working, the mic test must not.
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
+                dictation::stop_mic_test(&window.state::<Arc<App>>());
                 let _ = window.hide();
             }
         })
