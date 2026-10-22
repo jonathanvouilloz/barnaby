@@ -7,7 +7,7 @@
 La conversation et les décisions récentes du propriétaire priment sur les documents.
 
 ## Objectif
-App de bureau local-first : dictée au curseur et assistant de réunion (capture micro + système, transcription, diarisation, relecture des zones d'ombre, envoi). Jalon en cours : Phase 1 (MVP local) sur Windows et Linux.
+App de bureau local-first : dictée au curseur et assistant de réunion (capture micro + système, transcription, diarisation, relecture des zones d'ombre, envoi). Jalon en cours : Phase 1 (MVP local) sur Windows, Linux et macOS (Apple Silicon, 14.2+).
 
 ## Stack et commandes
 Tauri 2 + Rust (workspace : `crates/core`, `crates/engine`, `src-tauri`), front Svelte 5 + Vite + TypeScript dans `ui/`, avec Bun. Choix et raisons : `docs/project/decisions.md`.
@@ -19,9 +19,9 @@ Tauri 2 + Rust (workspace : `crates/core`, `crates/engine`, `src-tauri`), front 
 | Front : types | `cd ui && bun run check` |
 | Front : tests | `cd ui && bun test` |
 | App en dev | `cd src-tauri && cargo tauri dev` (machine avec webview et audio) |
-| Installeurs | Linux : `cd src-tauri && bunx @tauri-apps/cli build`. Windows : `cargo build --release -p barnaby` puis `bunx @tauri-apps/cli build --config tauri.bundle-windows.json` (DLL sherpa). Ou via la CI. |
+| Installeurs | Linux : `cd src-tauri && bunx @tauri-apps/cli build`. Windows : `cargo build --release -p barnaby` puis `bunx @tauri-apps/cli build --config tauri.bundle-windows.json` (DLL sherpa). macOS : `cd src-tauri && bunx @tauri-apps/cli build` (`.dmg`). Ou via la CI ; un tag `v*` publie la release. |
 
-Prérequis Linux pour l'app : `libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libssl-dev cmake clang pulseaudio-utils`. Windows : MSVC, CMake, LLVM.
+Prérequis Linux pour l'app : `libwebkit2gtk-4.1-dev libasound2-dev libxdo-dev libssl-dev cmake clang pulseaudio-utils`. Windows : MSVC, CMake, LLVM. macOS : Xcode Command Line Tools, CMake.
 
 ## Conventions
 - Code, identifiants et commits en anglais. Interface en français (anglais disponible), via `ui/src/lib/i18n.ts`.

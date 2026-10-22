@@ -5,22 +5,18 @@ const os = phone ? null : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'L
 const files = {
   Windows: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe',
   Linux: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb',
+  // Apple Silicon only; browsers do not tell an Intel Mac apart, the FAQ does.
+  Mac: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-macos-arm64.dmg',
 };
 const main = document.getElementById('download');
 const nav = document.getElementById('nav-download');
 if (files[os]) {
   main.textContent = `Télécharger pour ${os}`;
   main.href = nav.href = files[os];
-} else {
-  // Mac and phones: the main button says why; a second "Télécharger" would contradict it.
-  nav.hidden = true;
-}
-if (os === 'Mac') {
-  main.textContent = 'Pas encore sur Mac';
-  main.href = '#mac';
-  main.addEventListener('click', () => { document.getElementById('mac').open = true; });
 } else if (phone) {
+  // A phone cannot install it: the main button says so; a second "Télécharger" would contradict it.
   main.textContent = 'À installer sur ton ordinateur';
+  nav.hidden = true;
 }
 
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window);

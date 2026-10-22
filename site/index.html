@@ -22,7 +22,7 @@
     "name": "Barnaby",
     "description": "App de bureau gratuite et open source : dictée dans n’importe quel champ de texte et transcription des réunions, sur l’ordinateur de l’utilisateur.",
     "applicationCategory": "BusinessApplication",
-    "operatingSystem": "Windows, Linux",
+    "operatingSystem": "Windows, macOS, Linux",
     "inLanguage": "fr",
     "isAccessibleForFree": true,
     "license": "https://opensource.org/licenses/MIT",
@@ -61,7 +61,7 @@
         <a class="button" id="download" href="#installer">Télécharger Barnaby</a>
         <a class="quiet" href="#installer">Autres systèmes</a>
       </div>
-      <p class="platforms">Gratuit, pour Windows et Linux. Bientôt sur Mac.</p>
+      <p class="platforms">Gratuit, pour Windows, Mac et Linux.</p>
     </section>
 
     <figure class="demo" aria-labelledby="demo-caption">
@@ -72,7 +72,7 @@
           <span class="bars"><i></i><i></i><i></i><i></i><i></i></span>
         </div>
       </div>
-      <figcaption id="demo-caption">Tu appuies sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd>, tu parles, tu appuies encore. Le texte apparaît là où tu écrivais.</figcaption>
+      <figcaption id="demo-caption">Tu appuies sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd>, tu parles, tu appuies encore (sur Mac : <kbd>Option</kbd> <kbd>Espace</kbd>). Le texte apparaît là où tu écrivais.</figcaption>
     </figure>
 
     <!-- Jon's video. Set the YouTube id in src, then remove `hidden`. -->
@@ -159,7 +159,8 @@
           <h3>Télécharge Barnaby</h3>
           <p>Choisis ton système, puis ouvre le fichier téléchargé.</p>
           <p class="downloads">
-            <a class="button small" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe">Pour Windows</a>
+            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe">Pour Windows</a>
+            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-macos-arm64.dmg">Pour Mac (puce Apple)</a>
             <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb">Pour Linux (Ubuntu, Debian)</a>
           </p>
         </li>
@@ -169,11 +170,11 @@
         </li>
         <li>
           <h3>Parle</h3>
-          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd>, parle, puis appuie encore sur les mêmes touches.</p>
+          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Espace</kbd> (sur Mac : <kbd>Option</kbd> <kbd>Espace</kbd>), parle, puis appuie encore sur les mêmes touches.</p>
         </li>
         <li>
           <h3>Enregistre une réunion</h3>
-          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>R</kbd> pour commencer, et encore une fois pour finir. Barnaby te prévient quand la réunion est prête.</p>
+          <p>Appuie sur <kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>R</kbd> (sur Mac : <kbd>Cmd</kbd> <kbd>Shift</kbd> <kbd>R</kbd>) pour commencer, et encore une fois pour finir. Barnaby te prévient quand la réunion est prête.</p>
         </li>
       </ol>
     </section>
@@ -205,7 +206,7 @@
       </details>
       <details id="mac">
         <summary>Et sur Mac ?</summary>
-        <p>Pas encore. Il faut d’abord apprendre à Barnaby à capter le son d’un Mac. C’est prévu.</p>
+        <p>Barnaby marche sur les Mac avec puce Apple (M1 et plus récents), avec macOS 14.2 Sonoma ou plus récent. Au premier lancement, macOS dit qu’il ne peut pas vérifier l’app, car elle n’est pas signée chez Apple : ouvre Réglages Système, puis Confidentialité et sécurité, et clique sur « Ouvrir quand même ». Barnaby te demandera ensuite l’accès au micro, au son de l’ordinateur et à l’Accessibilité, qui lui sert à coller le texte.</p>
       </details>
     </section>
 

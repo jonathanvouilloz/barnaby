@@ -422,8 +422,10 @@ mod tests {
         let (tx, rx) = mpsc::channel();
         let mixer = {
             let shared = shared.clone();
-            // Every output excluded would hide real devices; none listed is fine too.
-            thread::spawn(move || mix_outputs(&tx, &[], &shared))
+            // Real outputs excluded: the clock is under test, and opening the macOS tap waits on
+            // a permission prompt nobody answers on CI.
+            let excluded: Vec<String> = outputs::list().into_iter().map(|o| o.id).collect();
+            thread::spawn(move || mix_outputs(&tx, &excluded, &shared))
         };
         thread::sleep(Duration::from_millis(700));
         shared.stopping.store(true, Ordering::Relaxed);

@@ -29,7 +29,7 @@ Indépendants et petites équipes francophones qui tombent sur le lien (réseaux
 - Page légère, lisible sur téléphone.
 
 ## Hors périmètre
-Anglais, blog, documentation détaillée, compteur de téléchargements, newsletter, version macOS de l'app (chantier séparé), section don active.
+Anglais, blog, documentation détaillée, compteur de téléchargements, newsletter, section don active.
 
 ## Succès
 Un inconnu comprend en 30 secondes ce que fait Barnaby, sait s'il peut l'installer, et télécharge le bon fichier sans aide.

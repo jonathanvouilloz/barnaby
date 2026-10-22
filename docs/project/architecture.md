@@ -41,5 +41,5 @@ models/                     modèles GGML et ONNX (téléchargés ou déposés �
 ## Environnements
 
 - Dev (VPS, sans sudo) : tout compile et se teste après `. ~/sysroot/env.sh` (en-têtes extraits dans un sysroot). Pas de matériel audio.
-- CI (GitHub Actions) : build et tests sur `windows-latest` et `ubuntu-22.04`, avec les artefacts d'installation (`.msi`/`.exe`, `.deb`).
-- Poste du propriétaire : la seule validation réelle de la capture, de l'injection et des performances.
+- CI (GitHub Actions) : build et tests sur `windows-latest`, `ubuntu-22.04` et `macos-14` (Apple Silicon), avec les artefacts d'installation (`.msi`/`.exe`, `.deb`, `.dmg`). Un tag `v*` publie la release avec des noms de fichiers fixes.
+- Poste du propriétaire : la seule validation réelle de la capture, de l'injection et des performances. Sur macOS, personne n'a encore testé sur un vrai Mac.
