@@ -6,6 +6,9 @@
   import { t } from './lib/i18n';
   import Icon, { type IconName } from './lib/Icon.svelte';
   import Spark from './lib/Spark.svelte';
+  import owl from './assets/owl/idle.png';
+  import { MAC } from './lib/accelerator';
+  import WindowControls from './lib/WindowControls.svelte';
   import Home from './screens/Home.svelte';
   import NewMeeting from './screens/NewMeeting.svelte';
   import Recording from './screens/Recording.svelte';
@@ -57,9 +60,9 @@
     {@render notice()}
   </main>
 {:else}
-<div class="shell">
+<div class="shell" class:mac={MAC}>
   <aside class="sidebar">
-    <div class="brand" data-tauri-drag-region>Barnaby <Spark size={10} /></div>
+    <div class="brand" data-tauri-drag-region><img src={owl} alt="" width="28" height="28" />Barnaby</div>
     <nav aria-label={t('nav.label')}>
       <ul>
         {#each nav as item (item.route)}
@@ -112,6 +115,8 @@
 </div>
 {/if}
 
+{#if !MAC}<WindowControls />{/if}
+
 <style>
   .shell { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
 
@@ -125,9 +130,13 @@
     min-height: 0;
   }
   .brand {
-    display: flex; align-items: center; gap: 4px;
-    padding: 24px 8px 20px; font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 20px 8px 16px; font-weight: 700; font-size: 15px;
   }
+  /* Clicks go through to the drag region. */
+  .brand img { pointer-events: none; }
+  /* Room for the traffic lights drawn over the sidebar. */
+  .mac .brand { padding-top: 44px; }
   nav ul { display: grid; gap: 4px; }
   .nav-item {
     display: flex; align-items: center; gap: 8px; width: 100%;

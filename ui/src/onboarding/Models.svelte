@@ -93,7 +93,10 @@
 <div class="choices" role="group" aria-label={t('onboarding.models.title')}>
   {#each ['local', 'cloud'] as const as c (c)}
     <button class="choice card" aria-pressed={choice === c} disabled={busy} onclick={() => pick(c)}>
-      <span class="name">{t(`onboarding.models.${c}`)}</span>
+      <span class="head">
+        <span class="name">{t(`onboarding.models.${c}`)}</span>
+        {#if c === 'local'}<span class="badge">{t('onboarding.models.recommended')}</span>{/if}
+      </span>
       <span class="secondary">{t(`onboarding.models.${c}_text`)}</span>
     </button>
   {/each}
@@ -145,6 +148,11 @@
   .choice[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
   .choice:disabled { cursor: default; }
   .name { font-weight: 600; display: grid; }
+  .head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+  .badge {
+    padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    background: var(--fill-strong); color: var(--text);
+  }
   .download { display: grid; gap: 12px; width: 100%; justify-items: start; }
   ul { display: grid; gap: 8px; width: 100%; }
   li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }

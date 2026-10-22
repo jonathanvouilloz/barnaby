@@ -8,7 +8,7 @@ Mise à jour : 2026-10-22
 
 ## Prochaine action
 1. Jon teste le `.dmg` sur un Mac : installation, dictée (⌘⇧Espace), réunion avec du son système (visio), permissions.
-2. Reprendre la liste de l'app : logo (icône et barre latérale), barre de titre sans décoration, badge « Recommandé » à l'étape Modèles, renommer le réglage du son de fin, puis le test du son sous Windows.
+2. Liste de l'app faite sur `phase-1` (logo, barre de titre, badge « Recommandé », réglage du son renommé) : à tester dans un vrai build (barre de titre Windows et Linux : déplacer, redimensionner, double-clic), puis le test du son sous Windows.
 
 ## Vérifications (2026-10-22)
 - CI run 39829286125 (tag `v0.2.0`) : checks, build Ubuntu, Windows et macOS-14 verts ; artefacts `.deb`, `.exe`/`.msi`, `.dmg` (14 Mo) ; job `release` non démarré (facturation).
@@ -23,7 +23,6 @@ Mise à jour : 2026-10-22
 
 ## Bloquants et actions du propriétaire
 - Site : adresse finale (jonlabs.ch/barnaby ou un domaine) pour la balise canonique, `og:url` et `og:image` ; vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`).
-- Logo : découpe de `design/references/owl-sheet.png` ou image propre fournie par Jon.
 - À trancher : sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral.
 - Réunion à un seul micro (analyse du 2026-10-22) : sans son système, tout le monde est étiqueté « Moi », ce qui fausse les tâches du résumé ; `whisper-small` par défaut est faible en salle. Correctifs proposés, pas encore décidés.
 

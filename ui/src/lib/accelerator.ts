@@ -28,7 +28,7 @@ function keyName(code: string): string | null {
   return code && code !== 'Unidentified' ? code : null;
 }
 
-const MAC = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
+export const MAC = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
 
 /**
  * Accelerator as the keycaps read in the interface language: `Ctrl+Shift+Space` → « Ctrl + Maj + Espace ».
