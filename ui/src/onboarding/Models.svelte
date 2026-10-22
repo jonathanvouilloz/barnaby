@@ -11,14 +11,14 @@
 
   type Choice = 'local' | 'cloud';
 
-  let { ready = $bindable() }: { ready: boolean } = $props();
+  // busy: the parent keeps the step open while a download runs (leaving would orphan the loop).
+  let { ready = $bindable(), busy = $bindable(false) }: { ready: boolean; busy?: boolean } = $props();
   ready = false;
 
   let models = $state<ModelInfo[]>([]);
   let choice = $state<Choice | null>(null);
   let mistralOpen = $state(false);
   let progress = $state<Record<string, number>>({});
-  let busy = $state(false);
   let failed = $state(false);
 
   // The catalog is read once: models installed here stay listed, marked done.

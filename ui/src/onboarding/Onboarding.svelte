@@ -16,6 +16,7 @@
   // Steps that prove something (mic heard, models in, text dictated) lower it until done; Passer always works.
   let ready = $state(true);
   let finishing = $state(false);
+  let downloading = $state(false);
   let heading = $state<HTMLElement>();
 
   const step = $derived(STEPS[i]);
@@ -38,10 +39,9 @@
     finishing = false;
   }
 
-  // Keyboard and screen-reader users land on the new step's title.
+  // Keyboard and screen-reader users land on the new step's title; the dictation test keeps its textarea focused.
   $effect(() => {
-    void step;
-    queueMicrotask(() => heading?.focus());
+    if (step !== 'dictation') queueMicrotask(() => heading?.focus());
   });
 </script>
 
@@ -72,7 +72,7 @@
           <Mic bind:ready />
         {:else if step === 'models'}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.models.title')}</h1>
-          <Models bind:ready />
+          <Models bind:ready bind:busy={downloading} />
         {:else if step === 'dictation'}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.dictation.title')}</h1>
           <DictationTest bind:ready />
@@ -89,12 +89,12 @@
   </div>
 
   <footer class:wide={step === 'tour'}>
-    {#if i > 0}<button class="btn ghost" onclick={() => move(-1)}>{t('common.back')}</button>{/if}
+    {#if i > 0}<button class="btn ghost" disabled={downloading} onclick={() => move(-1)}>{t('common.back')}</button>{/if}
     <span class="grow"></span>
     {#if last}
       <button class="btn primary" disabled={finishing} onclick={finish}>{t('onboarding.done.go')}</button>
     {:else}
-      <button class="btn ghost" onclick={() => move(1)}>{t('onboarding.skip')}</button>
+      <button class="btn ghost" disabled={downloading} onclick={() => move(1)}>{t('onboarding.skip')}</button>
       <button class="btn primary" disabled={!ready} onclick={() => move(1)}>{t('onboarding.continue')}</button>
     {/if}
   </footer>

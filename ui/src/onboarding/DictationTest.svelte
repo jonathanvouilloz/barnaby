@@ -1,6 +1,6 @@
 <script lang="ts">
   // The real dictation, pasted into this window: the shortcut is saved for good before the try.
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { api, events } from '../lib/api';
   import { t } from '../lib/i18n';
   import { app, applySettings } from '../lib/state.svelte';
@@ -15,13 +15,15 @@
   let text = $state('');
   let worked = $state(false);
   let area = $state<HTMLTextAreaElement>();
+  // Text before the current dictation: success means the dictation really changed the box.
+  let before = '';
 
-  function succeed() {
-    worked = ready = true;
+  function check() {
+    if (text.trim() && text !== before) worked = ready = true;
   }
 
   function retry() {
-    text = '';
+    text = before = '';
     worked = ready = false;
     area?.focus();
   }
@@ -38,18 +40,23 @@
       area?.focus();
     } catch (e) {
       error = String(e);
+      shortcut = app.settings!.shortcuts.dictation;
     }
   }
 
   // Dictation pastes; typing by hand does not count.
   function oninput(e: Event) {
-    if ((e as InputEvent).inputType === 'insertFromPaste' && text.trim()) succeed();
+    if ((e as InputEvent).inputType === 'insertFromPaste') check();
   }
 
   onMount(() => {
     area?.focus();
-    const off = events.dictationDone(succeed);
-    return () => off.then((f) => f());
+    const offs = [
+      events.dictationStatus((s) => s === 'recording' && (before = text)),
+      // The paste may land just after the event: check the box, never trust the event alone.
+      events.dictationDone(() => tick().then(check)),
+    ];
+    return () => offs.forEach((o) => o.then((f) => f()));
   });
 </script>
 
