@@ -53,7 +53,7 @@ const fr: Record<string, string> = {
   'error.mistral_quota': 'Mistral refuse la demande : limite atteinte ou crédit épuisé. Vérifie ton compte Mistral ou attends quelques minutes, puis réessaie.',
   'error.mistral_unreachable': 'Mistral ne répond pas. Vérifie ta connexion à Internet, puis réessaie.',
   'error.mistral_failed': 'Mistral n’a pas pu transcrire la réunion. Réessaie plus tard, ou choisis un modèle local dans Réglages › Réunion.',
-  'error.generic': 'Ça n’a pas marché : {message}',
+  'error.generic': 'Une erreur s’est produite : {message}',
 
   'common.copy': 'Copier',
   'common.copied': 'Copié',
@@ -66,7 +66,7 @@ const fr: Record<string, string> = {
   'home.title': 'Accueil',
   'home.start': 'Démarrer une réunion',
   'home.meetings': 'Réunions récentes',
-  'home.meetings_empty': 'Aucune réunion pour l’instant. Lance-en une ici ou avec {shortcut}.',
+  'home.meetings_empty': 'Aucune réunion pour l’instant. Lances-en une ici ou avec {shortcut}.',
   'home.zones': 'Zones traitées : {done}/{total}',
   'home.delete_meeting': 'Supprimer « {title} »',
   'home.delete_meeting_title': 'Supprimer cette réunion ?',
