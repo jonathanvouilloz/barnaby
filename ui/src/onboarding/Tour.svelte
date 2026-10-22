@@ -40,7 +40,7 @@
 </ul>
 
 <style>
-  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; width: 100%; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 32px; width: 100%; }
   li { display: grid; gap: 8px; align-content: start; }
   svg { width: 120px; height: 64px; margin-bottom: 8px; color: var(--text-2); overflow: visible; }
   .ink { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }

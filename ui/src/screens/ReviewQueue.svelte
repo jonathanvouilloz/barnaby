@@ -40,7 +40,7 @@
                 <span class="mark"></span>
                 <span class="main">
                   <span class="title">{m.title}</span>
-                  <span class="cause">{errorText(m.error)}</span>
+                  <span class="cause">{#if app.mascot}<Owl state="error" size={24} />{/if}{errorText(m.error)}</span>
                 </span>
                 <span class="state">{t(`state.${m.state}`)}</span>
                 <button class="btn small" onclick={() => attempt(() => api.retryMeeting(m.id)).then(refreshMeetings)}>{t('common.retry')}</button>
@@ -69,6 +69,7 @@
   .title { font-weight: 500; }
   .count { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
   .state, .cause { font-size: 12.5px; color: var(--danger); }
+  .cause { display: flex; align-items: center; gap: 6px; }
   .chevron { display: inline-flex; color: var(--text-2); }
   .empty { display: grid; justify-items: center; gap: 12px; padding: 64px 16px; }
 </style>

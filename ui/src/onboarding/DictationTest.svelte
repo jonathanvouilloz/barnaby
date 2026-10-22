@@ -82,7 +82,7 @@
   .shortcut { width: 100%; }
   .try { width: 100%; }
   .try > span { font-size: 14px; color: var(--text); font-weight: 400; }
-  textarea { margin-top: 4px; }
+  textarea { margin-top: 4px; resize: none; }
   .result { display: flex; align-items: center; gap: 12px; min-height: 56px; }
   .result p { font-weight: 550; }
   .problem { color: var(--danger); }

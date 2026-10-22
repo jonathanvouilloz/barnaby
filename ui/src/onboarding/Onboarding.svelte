@@ -57,12 +57,11 @@
     {#key step}
       <div
         class="step"
-        class:wide={step === 'tour'}
         in:fly={{ x: dir * shift, duration: shift && 240, delay: shift && 60 }}
         out:fly={{ x: -dir * shift, duration: shift && 180 }}
       >
         {#if step === 'welcome'}
-          {#if app.mascot}<Owl state="idle" size={128} />{/if}
+          {#if app.mascot}<Owl state="idle" size={160} />{/if}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.welcome.title')}</h1>
           <p class="lead">{t('onboarding.welcome.text')}</p>
           <p class="promise">{t('onboarding.welcome.promise')}</p>
@@ -80,7 +79,7 @@
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.tour.title')}</h1>
           <Tour />
         {:else}
-          {#if app.mascot}<Owl state="success" size={128} />{/if}
+          {#if app.mascot}<Owl state="success" size={160} />{/if}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.done.title')}</h1>
           <p class="lead">{t('onboarding.done.text')}</p>
         {/if}
@@ -88,7 +87,7 @@
     {/key}
   </div>
 
-  <footer class:wide={step === 'tour'}>
+  <footer>
     {#if i > 0}<button class="btn ghost" disabled={downloading} onclick={() => move(-1)}>{t('common.back')}</button>{/if}
     <span class="grow">{#if !ready}<span id="continue-hint" class="secondary">{t(`onboarding.${step}.unlock`)}</span>{/if}</span>
     {#if last}
@@ -108,27 +107,27 @@
   header { display: flex; justify-content: center; padding: 28px 40px 0; min-height: 56px; }
   .dots { display: flex; gap: 8px; align-items: center; }
   .dots li {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--fill-strong);
+    width: 6px; height: 6px; border-radius: 50%;
     transition: width 240ms var(--ease), background-color 240ms var(--ease);
   }
-  .dots li.past { background: var(--text-2); }
-  .dots li.current { width: 20px; border-radius: 3px; background: var(--accent); }
+  /* Upcoming steps: a hollow ring, still 3:1 on the page. */
+  .dots li { background: transparent; box-shadow: inset 0 0 0 1.5px var(--text-2); }
+  .dots li.past { background: var(--text-2); box-shadow: none; }
+  .dots li.current { width: 20px; border-radius: 3px; background: var(--accent); box-shadow: none; }
 
-  /* Both steps share one cell during the slide, so nothing jumps. */
+  /* Both steps share one cell during the slide, so nothing jumps; every step and the footer share one width. */
   .stage { display: grid; min-height: 0; overflow: hidden auto; padding: 24px 40px; }
   .step {
     grid-area: 1 / 1; align-self: center; justify-self: center;
-    width: min(520px, 100%); display: grid; gap: 16px; justify-items: start;
+    width: min(640px, 100%); display: grid; gap: 16px; justify-items: start;
   }
-  .step.wide { width: min(840px, 100%); }
   h1:focus { outline: none; }
   .lead { font-size: 16px; }
   .promise { font-weight: 550; }
 
   footer {
     display: flex; align-items: center; gap: 8px;
-    width: min(600px, 100%); justify-self: center; padding: 16px 40px 32px;
+    width: min(720px, 100%); justify-self: center; padding: 16px 40px 32px;
   }
-  footer.wide { width: min(920px, 100%); }
   .grow { flex: 1; text-align: right; }
 </style>

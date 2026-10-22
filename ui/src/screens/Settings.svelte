@@ -224,7 +224,7 @@
           </label>
           <div class="line">
             <span class="lbl"><label for="show-overlay">{t('settings.show_overlay')}</label><span class="secondary" id="overlay-hint">{t('settings.show_overlay_hint')}</span></span>
-            <input id="show-overlay" type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
+            <input id="show-overlay" type="checkbox" role="switch" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
           </div>
           <label class="line">
             <span class="lbl">{t('settings.delay_before')}</span>
@@ -236,7 +236,7 @@
           </label>
           <label class="line">
             <span class="lbl">{t('settings.keep_history')}</span>
-            <input type="checkbox" bind:checked={draft.dictation.keep_history} />
+            <input type="checkbox" role="switch" bind:checked={draft.dictation.keep_history} />
           </label>
         </div>
       </section>
@@ -257,7 +257,7 @@
               <span>{t('settings.threshold')} <output class="tabular">{new Intl.NumberFormat(app.lang, { minimumFractionDigits: 2 }).format(draft.meeting.confidence_threshold)}</output></span>
               <span id="threshold-hint" class="secondary">{t('settings.threshold_hint')}</span>
             </span>
-            <input class="ctl" type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} aria-describedby="threshold-hint" />
+            <input class="ctl" type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} style:--p={(draft.meeting.confidence_threshold - 0.3) / 0.6} aria-describedby="threshold-hint" />
           </label>
           <fieldset class="line stack" aria-describedby="outputs-hint">
             <legend class="secondary">{t('settings.outputs')}</legend>
@@ -348,7 +348,7 @@
         <div class="box">
           <label class="line">
             <span class="lbl">{t('settings.folder_enabled')}</span>
-            <input type="checkbox" bind:checked={draft.destinations.folder.enabled} />
+            <input type="checkbox" role="switch" bind:checked={draft.destinations.folder.enabled} />
           </label>
           <label class="line">
             <span class="lbl">{t('settings.folder_path')}</span>
@@ -358,7 +358,7 @@
         <div class="box">
           <label class="line">
             <span class="lbl">{t('settings.webhook_enabled')}</span>
-            <input type="checkbox" bind:checked={draft.destinations.webhook.enabled} />
+            <input type="checkbox" role="switch" bind:checked={draft.destinations.webhook.enabled} />
           </label>
           <label class="line">
             <span class="lbl">{t('settings.webhook_url')}</span>
@@ -382,7 +382,7 @@
         <div class="box">
           <label class="line">
             <span class="lbl">{t('settings.llm_enabled')}</span>
-            <input type="checkbox" bind:checked={draft.llm.enabled} />
+            <input type="checkbox" role="switch" bind:checked={draft.llm.enabled} />
           </label>
           <fieldset class="line stack" disabled={!draft.llm.enabled}>
             <legend class="secondary">{t('settings.llm_where')}</legend>
@@ -446,11 +446,11 @@
         <div class="box">
           <label class="line">
             <span class="lbl">{t('settings.notification_sound')}</span>
-            <input type="checkbox" bind:checked={draft.notification_sound} />
+            <input type="checkbox" role="switch" bind:checked={draft.notification_sound} />
           </label>
           <div class="line">
             <span class="lbl"><label for="show-mascot">{t('settings.mascot')}</label><span class="secondary" id="mascot-hint">{t('settings.mascot_hint')}</span></span>
-            <input id="show-mascot" type="checkbox" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
+            <input id="show-mascot" type="checkbox" role="switch" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
           </div>
         </div>
       </section>
@@ -514,7 +514,6 @@
   /* Selects grow to their longest option rather than clip it. */
   select.ctl { width: auto; min-width: 280px; max-width: 100%; }
   .num { width: 112px; flex: none; text-align: right; }
-  .line > input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; }
   .stack { display: grid; justify-content: stretch; gap: 8px; padding-block: 12px; }
   .plain { display: block; }
   fieldset { border: 0; min-width: 0; }

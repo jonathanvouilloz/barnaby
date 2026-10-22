@@ -161,7 +161,7 @@
   .alt { white-space: normal; text-align: left; font-weight: 400; color: var(--text-2); }
   .alt strong { font-weight: 650; color: var(--text); }
   .actions { display: flex; flex-wrap: wrap; gap: 4px; }
-  .validate { gap: 4px; color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .validate { gap: 4px; color: var(--accent-text); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
   .extra { display: grid; gap: 8px; justify-items: start; }
   .extra .field { width: 100%; }
   .extra.row { grid-template-columns: 1fr auto; align-items: end; }

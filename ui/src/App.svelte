@@ -66,7 +66,7 @@
           {@const current = item.match.includes(app.route.name)}
           <li>
             <button
-              class="nav-item"
+              class="nav-item hit"
               class:current
               aria-current={current ? 'page' : undefined}
               onclick={() => go({ name: item.route } as Route)}
@@ -136,7 +136,8 @@
   .nav-item.current { background: var(--fill-strong); font-weight: 650; }
   .label { flex: 1; min-width: 0; }
   .icon { display: inline-flex; }
-  .icon.home { color: var(--accent); }
+  /* One hue per function, as in Things: warm home, blue review (the spark), taupe settings. */
+  .icon.home { color: var(--warm); }
   .icon.review { color: var(--spark); }
   .icon.settings { color: var(--text-2); }
   .count {
@@ -156,7 +157,7 @@
   @keyframes pulse { 50% { opacity: .35; } }
 
   /* Labels wrap rather than overflow the sidebar ("Enregistrement en cours"). */
-  .new { justify-content: flex-start; width: 100%; background: var(--surface); white-space: normal; text-align: left; line-height: 1.3; padding-block: 6px; }
+  .new { justify-content: flex-start; width: 100%; background: var(--surface); white-space: normal; font-weight: 500; text-align: left; line-height: 1.3; padding-block: 6px; }
   .rec { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--rec); box-shadow: inset 0 0 0 1px var(--border); }
 
   .solo { height: 100%; }

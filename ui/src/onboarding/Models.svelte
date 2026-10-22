@@ -138,6 +138,7 @@
   .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
   .choice {
     display: grid; gap: 4px; align-content: start; padding: 16px; text-align: left; cursor: pointer;
+    border-color: var(--border-strong);
     transition: border-color 150ms var(--ease), background-color 150ms var(--ease);
   }
   .choice:hover:not(:disabled) { background: var(--fill); }

@@ -52,7 +52,7 @@
 {/snippet}
 
 <section class="screen">
-  <header class="screen-head" data-tauri-drag-region>
+  <header class="screen-head column" data-tauri-drag-region>
     <h1>{t('home.title')}</h1>
     {#if app.recordingId}
       <button class="btn primary" onclick={() => go({ name: 'recording' })}>{t('rec.live')}</button>
@@ -87,7 +87,7 @@
                     {formatTime(m.started_at, app.lang)}
                     {#if m.review_items_total > 0}{' · '}{t('home.zones', { done: m.review_items_resolved, total: m.review_items_total })}{/if}
                   </p>
-                  {#if m.state === 'failed'}<p class="cause">{errorText(m.error)}</p>{/if}
+                  {#if m.state === 'failed'}<p class="cause">{#if app.mascot}<Owl state="error" size={24} />{/if}{errorText(m.error)}</p>{/if}
                 </div>
                 <span class="state {m.state}">{t(`state.${m.state}`)}</span>
                 {#if m.state === 'failed'}
@@ -154,6 +154,8 @@
 
 <style>
   .block { max-width: 760px; }
+  /* The primary action sits right above the list, not at the far edge. */
+  .column { max-width: calc(760px + 80px); }
   .block + .block { margin-top: 40px; }
   .block > h2, .block-head { margin-bottom: 8px; }
   .block-head { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
@@ -186,9 +188,11 @@
   .row .btn { position: relative; }
 
   .state { font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
-  .state.needs_review, .state.recording { color: var(--text); font-weight: 550; }
+  .state.recording { color: var(--text); font-weight: 550; }
+  /* What waits is the brightest thing on the screen. */
+  .state.needs_review { color: var(--accent-text); font-weight: 600; }
   .state.failed { color: var(--danger); }
-  .cause { font-size: 12.5px; color: var(--danger); }
+  .cause { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--danger); }
 
   .reveal { opacity: 0; transition: opacity 150ms var(--ease); }
   .row:hover .reveal, .row:focus-within .reveal { opacity: 1; }

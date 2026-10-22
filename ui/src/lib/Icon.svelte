@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  export type IconName = 'home' | 'review' | 'settings' | 'record' | 'mic' | 'spark' | 'check' | 'chevron' | 'play';
+  export type IconName = 'home' | 'review' | 'settings' | 'record' | 'mic' | 'spark' | 'check' | 'chevron' | 'play' | 'pause';
 </script>
 
 <script lang="ts">
@@ -17,8 +17,9 @@
     check: 'M3.25 8.5 6.5 11.75 12.75 4.75',
     chevron: 'M6 3.5 10.5 8 6 12.5',
     play: 'M5 3.25v9.5L12.5 8Z',
+    pause: 'M4.25 3.25h2.5v9.5h-2.5ZM9.25 3.25h2.5v9.5h-2.5Z',
   };
-  const filled = $derived(name === 'record' || name === 'spark' || name === 'play');
+  const filled = $derived(name === 'record' || name === 'spark' || name === 'play' || name === 'pause');
 </script>
 
 <svg

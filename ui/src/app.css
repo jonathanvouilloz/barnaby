@@ -7,29 +7,28 @@
   --text: #0f0c2f;
   --text-2: #6f5b52;
   --border: rgb(15 12 47 / .09);
+  --border-strong: rgb(15 12 47 / .5); /* fields and choice cards: 3:1 on every ground */
   --accent: #0170ec;
+  --accent-text: #005fcc; /* blue text that stays AA on the taupe fills */
+  --warm: #b25f00; /* beak orange darkened to 3:1 on the selected sidebar row */
   --on-accent: #fdfdfd;
   --rec: #fcaa4f;
   --on-rec: #0f0c2f; /* ink in both themes: cream text fails on the orange */
   --danger: #b3261e;
   --warn: #9a5b00;
   --ok: #1f7a3a;
-  --fill: rgb(15 12 47 / .05);
-  --fill-strong: rgb(15 12 47 / .09);
+  --fill: rgb(159 136 125 / .10);
+  --fill-strong: rgb(159 136 125 / .16);
   --spark: #0170ec;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='%236f5b52' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   --scrim: rgb(15 12 47 / .28);
   --shadow-pop: 0 8px 24px rgb(15 12 47 / .16);
   --shadow-sheet: 0 18px 50px rgb(15 12 47 / .22);
   --shadow-float: 0 1px 2px rgb(15 12 47 / .14), 0 4px 10px rgb(15 12 47 / .12);
 
   /* The owl keeps its sheet colours in both themes. */
-  --owl-line: #0f0c2f;
-  --owl-body: #b9a596;
-  --owl-shade: #9f887d;
-  --owl-face: #f8ebdc;
-  --owl-belly: #decfc5;
-  --owl-beak: #fcaa4f;
-  --owl-eye: #0f0c2f;
+  /* The owl art has a dark outline: it sits on a warm field, kraft in the dark theme. */
+  --owl-field: #f8ebdc;
 
   --r-control: 8px;
   --r-card: 12px;
@@ -42,11 +41,14 @@
   :root {
     --bg: #0f0c2f;
     --surface: #18143d;
-    --sidebar: rgb(26 22 64 / .78);
+    --sidebar: rgb(34 29 78 / .82);
     --text: #f8ebdc;
     --text-2: #b9a596;
     --border: rgb(248 235 220 / .12);
+    --border-strong: rgb(248 235 220 / .42);
     --accent: #4d9bff;
+    --accent-text: #4d9bff;
+    --warm: #fcaa4f;
     --on-accent: #0f0c2f;
     --rec: #fcaa4f;
     --danger: #ff8a80;
@@ -55,6 +57,8 @@
     --fill: rgb(248 235 220 / .06);
     --fill-strong: rgb(248 235 220 / .11);
     --spark: #4d9bff;
+    --owl-field: #decfc5;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='%23b9a596' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     --scrim: rgb(0 0 0 / .45);
     --shadow-pop: 0 8px 24px rgb(0 0 0 / .4);
     --shadow-sheet: 0 18px 50px rgb(0 0 0 / .5);
@@ -89,6 +93,13 @@ ul, ol { padding: 0; list-style: none; }
 }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--spark) 24%, transparent); }
+
+/* Thin warm scrollbars, both engines. */
+:root { scrollbar-color: color-mix(in srgb, var(--text-2) 45%, transparent) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 5px; background: color-mix(in srgb, var(--text-2) 45%, transparent) padding-box; }
 
 button, input, select, textarea { font: inherit; color: inherit; }
 
@@ -99,8 +110,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border: 1px solid var(--border); border-radius: var(--r-control);
   background: var(--surface); color: var(--text);
   font-size: 14px; font-weight: 550; white-space: nowrap; cursor: pointer;
+  position: relative;
   transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
 }
+/* Small controls keep their drawing but take a 40px hit area. */
+.btn::before, .hit::before {
+  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: max(100%, 40px); height: max(100%, 40px);
+}
+.hit { position: relative; }
 .btn:hover:not(:disabled) { background: var(--fill); }
 .btn:active:not(:disabled) { background: var(--fill-strong); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -116,12 +134,52 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 input[type="text"], input[type="email"], input[type="url"], input[type="number"], input[type="password"], input:not([type]), select, textarea {
   width: 100%; min-height: 32px; padding: 4px 12px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-control);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-control);
   font-size: 14px;
+}
+select {
+  appearance: none; padding-right: 32px; cursor: pointer;
+  background: var(--chevron) no-repeat right 10px center / 14px var(--surface);
 }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
 textarea { resize: vertical; line-height: 1.5; padding: 8px 12px; }
-input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
+input[type="checkbox"] { accent-color: var(--accent); }
+
+/* Radios in the palette: a ring that fills with blue. */
+input[type="radio"] {
+  appearance: none; flex: none; width: 16px; height: 16px; margin: 0; align-self: center;
+  border: 1px solid var(--border-strong); border-radius: 50%; background: var(--surface);
+  transition: border-width 150ms var(--ease), border-color 150ms var(--ease);
+}
+input[type="radio"]:checked { border: 5px solid var(--accent); }
+
+/* Booleans read as switches: a native checkbox with role="switch". */
+input[role="switch"] {
+  appearance: none; flex: none; position: relative; width: 32px; height: 18px; margin: 0; cursor: pointer;
+  border-radius: 9px; background: var(--border-strong);
+  transition: background-color 150ms var(--ease);
+}
+input[role="switch"]::before {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+  border-radius: 50%; background: #fdfdfd; box-shadow: var(--shadow-float); /* white knob in both themes, as on macOS */
+  transition: transform 150ms var(--ease);
+}
+input[role="switch"]:checked { background: var(--accent); }
+input[role="switch"]:checked::before { transform: translateX(14px); }
+input[role="switch"]:disabled { opacity: .5; cursor: default; }
+
+/* Range: a thin track filled to --p (0 to 1) and a round thumb. */
+input[type="range"] {
+  appearance: none; height: 20px; margin: 0; background: transparent; cursor: pointer; --p: 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) calc(var(--p) * 100%), var(--fill-strong) 0);
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow-float);
+}
 ::placeholder { color: var(--text-2); opacity: 1; }
 
 label { display: block; }

@@ -48,7 +48,7 @@
 <style>
   .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .keys { min-width: 170px; }
-  .capturing { border-color: var(--accent); color: var(--accent); }
+  .capturing { border-color: var(--accent); color: var(--accent-text); }
   kbd { font: inherit; font-variant-numeric: tabular-nums; }
   .hint { text-align: right; color: var(--warn); }
 </style>

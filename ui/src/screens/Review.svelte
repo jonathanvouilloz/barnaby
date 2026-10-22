@@ -6,6 +6,7 @@
   import { t } from '../lib/i18n';
   import { formatDateTime, formatTimestamp } from '../lib/format';
   import { canSend, flaggedSegments, isOpen, nextOpenAfter, remaining, segmentAt, speakerIds, speakerName, stepId } from '../lib/review';
+  import Icon from '../lib/Icon.svelte';
   import Spark from '../lib/Spark.svelte';
   import ReviewZone from './ReviewZone.svelte';
 
@@ -14,6 +15,7 @@
   let detail = $state<MeetingDetail | null>(null);
   let currentTime = $state(0);
   let paused = $state(true);
+  let duration = $state(0);
   let stopAt: number | null = null;
   let focusedId = $state<string | null>(null);
   let editing = $state<string | null>(null);
@@ -142,7 +144,17 @@
   {#if detail}
     <div class="player">
       {#if detail.audio_path}
-        <audio controls preload="metadata" src={convertFileSrc(detail.audio_path)} aria-label={t('review.audio')} bind:currentTime bind:paused></audio>
+        {@const length = duration || 0}
+        <audio preload="metadata" src={convertFileSrc(detail.audio_path)} bind:currentTime bind:paused bind:duration></audio>
+        <button class="btn icon" aria-label={t(paused ? 'review.play' : 'review.pause')} onclick={() => (paused = !paused)}>
+          <Icon name={paused ? 'play' : 'pause'} />
+        </button>
+        <span class="time secondary tabular">{formatTimestamp(currentTime)} / {formatTimestamp(length)}</span>
+        <div class="track">
+          <input type="range" min="0" max={length} step="0.1" bind:value={currentTime} aria-label={t('review.audio')} aria-valuetext={formatTimestamp(currentTime)} style:--p={length ? currentTime / length : 0} />
+          <!-- The zones to review, marked on the timeline. -->
+          {#if length}{#each items as item (item.id)}<span class="tick" style:--at={Math.min(1, item.start / length)}><Spark size={8} active={isOpen(item)} /></span>{/each}{/if}
+        </div>
       {:else}
         <p class="secondary">{t('review.no_audio')}</p>
       {/if}
@@ -155,7 +167,7 @@
           <!-- A heading inside <summary> loses its role: the hidden one keeps heading navigation. -->
           <h2 class="sr-only">{t('review.summary')}</h2>
           <details class="card summary">
-            <summary>{t('review.summary')}</summary>
+            <summary><span class="chev"><Icon name="chevron" /></span>{t('review.summary')}</summary>
             <p>{s.overview}</p>
             {#if s.decisions.length}<h3>{t('review.decisions')}</h3><ul>{#each s.decisions as d}<li>{d}</li>{/each}</ul>{/if}
             {#if s.action_items.length}
@@ -171,7 +183,7 @@
           {#each segments as s (s.id)}
             <li id="seg-{s.id}" class="seg" class:flagged={flagged.has(s.id)} class:playing={playing === s.id}>
               <span class="mark"><Spark active={flagged.has(s.id)} /></span>
-              <button class="ts tabular" disabled={!detail.audio_path} aria-label={t('review.seek', { time: formatTimestamp(s.start) })} onclick={() => seek(s.start)}>
+              <button class="ts tabular hit" disabled={!detail.audio_path} aria-label={t('review.seek', { time: formatTimestamp(s.start) })} onclick={() => seek(s.start)}>
                 {formatTimestamp(s.start)}
               </button>
               <div class="body">
@@ -235,8 +247,12 @@
 <style>
   .title { flex: 1; min-width: 0; }
   .title h1 { white-space: normal; overflow-wrap: anywhere; }
-  .player { padding: 0 40px 16px; }
-  audio { width: 100%; height: 36px; }
+  .player { display: flex; align-items: center; gap: 12px; padding: 0 40px 16px; }
+  .time { flex: none; min-width: 88px; }
+  .track { position: relative; flex: 1; min-width: 0; display: grid; }
+  .track input { width: 100%; }
+  /* Same inset as the thumb, so a tick sits where the thumb lands. */
+  .tick { position: absolute; top: 50%; left: calc(7px + (100% - 14px) * var(--at)); translate: -50% -50%; display: inline-flex; pointer-events: none; }
 
   .columns { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; border-top: 1px solid var(--border); }
   .col { overflow: auto; min-height: 0; }
@@ -246,7 +262,10 @@
   /* Reading column: about 68 characters of text beside the spark and timestamp gutter. */
   .summary, .segments { max-width: calc(68ch + 100px); }
   .summary { padding: 12px 16px; margin: 0 0 24px 8px; display: grid; gap: 8px; }
-  .summary summary { cursor: pointer; list-style-position: inside; }
+  .summary summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
+  .summary summary::-webkit-details-marker { display: none; }
+  .chev { display: inline-flex; color: var(--text-2); transition: transform 150ms var(--ease); }
+  .summary[open] .chev { transform: rotate(90deg); }
   .summary summary { font-size: 15px; font-weight: 650; line-height: 1.35; }
   .summary h3 { font-size: 12.5px; font-weight: 650; color: var(--text-2); margin-top: 4px; }
   .summary ul { list-style: disc; padding-left: 20px; }
@@ -264,7 +283,7 @@
     align-self: start; padding: 2px 4px; border: 0; border-radius: 4px; background: none;
     font-size: 12.5px; color: var(--text-2); cursor: pointer;
   }
-  .ts:hover:not(:disabled) { color: var(--accent); }
+  .ts:hover:not(:disabled) { color: var(--accent-text); }
   .ts:disabled { cursor: default; }
   .body { position: relative; min-width: 0; padding-right: 32px; }
   .chip { display: block; margin-bottom: 2px; font-size: 12.5px; font-weight: 650; }

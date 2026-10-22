@@ -66,7 +66,7 @@
     display: block; height: 100%; background: var(--accent);
     transform-origin: left; transition: transform 80ms linear;
   }
-  .heard { display: inline-flex; align-items: center; gap: 8px; min-width: 120px; font-weight: 550; color: var(--accent); }
+  .heard { display: inline-flex; align-items: center; gap: 8px; min-width: 120px; font-weight: 550; color: var(--accent-text); }
   .problem { display: grid; gap: 8px; justify-items: start; }
   .problem > p:first-child { color: var(--danger); }
 </style>
