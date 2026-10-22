@@ -1,8 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { app, go, init, owlState, reviewCount, type Route } from './lib/state.svelte';
+  import { app, go, init, reviewCount, type Route } from './lib/state.svelte';
   import { t } from './lib/i18n';
-  import Owl from './lib/Owl.svelte';
+  import Icon, { type IconName } from './lib/Icon.svelte';
+  import Spark from './lib/Spark.svelte';
   import ModelSetup from './lib/ModelSetup.svelte';
   import Home from './screens/Home.svelte';
   import NewMeeting from './screens/NewMeeting.svelte';
@@ -15,10 +16,10 @@
     init();
   });
 
-  const nav: { route: Route['name']; key: string; match: Route['name'][] }[] = [
-    { route: 'home', key: 'nav.home', match: ['home', 'new', 'recording'] },
-    { route: 'queue', key: 'nav.review', match: ['queue', 'review'] },
-    { route: 'settings', key: 'nav.settings', match: ['settings'] },
+  const nav: { route: Route['name']; key: string; icon: IconName; match: Route['name'][] }[] = [
+    { route: 'home', key: 'nav.home', icon: 'home', match: ['home', 'new', 'recording'] },
+    { route: 'queue', key: 'nav.review', icon: 'review', match: ['queue', 'review'] },
+    { route: 'settings', key: 'nav.settings', icon: 'settings', match: ['settings'] },
   ];
 
   const status = $derived(
@@ -28,7 +29,7 @@
 
 <div class="shell">
   <aside class="sidebar">
-    <div class="brand" data-tauri-drag-region>Barnaby</div>
+    <div class="brand" data-tauri-drag-region>Barnaby <Spark size={10} /></div>
     <nav aria-label={t('nav.label')}>
       <ul>
         {#each nav as item (item.route)}
@@ -40,9 +41,10 @@
               aria-current={current ? 'page' : undefined}
               onclick={() => go({ name: item.route } as Route)}
             >
-              <span>{t(item.key)}</span>
+              <span class="icon {item.icon}"><Icon name={item.icon} /></span>
+              <span class="label">{t(item.key)}</span>
               {#if item.route === 'queue' && reviewCount() > 0}
-                <span class="count tabular" aria-label={t('nav.review_badge', { n: reviewCount() })}>{reviewCount()}</span>
+                <span class="count tabular" aria-label={t('nav.review_badge', { n: reviewCount() })}><Spark size={10} />{reviewCount()}</span>
               {/if}
             </button>
           </li>
@@ -54,7 +56,11 @@
       <p class="pill {status}" aria-live="polite">
         <span class="dot" aria-hidden="true"></span>{t(`status.${status}`)}
       </p>
-      {#if app.mascot}<Owl state={owlState()} size={64} />{/if}
+      {#if app.recordingId}
+        <button class="btn new live" onclick={() => go({ name: 'recording' })}><span class="rec" aria-hidden="true"></span>{t('rec.live')}</button>
+      {:else}
+        <button class="btn new" onclick={() => go({ name: 'new' })}><span class="rec" aria-hidden="true"></span>{t('new.title')}</button>
+      {/if}
     </div>
   </aside>
 
@@ -74,53 +80,63 @@
 </div>
 
 <style>
-  .shell { display: grid; grid-template-columns: 216px 1fr; height: 100%; }
+  .shell { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
 
+  /* The only translucent surface: navigation, never content. */
   .sidebar {
     display: flex; flex-direction: column;
     background: var(--sidebar);
     backdrop-filter: blur(30px) saturate(1.8);
     border-right: 1px solid var(--border);
-    padding: 0 10px 20px;
+    padding: 0 12px 16px;
     min-height: 0;
   }
-  .brand { padding: 22px 10px 18px; font-weight: 600; font-size: 15px; }
-  nav ul { display: grid; gap: 2px; }
+  .brand {
+    display: flex; align-items: center; gap: 4px;
+    padding: 24px 8px 20px; font-weight: 700; font-size: 15px;
+  }
+  nav ul { display: grid; gap: 4px; }
   .nav-item {
-    display: flex; align-items: center; justify-content: space-between; width: 100%;
-    padding: 6px 10px; border: 0; border-radius: var(--r-control);
-    background: transparent; text-align: left; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    min-height: 32px; padding: 4px 8px; border: 0; border-radius: var(--r-control);
+    background: transparent; text-align: left; cursor: pointer; font-size: 14px; font-weight: 500;
     transition: background-color 150ms var(--ease);
   }
   .nav-item:hover { background: var(--fill); }
-  .nav-item.current { background: var(--fill-strong); font-weight: 600; }
+  .nav-item.current { background: var(--fill-strong); font-weight: 650; }
+  .label { flex: 1; min-width: 0; }
+  .icon { display: inline-flex; }
+  .icon.home { color: var(--accent); }
+  .icon.review { color: var(--spark); }
+  .icon.settings { color: var(--text-2); }
   .count {
-    min-width: 20px; padding: 0 6px; border-radius: 999px;
-    background: var(--warn); color: var(--bg);
-    font-size: 11.5px; font-weight: 600; line-height: 18px; text-align: center;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12.5px; font-weight: 600; color: var(--text-2);
   }
 
-  .foot { margin-top: auto; display: grid; justify-items: center; gap: 12px; }
+  .foot { margin-top: auto; display: grid; gap: 8px; }
   .pill {
-    display: inline-flex; align-items: center; gap: 7px; justify-self: stretch;
-    padding: 4px 10px; border-radius: 999px; background: var(--fill);
-    font-size: 12.5px; color: var(--text-2);
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 8px; font-size: 12.5px; color: var(--text-2);
   }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
   .pill.recording, .pill.meeting { color: var(--text); }
-  .pill.recording .dot, .pill.meeting .dot { background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+  .pill.recording .dot, .pill.meeting .dot { background: var(--rec); animation: pulse 1.4s ease-in-out infinite; }
   .pill.transcribing .dot { background: var(--accent); }
   @keyframes pulse { 50% { opacity: .35; } }
 
-  main { position: relative; min-width: 0; min-height: 0; }
+  .new { justify-content: flex-start; width: 100%; background: var(--surface); }
+  .rec { width: 12px; height: 12px; border-radius: 50%; background: var(--rec); box-shadow: inset 0 0 0 1px var(--border); }
+
+  main { position: relative; min-width: 0; min-height: 0; background: var(--bg); }
   .notice {
-    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+    position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
     pointer-events: none; max-width: calc(100% - 56px);
   }
   .notice span {
-    display: block; padding: 8px 14px; border-radius: var(--r-card);
+    display: block; padding: 8px 16px; border-radius: var(--r-card);
     background: var(--text); color: var(--bg); font-size: 13px;
-    box-shadow: 0 8px 24px rgb(0 0 0 / .18);
+    box-shadow: var(--shadow-pop);
     animation: rise 200ms var(--ease);
   }
   @keyframes rise { from { opacity: 0; transform: translateY(6px); } }

@@ -1,49 +1,63 @@
-/* Tokens: see DESIGN.md. Light by default, dark follows the system. */
+/* Tokens: "Things, version chouette" (DESIGN.md). Light by default, dark follows the system. */
 :root {
   color-scheme: light dark;
-  --bg: #f5f5f7;
+  --bg: #fdfdfd;
   --surface: #ffffff;
-  --sidebar: rgb(236 236 240 / .8);
-  --text: #1d1d1f;
-  --text-2: #6e6e73;
-  --border: rgb(0 0 0 / .1);
-  --accent: #0a66d8;
-  --on-accent: #ffffff;
-  --danger: #c62828;
-  --warn: #9a6400;
+  --sidebar: rgb(248 235 220 / .82);
+  --text: #0f0c2f;
+  --text-2: #6f5b52;
+  --border: rgb(15 12 47 / .09);
+  --accent: #0170ec;
+  --on-accent: #fdfdfd;
+  --rec: #fcaa4f;
+  --danger: #b3261e;
+  --warn: #9a5b00;
   --ok: #1f7a3a;
-  --fill: rgb(0 0 0 / .05);
-  --fill-strong: rgb(0 0 0 / .09);
-  --owl-body: #b9b1a4;
-  --owl-face: #efe9df;
-  --owl-beak: #c98a2b;
+  --fill: rgb(15 12 47 / .05);
+  --fill-strong: rgb(15 12 47 / .09);
+  --spark: #0170ec;
+  --scrim: rgb(15 12 47 / .28);
+  --shadow-pop: 0 8px 24px rgb(15 12 47 / .16);
+  --shadow-sheet: 0 18px 50px rgb(15 12 47 / .22);
+  --shadow-float: 0 1px 2px rgb(15 12 47 / .14), 0 4px 10px rgb(15 12 47 / .12);
 
-  --r-control: 6px;
-  --r-card: 10px;
-  --r-sheet: 14px;
+  /* The owl keeps its sheet colours in both themes. */
+  --owl-line: #0f0c2f;
+  --owl-body: #b9a596;
+  --owl-shade: #9f887d;
+  --owl-face: #f8ebdc;
+  --owl-belly: #decfc5;
+  --owl-beak: #fcaa4f;
+  --owl-eye: #0f0c2f;
+
+  --r-control: 8px;
+  --r-card: 12px;
+  --r-sheet: 16px;
   --ease: cubic-bezier(.2, .7, .3, 1);
-  --font: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Cantarell, "Noto Sans", sans-serif;
+  --font: "Valley Sans Variable", system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1c1c1e;
-    --surface: #2c2c2e;
-    --sidebar: rgb(44 44 46 / .72);
-    --text: #f5f5f7;
-    --text-2: #a1a1a6;
-    --border: rgb(255 255 255 / .12);
-    --accent: #3d9bff;
-    /* white on #3d9bff fails AA; near-black passes */
-    --on-accent: #0b1220;
-    --danger: #ff6b60;
-    --warn: #ffcc4d;
-    --ok: #4cd774;
-    --fill: rgb(255 255 255 / .06);
-    --fill-strong: rgb(255 255 255 / .11);
-    --owl-body: #8a8276;
-    --owl-face: #d9d2c6;
-    --owl-beak: #e0a443;
+    --bg: #0f0c2f;
+    --surface: #18143d;
+    --sidebar: rgb(26 22 64 / .78);
+    --text: #f8ebdc;
+    --text-2: #b9a596;
+    --border: rgb(248 235 220 / .12);
+    --accent: #4d9bff;
+    --on-accent: #0f0c2f;
+    --rec: #fcaa4f;
+    --danger: #ff8a80;
+    --warn: #ffc069;
+    --ok: #5bd17f;
+    --fill: rgb(248 235 220 / .06);
+    --fill-strong: rgb(248 235 220 / .11);
+    --spark: #4d9bff;
+    --scrim: rgb(0 0 0 / .45);
+    --shadow-pop: 0 8px 24px rgb(0 0 0 / .4);
+    --shadow-sheet: 0 18px 50px rgb(0 0 0 / .5);
+    --shadow-float: 0 1px 2px rgb(0 0 0 / .3), 0 4px 10px rgb(0 0 0 / .25);
   }
 }
 
@@ -62,8 +76,8 @@ body {
 #app { height: 100%; }
 
 h1, h2, h3, p, ul, ol { margin: 0; }
-h1 { font-size: 22px; font-weight: 600; line-height: 1.25; }
-h2 { font-size: 15px; font-weight: 600; line-height: 1.35; }
+h1 { font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
+h2 { font-size: 15px; font-weight: 650; line-height: 1.35; }
 ul, ol { padding: 0; list-style: none; }
 
 .secondary { font-size: 12.5px; color: var(--text-2); }
@@ -79,14 +93,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 /* Buttons: one filled primary per screen, the rest quiet. */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  min-height: 30px; padding: 4px 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 32px; padding: 4px 12px;
   border: 1px solid var(--border); border-radius: var(--r-control);
   background: var(--surface); color: var(--text);
-  font-size: 13.5px; font-weight: 500; white-space: nowrap; cursor: pointer;
+  font-size: 14px; font-weight: 550; white-space: nowrap; cursor: pointer;
   transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
 }
-.btn:hover:not(:disabled) { background: var(--fill-strong); }
+.btn:hover:not(:disabled) { background: var(--fill); }
+.btn:active:not(:disabled) { background: var(--fill-strong); }
 .btn:disabled { opacity: .5; cursor: default; }
 .btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
 .btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
@@ -94,22 +109,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.danger-fill { background: var(--danger); border-color: transparent; color: var(--on-accent); }
 .btn.ghost { border-color: transparent; background: transparent; }
 .btn.ghost:hover:not(:disabled) { background: var(--fill); }
-.btn.small { min-height: 26px; padding: 2px 9px; font-size: 12.5px; }
-.btn.icon { padding: 0; width: 28px; min-height: 28px; }
+.btn.small { min-height: 28px; padding: 0 8px; font-size: 12.5px; }
+.btn.icon { padding: 0; width: 32px; min-height: 32px; }
+.btn.icon.small { width: 28px; min-height: 28px; }
 
 input[type="text"], input[type="email"], input[type="url"], input[type="number"], input[type="password"], input:not([type]), select, textarea {
-  width: 100%; min-height: 30px; padding: 4px 9px;
+  width: 100%; min-height: 32px; padding: 4px 12px;
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-control);
   font-size: 14px;
 }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
-textarea { resize: vertical; line-height: 1.5; padding: 6px 9px; }
+textarea { resize: vertical; line-height: 1.5; padding: 8px 12px; }
 input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--accent); }
 ::placeholder { color: var(--text-2); opacity: 1; }
 
 label { display: block; }
 .field { display: grid; gap: 4px; }
-.field > span { font-size: 12.5px; color: var(--text-2); }
+.field > span { font-size: 12.5px; font-weight: 550; color: var(--text-2); }
 
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card);
@@ -119,12 +135,12 @@ label { display: block; }
 .screen { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .screen-head {
   display: flex; align-items: center; gap: 12px;
-  padding: 20px 28px 16px; min-height: 72px;
+  padding: 28px 40px 20px; min-height: 84px;
 }
 .screen-head h1 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.screen-body { flex: 1; min-height: 0; overflow: auto; padding: 0 28px 28px; }
+.screen-body { flex: 1; min-height: 0; overflow: auto; padding: 0 40px 40px; }
 
-.empty { color: var(--text-2); padding: 20px 16px; text-align: center; }
+.empty { color: var(--text-2); padding: 24px 16px; text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

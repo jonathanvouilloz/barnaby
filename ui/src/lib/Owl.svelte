@@ -1,5 +1,6 @@
 <script lang="ts">
-  // Placeholder owl until the author's mascot lands. One look per system state (spec 10.4).
+  // Provisional SVG owl after design/references/owl-sheet.png, until the cut-out mascot lands.
+  // One expression per system state; colours come from the --owl-* tokens only.
   import type { OwlState } from './state.svelte';
   import { t } from './i18n';
 
@@ -14,70 +15,95 @@
   role="img"
   aria-label={t('owl.label', { state: t(`owl.${state}`) })}
 >
+  <path class="spark" d="M32 0.5C32.4 3.4 33.6 4.6 36.5 5 33.6 5.4 32.4 6.6 32 9.5 31.6 6.6 30.4 5.4 27.5 5 30.4 4.6 31.6 3.4 32 0.5Z" />
   <g class="bird">
+    <path class="body line" d="M15 45C15 36 22 33 32 33S49 36 49 45C49 54 43 59 32 59S15 54 15 45Z" />
+    <path class="belly" d="M22 48C22 42 26 40 32 40S42 42 42 48C42 54 38 57 32 57S22 54 22 48Z" />
+    <path class="wing line" d="M16.5 41C12.5 45 13 52 18.5 55 19.5 50 19.5 45 16.5 41Z" />
+    <path class="wing line" d="M47.5 41C51.5 45 51 52 45.5 55 44.5 50 44.5 45 47.5 41Z" />
+    <ellipse class="foot line" cx="26.5" cy="59" rx="3.2" ry="2.2" />
+    <ellipse class="foot line" cx="37.5" cy="59" rx="3.2" ry="2.2" />
+
     <g class="head">
-      <path class="tuft" d="M14 22 L17 7 L26 16 Z" />
-      <path class="tuft right" d="M50 22 L47 7 L38 16 Z" />
-      <ellipse class="body" cx="32" cy="37" rx="20" ry="22" />
-      <ellipse class="belly" cx="32" cy="48" rx="11" ry="8.5" />
-      <circle class="disc" cx="24" cy="30" r="8.5" />
-      <circle class="disc" cx="40" cy="30" r="8.5" />
-      <g class="pupils">
-        <circle class="pupil" cx="24" cy="30" r="4" />
-        <circle class="pupil" cx="40" cy="30" r="4" />
-        <circle class="glint" cx="25.5" cy="28.5" r="1.3" />
-        <circle class="glint" cx="41.5" cy="28.5" r="1.3" />
+      <path
+        class="skull line"
+        d="M13 24C11 19 11 15 12.5 11.5 15.5 13 18.5 15 21 16.2 24.5 14.6 28 14 32 14S39.5 14.6 43 16.2C45.5 15 48.5 13 51.5 11.5 53 15 53 19 51 24 54 29 54 35 51 39 47 43.5 40 44.5 32 44.5S17 43.5 13 39C10 35 10 29 13 24Z"
+      />
+      <path class="face" d="M32 21C29 18 24 18 20 20 15 23 14 30 16 35 18 39 24 41.5 32 41.5S46 39 48 35C50 30 49 23 44 20 40 18 35 18 32 21Z" />
+
+      <g class="look">
+        <g class="eyes">
+          <circle class="eye" cx="24" cy="29" r="5.2" />
+          <circle class="eye" cx="40" cy="29" r="5.2" />
+          <circle class="glint" cx="25.8" cy="27.2" r="1.7" />
+          <circle class="glint" cx="41.8" cy="27.2" r="1.7" />
+          <circle class="glint" cx="22.6" cy="31" r=".8" />
+          <circle class="glint" cx="38.6" cy="31" r=".8" />
+        </g>
       </g>
-      <path class="lid" d="M15.5 30 A8.5 8.5 0 0 1 32.5 30 Z" />
-      <path class="lid" d="M31.5 30 A8.5 8.5 0 0 1 48.5 30 Z" />
-      <path class="beak" d="M29 37 L35 37 L32 42 Z" />
+      <path class="happy" d="M20 30.5Q24 25.5 28 30.5M36 30.5Q40 25.5 44 30.5" />
+
+      <path class="beak line" d="M29.6 32.4H34.4L32 36.6Z" />
+      <ellipse class="mouth" cx="32" cy="39" rx="1.5" ry="1.8" />
     </g>
-    <path class="feet" d="M26 58.5 v2.5 M29 58.5 v2.5 M35 58.5 v2.5 M38 58.5 v2.5" />
   </g>
 </svg>
 
 <style>
   .owl { display: block; overflow: visible; }
-  .body, .tuft { fill: var(--owl-body); }
-  .belly { fill: var(--owl-face); opacity: .55; }
-  .disc { fill: var(--owl-face); }
-  .pupil { fill: #1d1d1f; }
-  .glint { fill: #fff; }
-  .lid { fill: var(--owl-body); transform-box: fill-box; transform-origin: top; transform: scaleY(0); }
-  .beak { fill: var(--owl-beak); }
-  .feet { stroke: var(--owl-beak); stroke-width: 1.6; stroke-linecap: round; }
+  .line { stroke: var(--owl-line); stroke-width: 1.6; stroke-linejoin: round; }
+  .skull { stroke-width: 2; }
+  .body, .skull { fill: var(--owl-body); }
+  .wing { fill: var(--owl-shade); }
+  .belly { fill: var(--owl-belly); }
+  .face { fill: var(--owl-face); }
+  .eye { fill: var(--owl-eye); }
+  .glint { fill: var(--owl-face); }
+  .beak, .foot { fill: var(--owl-beak); }
+  .beak { stroke-width: 1.2; }
+  .happy { fill: none; stroke: var(--owl-eye); stroke-width: 2.2; stroke-linecap: round; opacity: 0; }
+  .mouth { fill: var(--owl-line); opacity: 0; }
+  .spark { fill: var(--spark); opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(.4); }
 
-  .bird, .head, .tuft, .pupils, .lid {
-    transition: transform 200ms var(--ease);
+  .bird, .head, .look, .eyes, .happy, .mouth, .spark {
+    transition: transform 200ms var(--ease), opacity 200ms var(--ease);
   }
-  .head, .bird { transform-box: view-box; transform-origin: 32px 40px; }
-  .tuft { transform-box: fill-box; transform-origin: bottom center; }
+  .bird { transform-box: view-box; transform-origin: 32px 60px; animation: sway 6s ease-in-out infinite; }
+  .head { transform-box: view-box; transform-origin: 32px 40px; }
+  .eyes { transform-box: fill-box; transform-origin: center; animation: blink 5s infinite; }
 
-  /* listening: tufts up, eyes wide open */
-  .listening .tuft { transform: translateY(-1.5px) rotate(-6deg); }
-  .listening .tuft.right { transform: translateY(-1.5px) rotate(6deg); }
+  /* listening: eyes wide, the sparkle shows */
+  .listening .eyes { transform: scale(1.08); }
+  .listening .spark, .success .spark { opacity: 1; transform: none; }
 
-  /* thinking: eyes half shut, looking up and aside */
-  .thinking .lid { transform: scaleY(.55); }
-  .thinking .pupils { transform: translate(-1.5px, -1.5px); }
+  /* thinking: looking up */
+  .thinking .look { transform: translate(1px, -2px); }
 
   /* review: head tilted, waiting */
   .review .head { transform: rotate(-10deg); }
 
-  /* success: one short hop, eyes smiling */
-  .success .bird { animation: hop 420ms var(--ease) 1; }
-  .success .lid { transform: scaleY(.8); }
+  /* success: eyes squeezed with joy, one short hop */
+  .success .eyes { opacity: 0; animation: none; }
+  .success .happy { opacity: 1; }
+  .success .bird { animation: hop 240ms var(--ease) 1; }
 
-  /* error: tufts flattened, pupils small */
-  .error .tuft { transform: rotate(22deg); }
-  .error .tuft.right { transform: rotate(-22deg); }
-  .error .pupil { r: 2.6; }
+  /* error: small pupils, round mouth */
+  .error .eyes { transform: scale(.82); }
+  .error .mouth { opacity: 1; }
 
+  @keyframes blink {
+    0%, 95%, 100% { scale: 1 1; }
+    97.5% { scale: 1 .1; }
+  }
+  @keyframes sway {
+    0%, 100% { rotate: 0deg; }
+    50% { rotate: 1.5deg; }
+  }
   @keyframes hop {
-    40% { transform: translateY(-5px); }
+    50% { translate: 0 -4px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .bird, .head, .tuft, .pupils, .lid { transition: none; animation: none; }
+    .bird, .head, .look, .eyes, .happy, .mouth, .spark { transition: none; animation: none; }
   }
 </style>

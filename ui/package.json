@@ -10,6 +10,7 @@
     "test": "bun test src"
   },
   "dependencies": {
+    "@fontsource-variable/valley-sans": "5.3.1",
     "@tauri-apps/api": "^2.12.4"
   },
   "devDependencies": {

@@ -24,17 +24,16 @@
 <style>
   dialog {
     width: min(480px, calc(100vw - 48px));
-    padding: 20px 22px 18px;
+    padding: 20px 24px;
     border: 1px solid var(--border);
     border-radius: var(--r-sheet);
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: blur(24px) saturate(1.6);
+    background: var(--surface);
     color: var(--text);
-    box-shadow: 0 18px 50px rgb(0 0 0 / .25);
+    box-shadow: var(--shadow-sheet);
   }
   dialog[open] { animation: rise 200ms var(--ease); }
-  dialog::backdrop { background: rgb(0 0 0 / .28); }
-  .content { margin: 10px 0 18px; display: grid; gap: 12px; }
+  dialog::backdrop { background: var(--scrim); }
+  .content { margin: 12px 0 20px; display: grid; gap: 12px; }
   .actions { display: flex; justify-content: flex-end; gap: 8px; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 </style>

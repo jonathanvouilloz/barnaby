@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize } from './format';
@@ -156,4 +157,17 @@ test('processing mode follows meeting model and summary', () => {
   expect(modeFor(MISTRAL_MODEL, true)).toBe('api');
   expect(modeFor('whisper-small', true)).toBe('hybrid');
   expect(modeFor('whisper-small', false)).toBe('local');
+});
+
+describe('design tokens', () => {
+  test('no literal colour in .svelte files outside Owl.svelte', () => {
+    const root = new URL('..', import.meta.url).pathname;
+    const hits: string[] = [];
+    for (const file of new Bun.Glob('**/*.svelte').scanSync(root)) {
+      if (file.endsWith('Owl.svelte')) continue;
+      const src = readFileSync(root + file, 'utf8');
+      for (const m of src.matchAll(/#(?:[0-9a-f]{3}|[0-9a-f]{6})\b|\brgba?\(|\bhsla?\(/gi)) hits.push(`${file}: ${m[0]}`);
+    }
+    expect(hits).toEqual([]);
+  });
 });

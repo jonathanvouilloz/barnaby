@@ -16,7 +16,8 @@
   .badge {
     display: inline-block; padding: 1px 8px; border-radius: 999px;
     font-size: 12px; font-weight: 500; line-height: 18px; white-space: nowrap;
-    color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent);
+    /* Text leans toward --text so every tone passes AA on its own tint. */
+    color: color-mix(in srgb, var(--c) 82%, var(--text)); background: color-mix(in srgb, var(--c) 12%, transparent);
   }
   .neutral { --c: var(--text-2); }
   .warn { --c: var(--warn); }

@@ -54,7 +54,7 @@
     background: color-mix(in srgb, var(--surface) 86%, transparent);
     backdrop-filter: blur(20px) saturate(1.6);
     /* Two shadows: a tight one to detach from any wallpaper, a soft one for depth. */
-    box-shadow: 0 1px 2px rgb(0 0 0 / .14), 0 4px 10px rgb(0 0 0 / .12);
+    box-shadow: var(--shadow-float);
     animation: appear 180ms var(--ease);
   }
   .wave { display: flex; align-items: center; gap: 3px; height: 24px; }
