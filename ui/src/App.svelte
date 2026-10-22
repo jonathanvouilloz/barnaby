@@ -1,19 +1,37 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { app, go, init, reviewCount, type Route } from './lib/state.svelte';
+  import { api } from './lib/api';
+  import { app, applySettings, attempt, go, init, reviewCount, type Route } from './lib/state.svelte';
+  import { missingRequired } from './lib/models';
   import { t } from './lib/i18n';
   import Icon, { type IconName } from './lib/Icon.svelte';
   import Spark from './lib/Spark.svelte';
-  import ModelSetup from './lib/ModelSetup.svelte';
   import Home from './screens/Home.svelte';
   import NewMeeting from './screens/NewMeeting.svelte';
   import Recording from './screens/Recording.svelte';
   import ReviewQueue from './screens/ReviewQueue.svelte';
   import Review from './screens/Review.svelte';
   import Settings from './screens/Settings.svelte';
+  import Onboarding from './onboarding/Onboarding.svelte';
+  import { shouldOnboard } from './onboarding/steps';
 
-  onMount(() => {
-    init();
+  // Nothing is drawn until the first-run decision, so home never flashes before the onboarding.
+  let started = $state(false);
+
+  onMount(async () => {
+    await init();
+    const s = app.settings;
+    const models = s && !s.onboarding_done ? await attempt(api.listModels) : undefined;
+    if (s && models) {
+      const decision = shouldOnboard(s, missingRequired(models, s));
+      if (decision === 'show' && !app.recordingId) go({ name: 'onboarding' });
+      if (decision === 'mark_done') {
+        const next = { ...$state.snapshot(s), onboarding_done: true };
+        // Silent: an existing install has nothing to see; a failure just asks again next launch.
+        api.saveSettings(next).then(() => applySettings(next), () => {});
+      }
+    }
+    started = true;
   });
 
   const nav: { route: Route['name']; key: string; icon: IconName; match: Route['name'][] }[] = [
@@ -27,6 +45,18 @@
   );
 </script>
 
+{#snippet notice()}
+  <p class="notice" role="status" aria-live="polite">{#if app.notice}<span>{app.notice}</span>{/if}</p>
+{/snippet}
+
+{#if !started}
+  <!-- first-run decision pending -->
+{:else if app.route.name === 'onboarding'}
+  <main class="solo">
+    {#if app.settings}<Onboarding />{/if}
+    {@render notice()}
+  </main>
+{:else}
 <div class="shell">
   <aside class="sidebar">
     <div class="brand" data-tauri-drag-region>Barnaby <Spark size={10} /></div>
@@ -74,10 +104,10 @@
       {:else if app.route.name === 'settings'}<Settings />
       {/if}
     {/if}
-    {#if app.settings}<ModelSetup />{/if}
-    <p class="notice" role="status" aria-live="polite">{#if app.notice}<span>{app.notice}</span>{/if}</p>
+    {@render notice()}
   </main>
 </div>
+{/if}
 
 <style>
   .shell { display: grid; grid-template-columns: 232px 1fr; height: 100%; }
@@ -129,6 +159,7 @@
   .new { justify-content: flex-start; width: 100%; background: var(--surface); white-space: normal; text-align: left; line-height: 1.3; padding-block: 6px; }
   .rec { flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--rec); box-shadow: inset 0 0 0 1px var(--border); }
 
+  .solo { height: 100%; }
   main { position: relative; min-width: 0; min-height: 0; background: var(--bg); }
   .notice {
     position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);

@@ -131,7 +131,7 @@ const models: ModelInfo[] = [
   { id: 'whisper-small', kind: 'whisper', name: 'Whisper small', size_mb: 488, installed: true },
   { id: 'whisper-large-v3-turbo', kind: 'whisper', name: 'Whisper large-v3 turbo', size_mb: 1625, installed: false },
   { id: 'pyannote-segmentation-3-0', kind: 'diarization_segmentation', name: 'Pyannote segmentation 3.0', size_mb: 7, installed: true },
-  // Missing on purpose: the first-run sheet shows up in dev.
+  // Missing on purpose: the onboarding shows up in dev.
   { id: 'wespeaker-voxceleb-resnet34-lm', kind: 'diarization_embedding', name: 'WeSpeaker ResNet34 (VoxCeleb)', size_mb: 27, installed: false },
   { id: 'silero-vad', kind: 'vad', name: 'Silero VAD', size_mb: 1, installed: false },
 ];
@@ -270,17 +270,20 @@ function handle(cmd: string, a: Record<string, any>): unknown {
       { id: 'wasapi:{0.0.0.00000000}.{headset}', name: 'Casque (WH-1000XM4 Hands-Free)' },
     ];
     case 'download_model': {
+      // Like the backend: resolves once the model is installed.
       const m = models.find((x) => x.id === a.id)!;
       let p = 0;
-      const timer = setInterval(() => {
-        p = Math.min(1, p + 0.07);
-        if (p >= 1) {
-          clearInterval(timer);
-          m.installed = true;
-        }
-        emit('model-progress', { id: m.id, progress: p });
-      }, 150);
-      return null;
+      return new Promise((done) => {
+        const timer = setInterval(() => {
+          p = Math.min(1, p + 0.07);
+          emit('model-progress', { id: m.id, progress: p });
+          if (p >= 1) {
+            clearInterval(timer);
+            m.installed = true;
+            done(null);
+          }
+        }, 150);
+      });
     }
     case 'delete_model': models.find((x) => x.id === a.id)!.installed = false; return null;
   }

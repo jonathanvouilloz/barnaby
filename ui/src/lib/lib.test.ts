@@ -7,6 +7,7 @@ import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flag
 import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
+import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
 
 describe('i18n', () => {
   test('replaces params and keeps unknown placeholders', () => {
@@ -139,6 +140,33 @@ describe('missingRequired', () => {
     const models = [m('parakeet-v3', 'parakeet'), m('whisper-base', 'whisper'), m('whisper-small', 'whisper', true),
       m('seg', 'diarization_segmentation', true), m('emb', 'diarization_embedding', true), m('vad', 'vad', true)];
     expect(missingRequired(models, s).map((x) => x.id)).toEqual(['parakeet-v3']);
+  });
+});
+
+describe('onboarding', () => {
+  const m = (id: string, kind: ModelInfo['kind'], installed = false): ModelInfo => ({ id, kind, name: id, size_mb: 1, installed });
+  const settings = { dictation: { model: 'parakeet-v3' }, meeting: { model: 'whisper-small' } } as Settings;
+  const catalog = [m('parakeet-v3', 'parakeet'), m('whisper-small', 'whisper'), m('whisper-base', 'whisper'),
+    m('seg', 'diarization_segmentation'), m('emb', 'diarization_embedding'), m('vad', 'vad')];
+  test('steps come in order', () => {
+    expect(STEPS).toEqual(['welcome', 'mic', 'models', 'dictation', 'tour', 'done']);
+  });
+  test('shouldOnboard shows, marks done or skips', () => {
+    expect(shouldOnboard({ ...settings, onboarding_done: false }, [catalog[0]])).toBe('show');
+    expect(shouldOnboard({ ...settings, onboarding_done: false }, [])).toBe('mark_done');
+    expect(shouldOnboard({ ...settings, onboarding_done: true }, [catalog[0]])).toBe('skip');
+  });
+  test('cloud choice drops the meeting whisper but keeps dictation and diarization', () => {
+    expect(modelsFor('cloud', catalog, settings).map((x) => x.id)).toEqual(['parakeet-v3', 'seg', 'emb', 'vad']);
+  });
+  test('local choice includes the meeting model, even after a cloud choice', () => {
+    expect(modelsFor('local', catalog, settings).map((x) => x.id)).toEqual(['parakeet-v3', 'whisper-small', 'seg', 'emb', 'vad']);
+    const cloud = { ...settings, meeting: { model: MISTRAL_MODEL } } as Settings;
+    expect(modelsFor('local', catalog, cloud).map((x) => x.id)).toContain('whisper-small');
+  });
+  test('an installed model is never offered again', () => {
+    const resumed = catalog.map((x) => (x.id === 'parakeet-v3' || x.id === 'seg' ? { ...x, installed: true } : x));
+    expect(modelsFor('local', resumed, settings).map((x) => x.id)).toEqual(['whisper-small', 'emb', 'vad']);
   });
 });
 

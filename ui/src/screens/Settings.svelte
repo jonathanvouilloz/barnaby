@@ -4,9 +4,10 @@
   import { app, applySettings, attempt, go, notify, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
-  import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
+  import { addTerm, cloudSummary, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
   import Sheet from '../lib/Sheet.svelte';
+  import MistralSheet from '../lib/MistralSheet.svelte';
 
   // Explicit save: shortcuts are re-registered by the backend and may be refused as a whole.
   let draft = $state<Settings>($state.snapshot(app.settings!));
@@ -31,7 +32,7 @@
   const whisper = $derived(models.filter((m) => m.kind === 'whisper'));
   const parakeet = $derived(models.filter((m) => m.kind === 'parakeet'));
   // Not derived from the URL: typing a server address would flip the view at the first keystroke.
-  let summaryCloud = $state(draft.processing_mode === 'hybrid' || (draft.processing_mode === 'api' && !isLoopbackUrl(draft.llm.base_url)));
+  let summaryCloud = $state(cloudSummary(draft));
   const termDuplicate = $derived(term.trim() !== '' && addTerm(draft.vocabulary, term) === null);
   // An excluded output stays listed while unplugged, so the choice survives.
   const outputChoices = $derived([
@@ -161,12 +162,11 @@
 
   function cancelMistral() {
     mistralOpen = false;
-    keys.mistral = '';
     draft.meeting.model = mistralFallback;
   }
 
-  async function activateMistral() {
-    if (!(await storeKey('mistral', keys.mistral))) return;
+  function activateMistral() {
+    hasKeys.mistral = true;
     mistralOpen = false;
     draft.processing_mode = modeFor(MISTRAL_MODEL, summaryCloud);
   }
@@ -481,22 +481,7 @@
   </p>
 {/snippet}
 
-<Sheet open={mistralOpen} title={t('mistral.title')} onclose={cancelMistral}>
-  <p>{t('mistral.intro')}</p>
-  <ul class="bullets">
-    <li>{t('mistral.sent_audio')}</li>
-    <li>{t('mistral.sent_vocabulary')}</li>
-  </ul>
-  <p>{t('mistral.price')}</p>
-  <p class="secondary">{t('mistral.terms')}</p>
-  <label class="field"><span>{t('mistral.key')}</span>
-    <input type="password" bind:value={keys.mistral} autocomplete="off" />
-  </label>
-  {#snippet actions()}
-    <button class="btn" onclick={cancelMistral}>{t('common.cancel')}</button>
-    <button class="btn primary" disabled={!keys.mistral.trim()} onclick={activateMistral}>{t('mistral.confirm')}</button>
-  {/snippet}
-</Sheet>
+<MistralSheet open={mistralOpen} oncancel={cancelMistral} onconfirm={activateMistral} />
 
 <Sheet open={disclosureOpen} title={t('cloud.title')} onclose={() => (disclosureOpen = false)}>
   <p>{t('cloud.intro')}</p>

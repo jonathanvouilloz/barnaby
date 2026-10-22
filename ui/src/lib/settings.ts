@@ -1,4 +1,4 @@
-import type { ProcessingMode } from './api';
+import type { ProcessingMode, Settings } from './api';
 
 /** Mirrors the backend NetPolicy for local mode: only loopback hosts are allowed. */
 export function isLoopbackUrl(url: string): boolean {
@@ -25,4 +25,9 @@ export const MISTRAL_MODEL = 'mistral-voxtral';
 export function modeFor(meetingModel: string, summaryCloud: boolean): ProcessingMode {
   if (meetingModel === MISTRAL_MODEL) return 'api';
   return summaryCloud ? 'hybrid' : 'local';
+}
+
+/** The summary runs in the cloud: hybrid mode, or api mode with a remote LLM (Mistral alone is api with a local LLM). */
+export function cloudSummary(s: Settings): boolean {
+  return s.processing_mode === 'hybrid' || (s.processing_mode === 'api' && !isLoopbackUrl(s.llm.base_url));
 }
