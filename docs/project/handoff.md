@@ -1,36 +1,35 @@
 # Reprise — Barnaby
-Mise à jour : 2026-10-21 (soir)
+Mise à jour : 2026-10-22
 
 ## Où on en est
 - Phase 1 (`docs/plans/phase-1.md`) et itération 1b (`docs/plans/phase-1b-dictation.md`) codées sur `phase-1`, poussées. `main` ne contient que la spec. Pas de PR : la fusion attend les tests du propriétaire.
-- Premier test Windows du propriétaire : trois bugs, corrigés dans `e0ee496`, pas encore revérifiés sur Windows.
-  - Parakeet v3 se téléchargeait en boucle. La barre affichait 100 % avant la vérification et la décompression, et Réglages réaffichait alors « Télécharger ».
-  - La fenêtre « Modèles à installer » restait bloquée : même cause.
-  - La bulle de dictée était visible au démarrage : tao ignore une position de départ hors écran.
-- Installeurs de ce commit (Windows `.exe`/`.msi`, Linux `.deb`) : https://github.com/jonathanvouilloz/barnaby/actions/runs/39677298833 (section Artifacts).
-- Mascotte : orientation choisie, voir la dernière entrée de `decisions.md`. Le propriétaire génère l'image puis la vidéo.
+- Test Windows du propriétaire : Google Meet n'était pas enregistré dans la piste système (YouTube l'était). Corrigé dans `a44a0de` : capture de toutes les sorties actives, mélangées, avec exclusion possible dans Réglages › Réunion (`docs/plans/system-audio-all-outputs.md`, décision du 2026-10-22).
+- Les correctifs de `e0ee496` (téléchargement Parakeet en boucle, fenêtre « Modèles à installer » bloquée, bulle de dictée visible au démarrage) ne sont toujours pas revérifiés sur Windows.
+- Installeurs de `a44a0de` (Windows `.exe`/`.msi`, Linux `.deb`) : https://github.com/jonathanvouilloz/barnaby/actions/runs/39749837986 (section Artifacts).
+- Mascotte : orientation choisie (dernière entrée mascotte de `decisions.md`). Le propriétaire génère l'image puis la vidéo.
 
 ## Prochaine action
-1. Le propriétaire installe ce build. Il vérifie que la bulle n'est plus là au lancement, que Parakeet passe par « Installation… » puis « Installé », et que la fenêtre de configuration se ferme seule.
-2. Il continue la checklist ci-dessous et rapporte. On corrige, puis on ouvre la PR `phase-1` → `main` (accord requis pour fusionner).
-3. Quand la vidéo de la mascotte arrive (`scp` à la racine du dépôt) : la convertir avec ffmpeg en WebM et MP4 800 px (site) et en WebM 512 px (onboarding de l'app).
-4. Ensuite : build GPU (Vulkan) de whisper, puis Phase 0 (DER/WER sur le corpus réel).
+1. Le propriétaire installe ce build et teste une réunion Meet : avec casque Bluetooth, puis avec haut-parleurs, YouTube en même temps. Puis il décoche une sortie dans Réglages › Réunion et vérifie qu'elle n'est plus enregistrée.
+2. Si Meet manque encore : lire les logs (`output captured:` / `output closed:` / `capture failed`) ; plan B = capture par processus Windows.
+3. Il continue la checklist ci-dessous et rapporte. On corrige, puis PR `phase-1` → `main` (accord requis pour fusionner).
+4. Vidéo de la mascotte (`scp` à la racine du dépôt) : WebM et MP4 800 px (site), WebM 512 px (onboarding).
+5. Ensuite : build GPU (Vulkan) de whisper, puis Phase 0 (DER/WER sur le corpus réel).
 
-## Vérifications (2026-10-21, VPS, sur `e0ee496`)
+## Vérifications (2026-10-22, VPS, sur `a44a0de`)
 - `. ~/sysroot/env.sh && cargo clippy --workspace --all-targets -j2 -- -D warnings` : propre.
-- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 31 (cœur), 13 (moteur, 6 ignorés), 4 (app), tous verts.
+- `LD_LIBRARY_PATH=$HOME/sysroot/root/usr/lib/x86_64-linux-gnu cargo test --workspace -j2` : 31 (cœur), 17 (moteur, 6 ignorés), 4 (app), tous verts.
 - `cd ui && bun run check && bun test` : 0 erreur, 22 tests verts.
-- CI run 39677298833 : succès.
-- Non vérifié : les trois correctifs sur un vrai Windows ; OpenRouter avec une vraie clé (seulement contre un faux serveur) ; aucun test avec du vrai matériel audio.
+- Code Windows de `outputs.rs` : `cargo check --target x86_64-pc-windows-msvc` dans un crate de test du scratchpad, compile. CI run 39749837986 : succès (Windows et Ubuntu).
+- Non vérifié : aucune capture réelle (le VPS n'a ni carte son ni `pactl`) ; correctifs de `e0ee496` sur Windows ; OpenRouter avec une vraie clé.
 
 ## Checklist de test (Windows, puis Linux)
 - Dicter dans le Bloc-notes : le texte doit y arriver (l'overlay ne vole pas le focus).
 - Réglages d'avant la 1b : remettre Parakeet v3 et le mode Bascule dans Réglages › Dictée.
 - Dictée de 30 à 60 s avec des pauses : latence, ponctuation, vocabulaire (« Barber Concept »).
 - Réunion réelle (Meet ou Teams) : niveaux, fin, relecture, locuteurs, envoi dossier et webhook. Comparer Whisper small (défaut) et large-v3 turbo.
-- Résumé cloud : Réglages › Structuration (IA) › Cloud (OpenRouter), clé, identifiant de modèle (ex. `deepseek/deepseek-v4-flash`). Environ 0,002 à 0,04 $ par heure de réunion.
+- Résumé cloud : Réglages › Structuration (IA) › Cloud (OpenRouter), clé, identifiant de modèle (ex. `deepseek/deepseek-v4-flash`).
 - Crash pendant un enregistrement, puis relance : la réunion reprend. `barnaby --toggle` depuis un terminal.
-- Logs : `%LOCALAPPDATA%\app.barnaby.desktop\logs` (chercher `download_failed:` si un modèle ne s'installe pas).
+- Logs : `%LOCALAPPDATA%\app.barnaby.desktop\logs` (chercher `download_failed:` ou `capture failed`).
 
 ## État non commité
 Rien. Branche `phase-1`.
@@ -45,4 +44,5 @@ Rien. Branche `phase-1`.
 - Les commandes `before*` de `tauri.conf.json` s'exécutent depuis la racine du dépôt.
 - sherpa-onnx lié dynamiquement : rpath `$ORIGIN/../lib/barnaby` sous Linux ; `tauri.bundle-windows.json` seulement à l'empaquetage Windows ; pas de rust-cache dans le job de build de la CI.
 - Overlay Windows : ne jamais le cacher ni lui donner de position de départ hors écran, seulement le déplacer (voir `decisions.md`).
+- Capture système : une sortie exclue puis débranchée s'affiche sous son identifiant brut ; l'alerte `capture.no_system` reste affichée si aucune sortie n'existait au démarrage.
 - Pas encore traité : AppImage, zones « terme incertain », bouton « régénérer le résumé », `injected_into` vide sous Windows, écho haut-parleur qui fausse « me », environ 1 Go de RAM par heure de réunion, sur-correction du vocabulaire (« barbier concept »).
