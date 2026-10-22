@@ -237,9 +237,9 @@ fn alert(app: &App, alert: Alert) {
     let body = match (alert, en) {
         (Alert::NoMic, false) => "Aucun micro détecté.",
         (Alert::NoMic, true) => "No microphone found.",
-        (Alert::MicDenied, false) => "Accès au micro refusé. Autorisez Barnaby dans les réglages du système.",
+        (Alert::MicDenied, false) => "Accès au micro refusé. Autorise Barnaby dans les réglages du système.",
         (Alert::MicDenied, true) => "Microphone access denied. Allow Barnaby in the system settings.",
-        (Alert::ModelMissing, false) => "Modèle de dictée absent. Téléchargez-le dans Réglages › Modèles.",
+        (Alert::ModelMissing, false) => "Modèle de dictée absent. Télécharge-le dans Réglages › Modèles.",
         (Alert::ModelMissing, true) => "Dictation model missing. Download it in Settings › Models.",
     };
     let _ = app.handle.notification().builder().title("Barnaby").body(body).show();

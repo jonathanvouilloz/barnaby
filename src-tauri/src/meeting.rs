@@ -208,7 +208,7 @@ fn notify(app: &App, title: &str, ok: bool, settings: &Settings) {
     let body = match (ok, settings.ui_language == "en") {
         (true, false) => "Transcription prête à relire.",
         (true, true) => "Transcript ready for review.",
-        (false, false) => "Le traitement a échoué. Ouvrez Barnaby pour réessayer.",
+        (false, false) => "Le traitement a échoué. Ouvre Barnaby pour réessayer.",
         (false, true) => "Processing failed. Open Barnaby to retry.",
     };
     let mut n = app.handle.notification().builder().title(title).body(body);
