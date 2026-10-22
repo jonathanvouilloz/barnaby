@@ -3,6 +3,7 @@ name: ci
 on:
   push:
     branches: [main, phase-1]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -75,3 +76,25 @@ jobs:
             target/release/bundle/**/*.deb
             target/release/bundle/**/*.msi
             target/release/bundle/**/*-setup.exe
+
+  # A version tag publishes the installers under fixed names, so the site can link
+  # straight to releases/latest/download/<name>.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with: { path: dist }
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir out
+          # Artifact layout depends on the matched paths: find each file by its suffix.
+          cp "$(find dist -name '*-setup.exe')" out/Barnaby-windows-setup.exe
+          cp "$(find dist -name '*.msi')" out/Barnaby-windows.msi
+          cp "$(find dist -name '*.deb')" out/Barnaby-linux-amd64.deb
+          gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --title "Barnaby $GITHUB_REF_NAME" --generate-notes
