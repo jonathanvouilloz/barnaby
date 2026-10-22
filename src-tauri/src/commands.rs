@@ -4,9 +4,9 @@ use std::{collections::BTreeSet, sync::{Arc, Mutex}};
 
 use barnaby_core::{
     retention::{self, MIX_WAV},
-    review, Dictation, Meeting, MeetingDoc, MeetingState, Participant, Resolution, ReviewItem, Settings,
+    review, Dictation, Meeting, MeetingDoc, MeetingState, OutputDevice, Participant, Resolution, ReviewItem, Settings,
 };
-use barnaby_engine::models;
+use barnaby_engine::{models, outputs};
 use serde::Serialize;
 use tauri::{Emitter, State};
 use uuid::Uuid;
@@ -215,6 +215,12 @@ pub struct ModelInfo {
     name: &'static str,
     size_mb: u32,
     installed: bool,
+}
+
+/// Sound outputs a meeting records (all but `meeting.excluded_outputs`).
+#[tauri::command]
+pub fn list_outputs() -> Vec<OutputDevice> {
+    outputs::list()
 }
 
 #[tauri::command]

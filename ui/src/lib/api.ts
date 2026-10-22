@@ -62,7 +62,7 @@ export interface Settings {
   transcription_language: 'auto' | 'fr' | 'en';
   processing_mode: ProcessingMode;
   dictation: { mode: DictationMode; model: string; paste_delay_before_ms: number; paste_delay_after_ms: number; keep_history: boolean; show_overlay: boolean };
-  meeting: { model: string; confidence_threshold: number; retention: AudioRetention };
+  meeting: { model: string; confidence_threshold: number; retention: AudioRetention; excluded_outputs: string[] };
   shortcuts: { dictation: string; meeting_toggle: string; marker: string; review_queue: string };
   destinations: { folder: { enabled: boolean; path: string }; webhook: { enabled: boolean; url: string } };
   llm: { enabled: boolean; base_url: string; model: string };
@@ -76,6 +76,8 @@ export interface Settings {
 
 /** 'parakeet': fast dictation model (sherpa-onnx); 'whisper': meetings, dictation fallback. */
 export type ModelKind = 'whisper' | 'parakeet' | 'diarization_segmentation' | 'diarization_embedding' | 'vad';
+/** A sound output (speakers, headset…) the meeting capture can record. */
+export interface OutputDevice { id: string; name: string }
 export interface ModelInfo { id: string; kind: ModelKind; name: string; size_mb: number; installed: boolean }
 
 export type DictationStatus = 'idle' | 'recording' | 'transcribing';
@@ -114,6 +116,7 @@ export const api = {
   clearDictations: () => invoke<void>('clear_dictations'),
 
   listModels: () => invoke<ModelInfo[]>('list_models'),
+  listOutputs: () => invoke<OutputDevice[]>('list_outputs'),
   downloadModel: (id: string) => invoke<void>('download_model', { id }),
   deleteModel: (id: string) => invoke<void>('delete_model', { id }),
 };

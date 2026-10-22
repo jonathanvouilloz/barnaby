@@ -233,6 +233,15 @@ pub struct MeetingSettings {
     pub model: String,
     pub confidence_threshold: f32,
     pub retention: AudioRetention,
+    /// Ids of the outputs left out of `system.wav` (all others are recorded).
+    pub excluded_outputs: Vec<String>,
+}
+
+/// A sound output (speakers, headset, HDMI…) the meeting capture can record.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputDevice {
+    pub id: String,
+    pub name: String,
 }
 
 /// Accelerators in Tauri global-shortcut syntax, e.g. "Ctrl+Alt+Space".
@@ -316,6 +325,7 @@ impl Default for MeetingSettings {
             model: "whisper-small".into(),
             confidence_threshold: 0.6,
             retention: AudioRetention::OnReview,
+            excluded_outputs: Vec::new(),
         }
     }
 }

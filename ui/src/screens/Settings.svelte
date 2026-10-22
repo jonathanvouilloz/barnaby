@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { api, events, type ModelInfo, type Settings } from '../lib/api';
+  import { api, events, type ModelInfo, type OutputDevice, type Settings } from '../lib/api';
   import { app, applySettings, attempt, notify, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
@@ -21,6 +21,7 @@
   let hasKey = $state(false);
   let apiKey = $state('');
   let disclosureOpen = $state(false);
+  let outputs = $state<OutputDevice[]>([]);
 
   const CLOUD_MODELS = ['qwen/qwen3-235b-a22b-2507', 'deepseek/deepseek-chat-v3.1', 'z-ai/glm-4.6'];
 
@@ -29,6 +30,11 @@
   const parakeet = $derived(models.filter((m) => m.kind === 'parakeet'));
   const cloud = $derived(draft.processing_mode !== 'local');
   const termDuplicate = $derived(term.trim() !== '' && addTerm(draft.vocabulary, term) === null);
+  // An excluded output stays listed while unplugged, so the choice survives.
+  const outputChoices = $derived([
+    ...outputs,
+    ...draft.meeting.excluded_outputs.filter((id) => !outputs.some((o) => o.id === id)).map((id) => ({ id, name: id })),
+  ]);
   const llmNotLocal = $derived(draft.llm.enabled && draft.processing_mode === 'local' && !isLoopbackUrl(draft.llm.base_url));
 
   async function loadModels() {
@@ -37,6 +43,7 @@
 
   onMount(() => {
     loadModels();
+    attempt(api.listOutputs).then((v) => (outputs = v ?? []));
     attempt(api.hasWebhookSecret).then((v) => (hasSecret = v ?? false));
     attempt(api.hasLlmApiKey).then((v) => (hasKey = v ?? false));
     const off = events.modelProgress(({ id, progress: p }) => {
@@ -48,6 +55,11 @@
     });
     return () => off.then((f) => f());
   });
+
+  function toggleOutput(id: string) {
+    const ex = draft.meeting.excluded_outputs;
+    draft.meeting.excluded_outputs = ex.includes(id) ? ex.filter((x) => x !== id) : [...ex, id];
+  }
 
   async function save() {
     saving = true;
@@ -189,6 +201,15 @@
           <input type="range" min="0.3" max="0.9" step="0.05" bind:value={draft.meeting.confidence_threshold} aria-describedby="threshold-hint" />
           <span id="threshold-hint" class="secondary">{t('settings.threshold_hint')}</span>
         </label>
+        <fieldset aria-describedby="outputs-hint">
+          <legend class="secondary">{t('settings.outputs')}</legend>
+          {#each outputChoices as o (o.id)}
+            <label class="check"><input type="checkbox" checked={!draft.meeting.excluded_outputs.includes(o.id)} onchange={() => toggleOutput(o.id)} /> {o.name}</label>
+          {:else}
+            <p class="secondary">{t('settings.outputs_none')}</p>
+          {/each}
+          <span id="outputs-hint" class="secondary">{t('settings.outputs_hint')}</span>
+        </fieldset>
         <label class="field"><span>{t('settings.retention')}</span>
           <select bind:value={draft.meeting.retention}>
             {#each ['on_review', 'seven_days', 'forever'] as r (r)}<option value={r}>{t(`settings.retention.${r}`)}</option>{/each}

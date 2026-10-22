@@ -18,7 +18,7 @@ let settings: Settings = {
   transcription_language: 'auto',
   processing_mode: 'local',
   dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, paste_delay_after_ms: 300, keep_history: true, show_overlay: true },
-  meeting: { model: 'whisper-small', confidence_threshold: 0.6, retention: 'on_review' },
+  meeting: { model: 'whisper-small', confidence_threshold: 0.6, retention: 'on_review', excluded_outputs: [] },
   shortcuts: { dictation: 'Ctrl+Alt+Space', meeting_toggle: 'Ctrl+Shift+R', marker: 'Ctrl+Shift+M', review_queue: 'Ctrl+Shift+L' },
   destinations: { folder: { enabled: true, path: '/home/camille/Documents/Réunions' }, webhook: { enabled: false, url: '' } },
   llm: { enabled: false, base_url: 'http://localhost:11434/v1', model: 'qwen2.5:7b' },
@@ -253,6 +253,10 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     case 'delete_dictation': dictations = dictations.filter((d) => d.id !== a.id); return null;
     case 'clear_dictations': dictations = []; return null;
     case 'list_models': return clone(models);
+    case 'list_outputs': return [
+      { id: 'wasapi:{0.0.0.00000000}.{speakers}', name: 'Haut-parleurs (Realtek Audio)' },
+      { id: 'wasapi:{0.0.0.00000000}.{headset}', name: 'Casque (WH-1000XM4 Hands-Free)' },
+    ];
     case 'download_model': {
       const m = models.find((x) => x.id === a.id)!;
       let p = 0;

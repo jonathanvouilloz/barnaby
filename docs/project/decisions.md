@@ -60,3 +60,9 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Écarté : animation SVG ou Rive pilotée par l'état (jugée trop coûteuse pour le besoin) ; Kling pour une animation qui réagit en direct (une vidéo ne change pas d'état).
 - Ouvert : retirer de la spec (10.4) et du code les six états de la chouette. Le propriétaire n'a pas encore tranché.
 - À rouvrir si : une boucle vidéo pèse trop ou rend mal sur fond clair et sombre.
+
+## 2026-10-22 — Son système : toutes les sorties, mélangées
+- Choix : la piste système capture chaque sortie active (loopback WASAPI par sortie, un `parec` par moniteur sous Linux), rescannées toutes les 3 s, et les mélange sur l'horloge. L'utilisateur peut exclure une sortie.
+- Pourquoi : au premier test Windows, Google Meet n'était pas enregistré alors que YouTube l'était. Seule la sortie par défaut était écoutée, et Meet joue souvent sur la sortie de communication ou mains libres.
+- Écarté : la capture par processus de Windows (build 20348 ou plus, API bas niveau absente de cpal) ; la documentation ne dit pas si elle couvre toutes les sorties.
+- À rouvrir si : un cas réel échoue encore (plan B : capture par processus), ou si un son joué sur une autre sortie gêne la transcription.

@@ -102,6 +102,7 @@ pub fn run() {
             commands::delete_dictation,
             commands::clear_dictations,
             commands::list_models,
+            commands::list_outputs,
             commands::download_model,
             commands::delete_model,
         ])

@@ -1,6 +1,7 @@
 //! Meeting capture (spec 9): `mic.wav` and `system.wav`, 16 kHz mono i16, written
 //! as audio arrives so a crash loses at most the last flush interval.
 
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
@@ -14,6 +15,7 @@ use cpal::traits::{DeviceTrait, HostTrait};
 
 use crate::dsp::{downmix, rms, to_i16, Resampler};
 use crate::input;
+use crate::outputs::{self, Source};
 
 pub const SYSTEM_SILENT: &str = "capture.system_silent";
 pub const NO_MIC: &str = "capture.no_mic";
@@ -29,6 +31,13 @@ const SILENCE_RMS: f32 = 1e-3;
 /// so both tracks stay aligned with the meeting timeline.
 const GAP_TOLERANCE: u64 = SAMPLE_RATE as u64 / 2;
 const GAP_MARGIN: u64 = SAMPLE_RATE as u64 / 10;
+/// Outputs come and go mid-meeting (headset plugged in, Bluetooth hands-free profile).
+const RESCAN_EVERY: Duration = Duration::from_secs(3);
+const MIX_EVERY: Duration = Duration::from_millis(100);
+/// The mix trails the wall clock so late chunks still land in place.
+const MIX_DELAY: Duration = Duration::from_millis(200);
+/// 1 s at 16 kHz: an output whose clock runs ahead loses its oldest samples past this.
+const MAX_BACKLOG: usize = SAMPLE_RATE as usize;
 
 fn wav_spec() -> hound::WavSpec {
     hound::WavSpec { channels: 1, sample_rate: SAMPLE_RATE, bits_per_sample: 16, sample_format: hound::SampleFormat::Int }
@@ -64,15 +73,14 @@ impl Shared {
 pub struct Recorder {
     shared: Arc<Shared>,
     streams: Vec<cpal::Stream>,
-    #[cfg(target_os = "linux")]
-    parec: Option<std::process::Child>,
     writers: Vec<JoinHandle<Result<()>>>,
 }
 
 impl Recorder {
-    /// Starts both tracks in `dir`. A track that cannot start is reported through
-    /// [`Recorder::warnings`] and left as a valid empty WAV; the other keeps recording.
-    pub fn start(dir: &Path) -> Result<Recorder> {
+    /// Starts both tracks in `dir`; `system.wav` mixes every output except `excluded`.
+    /// A track that cannot start is reported through [`Recorder::warnings`] and left as
+    /// a valid empty WAV; the other keeps recording.
+    pub fn start(dir: &Path, excluded: &[String]) -> Result<Recorder> {
         std::fs::create_dir_all(dir)?;
         let shared = Arc::new(Shared {
             start: Instant::now(),
@@ -84,8 +92,6 @@ impl Recorder {
         let mut rec = Recorder {
             shared: shared.clone(),
             streams: Vec::new(),
-            #[cfg(target_os = "linux")]
-            parec: None,
             writers: Vec::new(),
         };
 
@@ -102,27 +108,14 @@ impl Recorder {
             }
         }
 
-        let system_path = dir.join("system.wav");
         let (tx, rx) = mpsc::channel();
-        #[cfg(target_os = "linux")]
-        let started = start_parec(tx, shared.clone()).map(|child| {
-            rec.parec = Some(child);
-            (SAMPLE_RATE, 1)
-        });
-        #[cfg(not(target_os = "linux"))]
-        let started = open_loopback(tx).map(|o| {
-            let format = (o.rate, o.channels);
-            rec.streams.push(o.stream);
-            format
-        });
-        match started {
-            Ok((rate, channels)) => rec.writers.push(spawn_writer(&system_path, rx, rate, channels, shared.clone(), |s| &s.system)?),
-            Err(e) => {
-                log::warn!("system capture failed: {e}");
-                shared.warn(NO_SYSTEM);
-                write_empty(&system_path)?;
-            }
-        }
+        let writer = spawn_writer(&dir.join("system.wav"), rx, SAMPLE_RATE, 1, shared.clone(), |s| &s.system)?;
+        let excluded = excluded.to_vec();
+        rec.writers.push(thread::spawn(move || {
+            mix_outputs(&tx, &excluded, &shared);
+            drop(tx);
+            writer.join().unwrap_or_else(|_| Err(anyhow::anyhow!("capture writer panicked")))
+        }));
         Ok(rec)
     }
 
@@ -150,13 +143,9 @@ impl Recorder {
     /// Stops both tracks and finalizes their WAV headers.
     pub fn stop(mut self) -> Result<()> {
         self.shared.stopping.store(true, Ordering::Relaxed);
-        // Dropping a stream drops its sender, which ends the writer loop.
+        // Dropping a stream drops its sender, which ends the writer loop; the system
+        // mixer sees `stopping` and closes its outputs.
         self.streams.clear();
-        #[cfg(target_os = "linux")]
-        if let Some(mut child) = self.parec.take() {
-            let _ = child.kill();
-            let _ = child.wait();
-        }
         let mut result = Ok(());
         for writer in self.writers.drain(..) {
             let r = writer.join().unwrap_or_else(|_| Err(anyhow::anyhow!("capture writer panicked")));
@@ -184,42 +173,119 @@ pub(crate) fn open_mic(tx: Sender<Vec<f32>>) -> Result<input::Opened, cpal::Erro
     input::open(&device, config, sender(tx))
 }
 
-#[cfg(not(target_os = "linux"))]
-fn open_loopback(tx: Sender<Vec<f32>>) -> Result<input::Opened, cpal::Error> {
-    let device = cpal::default_host().default_output_device().ok_or(cpal::Error::new(cpal::ErrorKind::DeviceNotAvailable))?;
-    let config = device.default_output_config()?;
-    input::open(&device, config, sender(tx))
+/// Sums the 16 kHz mono tracks of several outputs into one.
+#[derive(Default)]
+struct Mixer {
+    queues: HashMap<String, VecDeque<f32>>,
 }
 
-/// PulseAudio / PipeWire monitor of the default sink, already 16 kHz mono.
-#[cfg(target_os = "linux")]
-fn start_parec(tx: Sender<Vec<f32>>, shared: Arc<Shared>) -> std::io::Result<std::process::Child> {
-    use std::io::Read;
-    use std::process::{Command, Stdio};
+impl Mixer {
+    fn push(&mut self, id: &str, mono: &[f32]) {
+        let q = self.queues.entry(id.to_owned()).or_default();
+        q.extend(mono);
+        if q.len() > MAX_BACKLOG {
+            q.drain(..q.len() - MAX_BACKLOG);
+        }
+    }
 
-    let mut child = Command::new("parec")
-        .args(["--device=@DEFAULT_MONITOR@", "--format=s16le", "--rate=16000", "--channels=1", "--raw"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()?;
-    let Some(mut out) = child.stdout.take() else {
-        return Err(std::io::Error::other("parec stdout not piped"));
-    };
-    thread::spawn(move || {
-        let mut buf = [0u8; 3200]; // 100 ms
-        let mut got_data = false;
-        while out.read_exact(&mut buf).is_ok() {
-            got_data = true;
-            let chunk = buf.as_chunks::<2>().0.iter().map(|&b| f32::from(i16::from_le_bytes(b)) / 32768.0).collect();
-            if tx.send(chunk).is_err() {
-                break;
+    /// The next `n` mixed samples; an output with nothing queued adds silence.
+    fn take(&mut self, n: usize) -> Vec<f32> {
+        let mut out = vec![0.0; n];
+        for q in self.queues.values_mut() {
+            for (o, s) in out.iter_mut().zip(q.drain(..n.min(q.len()))) {
+                *o += s;
             }
         }
-        if !got_data && !shared.stopping.load(Ordering::Relaxed) {
-            shared.warn(NO_SYSTEM);
+        out.iter_mut().for_each(|s| *s = s.clamp(-1.0, 1.0));
+        out
+    }
+
+    fn remove(&mut self, id: &str) {
+        self.queues.remove(id);
+    }
+
+    fn backlog(&self) -> usize {
+        self.queues.values().map(VecDeque::len).max().unwrap_or(0)
+    }
+}
+
+/// Captures every output not in `excluded` until `stopping`, sending the mix to `out`
+/// in step with the wall clock.
+fn mix_outputs(out: &Sender<Vec<f32>>, excluded: &[String], shared: &Shared) {
+    let (tx, rx) = mpsc::channel::<(String, Vec<f32>)>();
+    let mut sources: HashMap<String, (Source, Resampler)> = HashMap::new();
+    let mut failed = HashSet::new();
+    let mut mixer = Mixer::default();
+    let drain = |sources: &mut HashMap<String, (Source, Resampler)>, mixer: &mut Mixer| {
+        for (id, chunk) in rx.try_iter() {
+            if let Some((src, resampler)) = sources.get_mut(&id) {
+                mixer.push(&id, &resampler.process(&downmix(&chunk, src.channels)));
+            }
         }
+    };
+    let mut emitted = 0u64;
+    let mut last_scan: Option<Instant> = None;
+    while !shared.stopping.load(Ordering::Relaxed) {
+        if last_scan.is_none_or(|t| t.elapsed() >= RESCAN_EVERY) {
+            rescan(&mut sources, &mut failed, &mut mixer, excluded, &tx);
+            if last_scan.is_none() && sources.is_empty() {
+                shared.warn(NO_SYSTEM);
+            }
+            last_scan = Some(Instant::now());
+        }
+        thread::sleep(MIX_EVERY);
+        drain(&mut sources, &mut mixer);
+        let target = (shared.start.elapsed().saturating_sub(MIX_DELAY).as_secs_f64() * f64::from(SAMPLE_RATE)) as u64;
+        if target > emitted {
+            if out.send(mixer.take((target - emitted) as usize)).is_err() {
+                return;
+            }
+            emitted = target;
+        }
+    }
+    drain(&mut sources, &mut mixer);
+    drop(sources);
+    let _ = out.send(mixer.take(mixer.backlog()));
+}
+
+/// Opens new outputs and closes the ones that disappeared or died.
+fn rescan(
+    sources: &mut HashMap<String, (Source, Resampler)>,
+    failed: &mut HashSet<String>,
+    mixer: &mut Mixer,
+    excluded: &[String],
+    tx: &Sender<(String, Vec<f32>)>,
+) {
+    let listed = outputs::list();
+    sources.retain(|id, (src, _)| {
+        let keep = src.alive() && listed.iter().any(|o| &o.id == id);
+        if !keep {
+            log::info!("output closed: {id}");
+            mixer.remove(id);
+        }
+        keep
     });
-    Ok(child)
+    failed.retain(|id| listed.iter().any(|o| &o.id == id));
+    for o in listed {
+        if excluded.contains(&o.id) || sources.contains_key(&o.id) || failed.contains(&o.id) {
+            continue;
+        }
+        let (tx, id) = (tx.clone(), o.id.clone());
+        match outputs::open(&o.id, move |chunk| {
+            let _ = tx.send((id.clone(), chunk));
+        }) {
+            Ok(src) => {
+                log::info!("output captured: {}", o.id);
+                let resampler = Resampler::new(src.rate);
+                sources.insert(o.id, (src, resampler));
+            }
+            Err(e) => {
+                // Logged once while the output stays listed.
+                log::warn!("output {} capture failed: {e}", o.id);
+                failed.insert(o.id);
+            }
+        }
+    }
 }
 
 fn spawn_writer(
@@ -316,6 +382,55 @@ mod tests {
         // The gap after the last chunk was padded to the wall clock.
         assert!(read(&path).len() >= 16_000 + 8_000);
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn mixer_sums_outputs_and_fills_gaps_with_silence() {
+        let mut m = Mixer::default();
+        assert_eq!(m.take(3), [0.0; 3], "no output yet");
+        m.push("a", &[0.1, 0.2, 0.3]);
+        m.push("b", &[0.1]);
+        assert_eq!(m.take(3), [0.2, 0.2, 0.3]);
+        // An output that starts late joins at the current position.
+        m.push("c", &[0.5]);
+        assert_eq!(m.take(2), [0.5, 0.0]);
+    }
+
+    #[test]
+    fn mixer_clips_and_bounds_backlog() {
+        let mut m = Mixer::default();
+        m.push("a", &[0.8]);
+        m.push("b", &[0.8]);
+        assert_eq!(m.take(1), [1.0]);
+        let backlog: Vec<f32> = (0..MAX_BACKLOG + 10).map(|i| i as f32).collect();
+        m.push("a", &backlog);
+        let out = m.take(MAX_BACKLOG + 10);
+        assert_eq!(out[MAX_BACKLOG..], [0.0; 10], "oldest samples were dropped");
+        m.remove("a");
+        assert!(!m.queues.contains_key("a"));
+    }
+
+    #[test]
+    fn mix_follows_the_wall_clock() {
+        let shared = Arc::new(Shared {
+            start: Instant::now(),
+            stopping: AtomicBool::new(false),
+            mic: Track::default(),
+            system: Track::default(),
+            warnings: Mutex::new(Vec::new()),
+        });
+        let (tx, rx) = mpsc::channel();
+        let mixer = {
+            let shared = shared.clone();
+            // Every output excluded would hide real devices; none listed is fine too.
+            thread::spawn(move || mix_outputs(&tx, &[], &shared))
+        };
+        thread::sleep(Duration::from_millis(700));
+        shared.stopping.store(true, Ordering::Relaxed);
+        mixer.join().unwrap();
+        let total: usize = rx.try_iter().map(|c| c.len()).sum();
+        // 0.5 s emitted on the clock (0.7 s minus the mix delay), at most one more tick after stop.
+        assert!((7_000..=12_800).contains(&total), "{total}");
     }
 
     #[test]

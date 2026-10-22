@@ -8,6 +8,7 @@ mod input;
 pub mod live;
 pub mod mic;
 pub mod models;
+pub mod outputs;
 pub mod parakeet;
 pub mod vad;
 pub mod whisper;

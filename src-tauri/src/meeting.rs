@@ -30,7 +30,7 @@ pub fn start(app: &Arc<App>, title: &str, participants: &[Participant]) -> Resul
     let mode = app.settings().processing_mode;
     let meeting = app.db().create_meeting(title, participants, mode)?;
     let dir = retention::meeting_dir(&app.data_dir, meeting.id);
-    let recorder = std::fs::create_dir_all(&dir).map_err(anyhow::Error::from).and_then(|_| Recorder::start(&dir));
+    let recorder = std::fs::create_dir_all(&dir).map_err(anyhow::Error::from).and_then(|_| Recorder::start(&dir, &app.settings().meeting.excluded_outputs));
     let recorder = match recorder {
         Ok(r) => r,
         Err(e) => {
