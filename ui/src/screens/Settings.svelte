@@ -171,11 +171,12 @@
     draft.processing_mode = modeFor(MISTRAL_MODEL, summaryCloud);
   }
 
-  // Saved through the normal path so the flag survives a restart, then the welcome opens.
+  // Persists only the flag from the saved settings: pending draft edits are neither committed nor lost to a refusal.
   async function replayOnboarding() {
-    draft.onboarding_done = false;
-    await save();
-    if (!error) go({ name: 'onboarding' });
+    const next = { ...$state.snapshot(app.settings!), onboarding_done: false };
+    if ((await attempt(() => api.saveSettings(next))) === undefined) return;
+    applySettings(next);
+    go({ name: 'onboarding' });
   }
 
   const size = (mb: number) => {
@@ -221,10 +222,10 @@
               </optgroup>
             </select>
           </label>
-          <label class="line">
-            <span class="lbl">{t('settings.show_overlay')}<span class="secondary" id="overlay-hint">{t('settings.show_overlay_hint')}</span></span>
-            <input type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
-          </label>
+          <div class="line">
+            <span class="lbl"><label for="show-overlay">{t('settings.show_overlay')}</label><span class="secondary" id="overlay-hint">{t('settings.show_overlay_hint')}</span></span>
+            <input id="show-overlay" type="checkbox" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
+          </div>
           <label class="line">
             <span class="lbl">{t('settings.delay_before')}</span>
             <input class="num" type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} />
@@ -447,10 +448,10 @@
             <span class="lbl">{t('settings.notification_sound')}</span>
             <input type="checkbox" bind:checked={draft.notification_sound} />
           </label>
-          <label class="line">
-            <span class="lbl">{t('settings.mascot')}<span class="secondary" id="mascot-hint">{t('settings.mascot_hint')}</span></span>
-            <input type="checkbox" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
-          </label>
+          <div class="line">
+            <span class="lbl"><label for="show-mascot">{t('settings.mascot')}</label><span class="secondary" id="mascot-hint">{t('settings.mascot_hint')}</span></span>
+            <input id="show-mascot" type="checkbox" checked={app.mascot} onchange={(e) => setMascot(e.currentTarget.checked)} aria-describedby="mascot-hint" />
+          </div>
         </div>
       </section>
 

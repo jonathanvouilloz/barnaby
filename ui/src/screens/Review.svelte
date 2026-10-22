@@ -281,8 +281,11 @@
   .speakers form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
 
   @media (max-width: 1000px) {
-    .columns { grid-template-columns: minmax(0, 1fr) 300px; }
-    .transcript { padding-left: 24px; }
+    .columns { grid-template-columns: minmax(0, 1fr) 260px; }
+    .transcript { padding: 16px 12px 32px 16px; }
+    .side { padding: 16px 16px 32px; }
     .player { padding-inline: 24px; }
+    .seg { grid-template-columns: 12px 44px minmax(0, 1fr); gap: 4px; padding-inline: 4px; }
+    .body { padding-right: 28px; }
   }
 </style>

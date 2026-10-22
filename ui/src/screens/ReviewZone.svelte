@@ -21,6 +21,11 @@
 
   const resolved = $derived(item.resolution !== null);
 
+  // A reopened zone starts closed: an autofocused textarea would swallow j/k.
+  $effect(() => {
+    if (!current) mode = 'none';
+  });
+
   function summary(r: Resolution): string {
     if (r.action === 'correct') return t('review.res.correct', { text: r.text });
     if (r.action === 'reassign') return t('review.res.reassign', { name: speakers.find((s) => s.id === r.speaker_id)?.name ?? r.speaker_id });
