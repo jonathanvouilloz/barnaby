@@ -29,12 +29,13 @@ export function modeFor(meetingModel: string, summaryCloud: boolean): Processing
 }
 
 /** The summary runs in the cloud: hybrid mode, or api mode with a remote LLM (Mistral alone is api with a local LLM). */
-export function cloudSummary(s: Settings): boolean {
+export function cloudSummary(s: Pick<Settings, 'processing_mode' | 'llm'>): boolean {
   return s.processing_mode === 'hybrid' || (s.processing_mode === 'api' && !isLoopbackUrl(s.llm.base_url));
 }
 
-/** Notice read to participants: where the audio goes and how long it is kept, from the meeting settings. */
-export function consentTemplate(lang: Lang, meeting: Pick<Settings['meeting'], 'model' | 'retention'>): string {
-  const where = meeting.model === MISTRAL_MODEL ? 'mistral' : 'local';
-  return ['intro', where, `keep_${meeting.retention}`, 'outro'].map((k) => translate(lang, `consent.template.${k}`)).join(' ');
+/** Notice read to participants: where the audio and the transcript go, and how long the audio is kept. */
+export function consentTemplate(lang: Lang, s: Pick<Settings, 'meeting' | 'processing_mode' | 'llm'>): string {
+  const where = s.meeting.model === MISTRAL_MODEL ? 'mistral' : 'local';
+  const summary = s.llm.enabled && cloudSummary(s) ? ['summary_cloud'] : [];
+  return ['intro', where, `keep_${s.meeting.retention}`, ...summary, 'outro'].map((k) => translate(lang, `consent.template.${k}`)).join(' ');
 }

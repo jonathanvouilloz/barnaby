@@ -13,7 +13,7 @@
   let nameInput: HTMLInputElement;
 
   const consentNeeded = $derived(!app.settings!.consent_acknowledged);
-  const template = $derived(consentTemplate(app.lang, app.settings!.meeting));
+  const template = $derived(consentTemplate(app.lang, app.settings!));
   const defaultTitle = t('new.name_default', {
     date: new Intl.DateTimeFormat(app.lang, { day: 'numeric', month: 'long' }).format(new Date()),
   });
@@ -90,6 +90,16 @@
           <button class="btn" type="submit" disabled={!name.trim()}>{t('new.add')}</button>
         </form>
       </section>
+
+      <!-- Always here, so a change of model or retention shows in the text participants hear. -->
+      <section class="consent" aria-labelledby="consent-title">
+        <div>
+          <h2 id="consent-title">{t('consent.reminder')}</h2>
+          <p class="secondary">{t('consent.body')}</p>
+        </div>
+        <blockquote class="template">{template}</blockquote>
+        <div><button class="btn small" onclick={copyTemplate}>{t('consent.copy')}</button></div>
+      </section>
     </div>
   </div>
 </section>
@@ -106,7 +116,7 @@
 
 <style>
   .form { display: grid; gap: 40px; max-width: 560px; padding-top: 8px; }
-  .people { display: grid; gap: 16px; }
+  .people, .consent { display: grid; gap: 16px; }
   ul { display: grid; gap: 2px; }
   li {
     display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 8px;

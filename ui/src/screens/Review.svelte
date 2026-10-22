@@ -151,7 +151,7 @@
         </button>
         <span class="time secondary tabular">{formatTimestamp(currentTime)} / {formatTimestamp(length)}</span>
         <div class="track">
-          <input type="range" min="0" max={length} step="0.1" bind:value={currentTime} aria-label={t('review.audio')} aria-valuetext={formatTimestamp(currentTime)} style:--p={length ? currentTime / length : 0} />
+          <input type="range" min="0" max={length} step="1" bind:value={currentTime} aria-label={t('review.audio')} aria-valuetext={formatTimestamp(currentTime)} style:--p={length ? currentTime / length : 0} />
           <!-- The zones to review, marked on the timeline. -->
           {#if length}{#each items as item (item.id)}<span class="tick" style:--at={Math.min(1, item.start / length)}><Spark size={8} active={isOpen(item)} /></span>{/each}{/if}
         </div>

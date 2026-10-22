@@ -194,15 +194,29 @@ test('processing mode follows meeting model and summary', () => {
 });
 
 describe('consent template', () => {
-  const tpl = (model: string, retention: Settings['meeting']['retention']) => consentTemplate('fr', { model, retention });
+  const local = { enabled: true, base_url: 'http://localhost:11434/v1' } as Settings['llm'];
+  const remote = { enabled: true, base_url: 'https://openrouter.ai/api/v1' } as Settings['llm'];
+  const cfg = (model: string, retention: Settings['meeting']['retention'], processing_mode: Settings['processing_mode'] = 'local', llm = local) =>
+    ({ meeting: { model, retention } as Settings['meeting'], processing_mode, llm });
+  const tpl = (...a: Parameters<typeof cfg>) => consentTemplate('fr', cfg(...a));
   test('local model keeps the audio on the computer', () => {
     expect(tpl('whisper-small', 'on_review')).toContain('reste sur mon ordinateur');
     expect(tpl('whisper-small', 'on_review')).not.toContain('Mistral');
   });
-  test('Mistral is named and the audio is not said to stay local', () => {
-    const s = tpl(MISTRAL_MODEL, 'on_review');
+  test('Mistral is named and the audio is not said to stay local or be used only for the notes', () => {
+    const s = tpl(MISTRAL_MODEL, 'on_review', 'api');
     expect(s).toContain('Mistral');
+    expect(s).toContain('selon ses conditions');
     expect(s).not.toContain('reste sur mon ordinateur');
+    expect(s).not.toContain('uniquement');
+  });
+  test('a cloud summary says the transcript goes online', () => {
+    const online = 'pour rédiger le résumé';
+    expect(tpl('whisper-small', 'on_review', 'hybrid', remote)).toContain(online);
+    expect(tpl(MISTRAL_MODEL, 'on_review', 'api', remote)).toContain(online);
+    expect(tpl(MISTRAL_MODEL, 'on_review', 'api', local)).not.toContain(online);
+    expect(tpl('whisper-small', 'on_review')).not.toContain(online);
+    expect(tpl('whisper-small', 'on_review', 'hybrid', { ...remote, enabled: false })).not.toContain(online);
   });
   test('states the real retention', () => {
     expect(tpl('whisper-small', 'on_review')).toContain('une fois le compte rendu relu');
@@ -212,7 +226,7 @@ describe('consent template', () => {
   });
   test('participants are addressed with vous, in English too', () => {
     expect(tpl(MISTRAL_MODEL, 'forever')).toContain('Si vous préférez');
-    expect(consentTemplate('en', { model: MISTRAL_MODEL, retention: 'seven_days' })).toContain('Mistral');
+    expect(consentTemplate('en', cfg(MISTRAL_MODEL, 'seven_days', 'api'))).toContain('Mistral');
   });
 });
 
@@ -247,11 +261,10 @@ describe('days', () => {
 });
 
 describe('design tokens', () => {
-  test('no literal colour in .svelte files outside Owl.svelte', () => {
+  test('no literal colour in .svelte files', () => {
     const root = new URL('..', import.meta.url).pathname;
     const hits: string[] = [];
     for (const file of new Bun.Glob('**/*.svelte').scanSync(root)) {
-      if (file.endsWith('Owl.svelte')) continue;
       const src = readFileSync(root + file, 'utf8');
       for (const m of src.matchAll(/#(?:[0-9a-f]{3}|[0-9a-f]{6})\b|\brgba?\(|\bhsla?\(/gi)) hits.push(`${file}: ${m[0]}`);
     }

@@ -55,9 +55,9 @@
   <header class="screen-head column" data-tauri-drag-region>
     <h1>{t('home.title')}</h1>
     {#if app.recordingId}
-      <button class="btn primary" onclick={() => go({ name: 'recording' })}>{t('rec.live')}</button>
+      <button class="btn" onclick={() => go({ name: 'recording' })}>{t('rec.live')}</button>
     {:else}
-      <button class="btn primary" onclick={() => go({ name: 'new' })}>{t('new.title')}</button>
+      <button class="btn" onclick={() => go({ name: 'new' })}>{t('new.title')}</button>
     {/if}
   </header>
 
@@ -87,7 +87,7 @@
                     {formatTime(m.started_at, app.lang)}
                     {#if m.review_items_total > 0}{' · '}{t('home.zones', { done: m.review_items_resolved, total: m.review_items_total })}{/if}
                   </p>
-                  {#if m.state === 'failed'}<p class="cause">{#if app.mascot}<Owl state="error" size={24} />{/if}{errorText(m.error)}</p>{/if}
+                  {#if m.state === 'failed'}<p class="cause">{#if app.mascot}<Owl state="error" size={32} />{/if}{errorText(m.error)}</p>{/if}
                 </div>
                 <span class="state {m.state}">{t(`state.${m.state}`)}</span>
                 {#if m.state === 'failed'}
@@ -154,7 +154,7 @@
 
 <style>
   .block { max-width: 760px; }
-  /* The primary action sits right above the list, not at the far edge. */
+  /* A quiet action right above the list: what waits stays the brightest thing. */
   .column { max-width: calc(760px + 80px); }
   .block + .block { margin-top: 40px; }
   .block > h2, .block-head { margin-bottom: 8px; }

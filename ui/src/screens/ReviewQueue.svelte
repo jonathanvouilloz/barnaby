@@ -40,7 +40,7 @@
                 <span class="mark"></span>
                 <span class="main">
                   <span class="title">{m.title}</span>
-                  <span class="cause">{#if app.mascot}<Owl state="error" size={24} />{/if}{errorText(m.error)}</span>
+                  <span class="cause">{#if app.mascot}<Owl state="error" size={32} />{/if}{errorText(m.error)}</span>
                 </span>
                 <span class="state">{t(`state.${m.state}`)}</span>
                 <button class="btn small" onclick={() => attempt(() => api.retryMeeting(m.id)).then(refreshMeetings)}>{t('common.retry')}</button>

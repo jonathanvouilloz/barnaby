@@ -110,15 +110,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border: 1px solid var(--border); border-radius: var(--r-control);
   background: var(--surface); color: var(--text);
   font-size: 14px; font-weight: 550; white-space: nowrap; cursor: pointer;
-  position: relative;
   transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
 }
-/* Small controls keep their drawing but take a 40px hit area. */
-.btn::before, .hit::before {
+/* Isolated small controls keep their drawing but take a 40px hit area (not text buttons: wrapped rows would overlap). */
+.btn.icon::before, .hit::before {
   content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   width: max(100%, 40px); height: max(100%, 40px);
 }
-.hit { position: relative; }
+.btn.icon, .hit { position: relative; }
 .btn:hover:not(:disabled) { background: var(--fill); }
 .btn:active:not(:disabled) { background: var(--fill-strong); }
 .btn:disabled { opacity: .5; cursor: default; }
@@ -167,6 +166,12 @@ input[role="switch"]::before {
 input[role="switch"]:checked { background: var(--accent); }
 input[role="switch"]:checked::before { transform: translateX(14px); }
 input[role="switch"]:disabled { opacity: .5; cursor: default; }
+
+/* High contrast: hand the custom controls back to the system so their state stays visible. */
+@media (forced-colors: active) {
+  input[type="radio"], input[role="switch"] { appearance: auto; width: 16px; height: 16px; }
+  input[role="switch"]::before { display: none; }
+}
 
 /* Range: a thin track filled to --p (0 to 1) and a round thumb. */
 input[type="range"] {
