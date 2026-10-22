@@ -8,8 +8,9 @@ use std::{
 
 use anyhow::{bail, Result};
 use barnaby_core::{
-    destination, llm::OpenAiStructurer, net::NetPolicy, pipeline::Pipeline, retention, send::send_meeting,
-    AudioRetention, MeetingState, Participant, Settings, Structurer,
+    destination, llm::OpenAiStructurer, mistral::{MistralTranscriber, MISTRAL_MODEL}, net::NetPolicy,
+    pipeline::Pipeline, retention, send::send_meeting,
+    AudioRetention, MeetingState, Participant, Settings, Structurer, Transcriber,
 };
 use barnaby_engine::Recorder;
 use serde_json::json;
@@ -148,7 +149,13 @@ fn process(app: &App, id: Uuid) {
         let _ = app.db().set_state(id, MeetingState::Failed, Some(code));
         app.emit_meeting(id);
     };
-    let Ok(transcriber) = app.transcriber(&settings.meeting.model) else { return fail("model_missing") };
+    let transcriber: Arc<dyn Transcriber> = if settings.meeting.model == MISTRAL_MODEL {
+        let Some(api_key) = app.mistral_api_key() else { return fail("mistral_key_missing") };
+        Arc::new(MistralTranscriber { api_key, vocabulary: settings.vocabulary.clone(), policy: NetPolicy { mode } })
+    } else {
+        let Ok(inner) = app.transcriber(&settings.meeting.model) else { return fail("model_missing") };
+        Arc::new(MeetingTranscriber { inner, gate: app.gate.clone() })
+    };
     let Ok(diarizer) = app.diarizer() else { return fail("diarization_model_missing") };
     let structurer = settings.llm.enabled.then(|| {
         Arc::new(OpenAiStructurer {
@@ -161,7 +168,7 @@ fn process(app: &App, id: Uuid) {
     });
     let pipeline = Pipeline {
         store: app.store.clone(),
-        transcriber: Arc::new(MeetingTranscriber { inner: transcriber, gate: app.gate.clone() }),
+        transcriber,
         diarizer,
         structurer,
         data_dir: app.data_dir.clone(),

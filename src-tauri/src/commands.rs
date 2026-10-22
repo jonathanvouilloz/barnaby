@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::{
     meeting, shortcuts,
-    state::{code, lock, App, CmdResult, Job, KEYRING_SERVICE, LLM_API_KEY_USER, WEBHOOK_SECRET_USER},
+    state::{code, lock, App, CmdResult, Job, KEYRING_SERVICE, LLM_API_KEY_USER, MISTRAL_API_KEY_USER, WEBHOOK_SECRET_USER},
 };
 
 type AppState<'a> = State<'a, Arc<App>>;
@@ -60,6 +60,16 @@ pub fn set_llm_api_key(key: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn has_llm_api_key(app: AppState) -> bool {
     app.llm_api_key().is_some()
+}
+
+#[tauri::command]
+pub fn set_mistral_api_key(key: String) -> CmdResult<()> {
+    set_secret(MISTRAL_API_KEY_USER, &key)
+}
+
+#[tauri::command]
+pub fn has_mistral_api_key(app: AppState) -> bool {
+    app.mistral_api_key().is_some()
 }
 
 /// An empty value deletes the secret.

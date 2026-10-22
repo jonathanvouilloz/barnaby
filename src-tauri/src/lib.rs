@@ -86,6 +86,8 @@ pub fn run() {
             commands::has_webhook_secret,
             commands::set_llm_api_key,
             commands::has_llm_api_key,
+            commands::set_mistral_api_key,
+            commands::has_mistral_api_key,
             commands::list_meetings,
             commands::get_meeting,
             commands::start_meeting,

@@ -44,6 +44,7 @@ pub struct App {
 pub const KEYRING_SERVICE: &str = "barnaby";
 pub const WEBHOOK_SECRET_USER: &str = "webhook-secret";
 pub const LLM_API_KEY_USER: &str = "llm-api-key";
+pub const MISTRAL_API_KEY_USER: &str = "mistral-api-key";
 
 /// Error codes cross the IPC boundary as plain strings (`error.<code>` in the UI).
 pub type CmdResult<T> = Result<T, String>;
@@ -92,6 +93,10 @@ impl App {
 
     pub fn llm_api_key(&self) -> Option<String> {
         secret(LLM_API_KEY_USER)
+    }
+
+    pub fn mistral_api_key(&self) -> Option<String> {
+        secret(MISTRAL_API_KEY_USER)
     }
 
     /// Loaded once per model id; loading a large model takes seconds.
