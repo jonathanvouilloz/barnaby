@@ -427,7 +427,7 @@
     <li>{t('cloud.sent_notes')}</li>
     <li>{t('cloud.sent_vocabulary')}</li>
   </ul>
-  <p>{t('cloud.never')}</p>
+  <p>{t(draft.meeting.model === MISTRAL_MODEL ? 'cloud.never_mistral' : 'cloud.never')}</p>
   <p class="secondary">{t('cloud.terms')}</p>
   {#snippet actions()}
     <button class="btn" onclick={() => (disclosureOpen = false)}>{t('common.cancel')}</button>
