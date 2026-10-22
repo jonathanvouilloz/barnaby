@@ -86,7 +86,7 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - À rouvrir si : un nouveau fournisseur ou une nouvelle règle de conservation apparaît.
 
 ## 2026-10-22 — Version macOS : Apple Silicon, macOS 14.2+, capture par tap global
-- Choix : `.dmg` pour Mac à puce Apple, macOS 14.2 minimum, signé ad hoc (pas de compte développeur Apple). Son de l'ordinateur par un « process tap » global de Core Audio (tous les processus, toutes les sorties) sur un agrégat privé lu par cpal ; sherpa-onnx lié en statique, whisper.cpp sur Metal ; raccourcis ⌥Espace et ⌘⇧R/M/L.
+- Choix : `.dmg` pour Mac à puce Apple, macOS 14.2 minimum, signé ad hoc (pas de compte développeur Apple). Son de l'ordinateur par un « process tap » global de Core Audio (tous les processus, toutes les sorties) sur un agrégat privé lu par cpal ; sherpa-onnx lié en statique, whisper.cpp sur Metal ; raccourcis ⌘⇧Espace et ⌘⇧R/M/L (macOS 15 refuse un raccourci global avec Option seul, et Ctrl+Option+Espace change la source de saisie) ; droit micro dans les entitlements (runtime renforcé).
 - Écarté : la capture par sortie de cpal (elle enregistre le micro d'un casque qui a aussi une entrée, comme les AirPods) ; ScreenCaptureKit (permission d'enregistrement d'écran) ; Intel et macOS 13 (le tap n'existe pas avant 14.2, build universel plus lourd) ; notarisation (compte payant).
 - Pourquoi : demande de Jon, sans Mac pour tester : la solution la plus courte qui couvre tous les casques.
 - À rouvrir si : le test sur un vrai Mac montre que l'agrégat privé n'est pas visible (repli public déjà codé), si des utilisateurs Intel le demandent, ou si Jon prend un compte développeur Apple.

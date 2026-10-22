@@ -81,7 +81,10 @@ fn enigo_paste() -> Result<()> {
     let mut enigo = Enigo::new(&Settings::default()).context("input_unavailable")?;
     let modifier = if cfg!(target_os = "macos") { Key::Meta } else { Key::Control };
     enigo.key(modifier, Direction::Press).context("paste_failed")?;
-    let click = enigo.key(Key::Unicode('v'), Direction::Click);
+    // macOS: the V key by position (kVK_ANSI_V). `Unicode('v')` looks the layout up through
+    // text-input APIs that abort when called off the main thread, as here.
+    let v = if cfg!(target_os = "macos") { Key::Other(9) } else { Key::Unicode('v') };
+    let click = enigo.key(v, Direction::Click);
     enigo.key(modifier, Direction::Release).context("paste_failed")?;
     click.context("paste_failed")
 }

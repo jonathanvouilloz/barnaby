@@ -333,11 +333,12 @@ impl Default for MeetingSettings {
 }
 
 impl Default for Shortcuts {
-    /// Spec 10.2. macOS uses ⌥Space (Ctrl+Option+Space switches input sources there) and ⌘.
+    /// Spec 10.2, adapted for macOS: Ctrl+Option+Space switches input sources there, and since
+    /// macOS 15 a global shortcut needs Cmd or Ctrl (Option alone is refused), hence ⌘⇧Space.
     fn default() -> Self {
         if cfg!(target_os = "macos") {
             Self {
-                dictation: "Alt+Space".into(),
+                dictation: "Super+Shift+Space".into(),
                 meeting_toggle: "Super+Shift+R".into(),
                 marker: "Super+Shift+M".into(),
                 review_queue: "Super+Shift+L".into(),

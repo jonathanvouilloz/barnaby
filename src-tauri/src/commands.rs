@@ -121,8 +121,10 @@ pub fn start_meeting(app: AppState, title: String, participants: Vec<Participant
     })
 }
 
-#[tauri::command]
-pub fn stop_meeting(app: AppState) -> CmdResult<()> {
+/// Off the main thread: on a first macOS meeting, stopping waits for the system-audio
+/// permission prompt to be answered, and the window must stay responsive meanwhile.
+#[tauri::command(async)]
+pub fn stop_meeting(app: AppState<'_>) -> CmdResult<()> {
     meeting::stop(&app).map_err(code("stop_failed"))
 }
 

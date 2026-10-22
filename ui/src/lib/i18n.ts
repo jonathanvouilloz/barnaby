@@ -162,7 +162,7 @@ const fr: Record<string, string> = {
   'rec.none': 'Aucun enregistrement en cours.',
   'rec.stopped': 'Enregistrement arrêté. Le traitement commence.',
 
-  'capture.system_silent': 'Aucun son du système depuis 30 s. Vérifie la sortie audio de l’appel.',
+  'capture.system_silent': 'Aucun son du système depuis 30 s. Vérifie la sortie audio de l’appel. Sur Mac, vérifie aussi que Barnaby peut enregistrer le son de l’ordinateur (Réglages Système, Confidentialité et sécurité).',
   'capture.no_mic': 'Aucun micro détecté. Seul le son du système est enregistré.',
   'capture.no_system': 'Le son du système est indisponible. Seul le micro est enregistré.',
   'capture.permission_denied': 'L’accès au micro est refusé. Autorise-le dans les réglages du système.',
@@ -511,7 +511,7 @@ const en: Record<string, string> = {
   'rec.none': 'No recording in progress.',
   'rec.stopped': 'Recording stopped. Processing is starting.',
 
-  'capture.system_silent': 'No system audio for 30 s. Check the call’s audio output.',
+  'capture.system_silent': 'No system audio for 30 s. Check the call’s audio output. On a Mac, also check that Barnaby may record the computer’s sound (System Settings, Privacy & Security).',
   'capture.no_mic': 'No microphone found. Only system audio is recorded.',
   'capture.no_system': 'System audio is unavailable. Only the microphone is recorded.',
   'capture.permission_denied': 'Microphone access is denied. Allow it in the system settings.',
