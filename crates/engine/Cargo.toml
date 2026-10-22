@@ -1,0 +1,33 @@
+[package]
+name = "barnaby-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+cuda = ["whisper-rs/cuda"]
+vulkan = ["whisper-rs/vulkan"]
+
+[dependencies]
+barnaby-core.workspace = true
+anyhow.workspace = true
+hound.workspace = true
+log.workspace = true
+cpal = "0.18.2"
+whisper-rs = { version = "0.16.0", features = ["log_backend"] }
+# One ONNX runtime for both diarization and VAD: sherpa-onnx ships it, prebuilt per target.
+sherpa-rs = { version = "0.6.8", default-features = false, features = ["download-binaries"] }
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
+bzip2 = "0.6.1"
+tar = "0.4.46"
+sha2 = "0.11.1"
+
+# macOS: sherpa-onnx linked statically (nothing to ship inside the .app), whisper.cpp on Metal,
+# and the Core Audio process tap for system audio (outputs.rs).
+[target.'cfg(target_os = "macos")'.dependencies]
+sherpa-rs = { version = "0.6.8", default-features = false, features = ["download-binaries", "static"] }
+whisper-rs = { version = "0.16.0", features = ["log_backend", "metal"] }
+objc2 = "0.6.3"
+objc2-core-audio = { version = "0.3.2", default-features = false, features = ["std", "AudioHardware", "objc2", "objc2-foundation"] }
+objc2-core-foundation = { version = "0.3.2", default-features = false, features = ["std", "CFDictionary"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSArray", "NSDictionary", "NSObject", "NSString", "NSUUID", "NSValue"] }

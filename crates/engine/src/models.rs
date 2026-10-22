@@ -1,0 +1,326 @@
+//! Local model catalog (spec 6): downloaded on demand, or placed by hand in
+//! `models/` and recognised by file name.
+
+use std::fs::{self, File};
+use std::io::{Read, Write};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use anyhow::{anyhow, ensure, Context, Result};
+use sha2::{Digest, Sha256};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModelKind {
+    Whisper,
+    Parakeet,
+    DiarizationSegmentation,
+    DiarizationEmbedding,
+    Vad,
+}
+
+impl ModelKind {
+    /// Matches `ModelKind` in `ui/src/lib/api.ts`.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ModelKind::Whisper => "whisper",
+            ModelKind::Parakeet => "parakeet",
+            ModelKind::DiarizationSegmentation => "diarization_segmentation",
+            ModelKind::DiarizationEmbedding => "diarization_embedding",
+            ModelKind::Vad => "vad",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelEntry {
+    pub id: &'static str,
+    pub kind: ModelKind,
+    pub name: &'static str,
+    /// Download size in MB (10^6 bytes).
+    pub size_mb: u32,
+    pub url: &'static str,
+    /// SHA-256 of the downloaded file (the archive for `.tar.bz2`): models are parsed by native code.
+    pub sha256: &'static str,
+    /// Path inside `models/`. For a `.tar.bz2` download it is an archive member: the
+    /// members of its directory are kept too, so an archive unpacked by hand into
+    /// `models/` lands on the same paths. This file is written last: it marks the model installed.
+    pub file_name: &'static str,
+}
+
+use ModelKind::*;
+
+static CATALOG: &[ModelEntry] = &[
+    ModelEntry { id: "whisper-tiny", kind: Whisper, name: "Whisper tiny", size_mb: 78, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin", sha256: "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21", file_name: "ggml-tiny.bin" },
+    ModelEntry { id: "whisper-base", kind: Whisper, name: "Whisper base", size_mb: 148, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin", sha256: "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe", file_name: "ggml-base.bin" },
+    ModelEntry { id: "whisper-small", kind: Whisper, name: "Whisper small", size_mb: 488, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin", sha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b", file_name: "ggml-small.bin" },
+    ModelEntry {
+        id: "whisper-large-v3-turbo",
+        kind: Whisper,
+        name: "Whisper large-v3 turbo",
+        size_mb: 1625,
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-large-v3-turbo.bin",
+        sha256: "1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69", file_name: "ggml-large-v3-turbo.bin",
+    },
+    ModelEntry {
+        id: "parakeet-v3",
+        kind: Parakeet,
+        name: "Parakeet v3",
+        size_mb: 487,
+        url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
+        sha256: "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf", file_name: "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/tokens.txt",
+    },
+    ModelEntry {
+        id: "pyannote-segmentation-3-0",
+        kind: DiarizationSegmentation,
+        name: "Pyannote segmentation 3.0",
+        size_mb: 7,
+        url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2",
+        sha256: "24615ee884c897d9d2ba09bb4d30da6bb1b15e685065962db5b02e76e4996488", file_name: "sherpa-onnx-pyannote-segmentation-3-0/model.onnx",
+    },
+    // WeSpeaker ResNet34 trained on VoxCeleb (speakers of 145 nationalities, many languages)
+    // with large-margin fine-tuning; speaker embeddings depend little on the spoken language.
+    ModelEntry {
+        id: "wespeaker-voxceleb-resnet34-lm",
+        kind: DiarizationEmbedding,
+        name: "WeSpeaker ResNet34 (VoxCeleb)",
+        size_mb: 27,
+        url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/wespeaker_en_voxceleb_resnet34_LM.onnx",
+        sha256: "e9848563da86f263117134dfd7ad63c92355b37de492b55e325400c9d9c39012", file_name: "wespeaker_en_voxceleb_resnet34_LM.onnx",
+    },
+    ModelEntry { id: "silero-vad", kind: Vad, name: "Silero VAD", size_mb: 1, url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad.onnx", sha256: "9e2449e1087496d8d4caba907f23e0bd3f78d91fa552479bb9c23ac09cbb1fd6", file_name: "silero_vad.onnx" },
+];
+
+pub fn catalog() -> &'static [ModelEntry] {
+    CATALOG
+}
+
+fn find(id: &str) -> Option<&'static ModelEntry> {
+    CATALOG.iter().find(|m| m.id == id)
+}
+
+pub fn path_for(models_dir: &Path, id: &str) -> Option<PathBuf> {
+    find(id).map(|m| models_dir.join(m.file_name)).filter(|p| p.is_file())
+}
+
+pub fn installed(models_dir: &Path, id: &str) -> bool {
+    path_for(models_dir, id).is_some()
+}
+
+/// Removes an installed model: its file, or its whole directory for an archive.
+pub fn delete(models_dir: &Path, id: &str) -> Result<()> {
+    let entry = find(id).ok_or_else(|| anyhow!("unknown model {id}"))?;
+    let path = path_for(models_dir, id).ok_or_else(|| anyhow!("model {id} not installed"))?;
+    match Path::new(entry.file_name).parent().filter(|p| !p.as_os_str().is_empty()) {
+        Some(dir) => fs::remove_dir_all(models_dir.join(dir))?,
+        None => fs::remove_file(path)?,
+    }
+    Ok(())
+}
+
+/// Blocking download of model `id` into `models_dir`; `progress` gets a fraction in [0, 1].
+/// The file only appears under its final name once complete and checksum-verified.
+pub fn download(models_dir: &Path, id: &str, progress: impl Fn(f32)) -> Result<PathBuf> {
+    let entry = find(id).ok_or_else(|| anyhow!("unknown model {id}"))?;
+    fetch(models_dir, entry, &progress)
+}
+
+fn fetch(models_dir: &Path, entry: &ModelEntry, progress: &dyn Fn(f32)) -> Result<PathBuf> {
+    let dest = models_dir.join(entry.file_name);
+    let part = PathBuf::from(format!("{}.part", dest.display()));
+    let archive = entry.url.ends_with(".tar.bz2");
+    let download = if archive { models_dir.join(format!("{}.tar.bz2.part", entry.id)) } else { part.clone() };
+    if let Some(parent) = dest.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let result = (|| {
+        stream_to(entry, &download, progress)?;
+        if archive {
+            extract(&download, models_dir, entry.file_name, &part)?;
+            fs::remove_file(&download)?;
+        }
+        fs::rename(&part, &dest)?;
+        progress(1.0);
+        Ok(dest.clone())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&download);
+        let _ = fs::remove_file(&part);
+    }
+    result
+}
+
+fn stream_to(entry: &ModelEntry, path: &Path, progress: &dyn Fn(f32)) -> Result<()> {
+    // No global timeout: a 1.6 GB model must not be cut; only a dead server or connection is.
+    let mut resp = ureq::get(entry.url)
+        .config()
+        .timeout_connect(Some(Duration::from_secs(30)))
+        .timeout_recv_response(Some(Duration::from_secs(60)))
+        .build()
+        .call()
+        .with_context(|| format!("download {}", entry.id))?;
+    let expected = u64::from(entry.size_mb) * 1_000_000;
+    let length = resp.body().content_length();
+    let total = length.unwrap_or(expected).max(1);
+    let mut reader = resp.body_mut().as_reader();
+    let mut file = File::create(path)?;
+    let mut hasher = Sha256::new();
+    let mut buf = vec![0u8; 1 << 16];
+    let mut done: u64 = 0;
+    loop {
+        let n = reader.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        file.write_all(&buf[..n])?;
+        hasher.update(&buf[..n]);
+        done += n as u64;
+        // Capped below 1.0: checksum, extraction and rename still follow (`fetch` sends 1.0).
+        progress((done as f32 / total as f32).min(0.99));
+    }
+    file.sync_all()?;
+    ensure!(length.is_none_or(|l| l == done), "download {} truncated", entry.id);
+    let digest: String = hasher.finalize().iter().map(|b| format!("{b:02x}")).collect();
+    ensure!(digest == entry.sha256, "download {}: checksum mismatch", entry.id);
+    Ok(())
+}
+
+/// Unpacks `member` to `out` and the other files of its directory (sample audio aside) in place.
+fn extract(archive: &Path, models_dir: &Path, member: &str, out: &Path) -> Result<()> {
+    let member = Path::new(member);
+    let dir = member.parent().unwrap_or(Path::new(""));
+    let mut found = false;
+    let mut tar = tar::Archive::new(bzip2::read::BzDecoder::new(File::open(archive)?));
+    for item in tar.entries()? {
+        let mut item = item?;
+        let path = item.path()?.into_owned();
+        // Only plain relative paths inside the model directory: the archive is untrusted.
+        let safe = path.components().all(|c| matches!(c, std::path::Component::Normal(_)));
+        let wanted = path == member || (!dir.as_os_str().is_empty() && path.parent() == Some(dir));
+        if !safe || !wanted || !item.header().entry_type().is_file() {
+            continue;
+        }
+        let dest = if path == member { out.to_path_buf() } else { models_dir.join(&path) };
+        std::io::copy(&mut item, &mut File::create(dest)?)?;
+        found |= path == member;
+    }
+    ensure!(found, "{} missing from archive", member.display());
+    Ok(())
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+    use std::io::BufRead;
+    use std::net::TcpListener;
+    use std::sync::Mutex;
+
+    /// Shared by the `#[ignore]` model tests; downloads what they need once.
+    pub fn models_dir() -> PathBuf {
+        std::env::var_os("BARNABY_MODELS_DIR").map(PathBuf::from).unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/test-models"))
+    }
+
+    pub fn ensure(id: &str) -> PathBuf {
+        let dir = models_dir();
+        path_for(&dir, id).unwrap_or_else(|| download(&dir, id, |_| {}).unwrap())
+    }
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("barnaby-models-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// Serves `body` once over HTTP on loopback; returns the URL.
+    fn serve(body: Vec<u8>, path: &str) -> &'static str {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let url = format!("http://{}/{path}", listener.local_addr().unwrap());
+        std::thread::spawn(move || {
+            let (mut conn, _) = listener.accept().unwrap();
+            let mut reader = std::io::BufReader::new(conn.try_clone().unwrap());
+            let mut line = String::new();
+            while reader.read_line(&mut line).unwrap() > 2 {
+                line.clear();
+            }
+            write!(conn, "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", body.len()).unwrap();
+            conn.write_all(&body).unwrap();
+        });
+        Box::leak(url.into_boxed_str())
+    }
+
+    fn fake(url: &'static str, body: &[u8], file_name: &'static str) -> ModelEntry {
+        let sha256: String = Sha256::digest(body).iter().map(|b| format!("{b:02x}")).collect();
+        ModelEntry { id: "fake", kind: Whisper, name: "Fake", size_mb: 0, url, sha256: Box::leak(sha256.into_boxed_str()), file_name }
+    }
+
+    #[test]
+    fn catalog_ids_are_unique_and_detected_by_file_name() {
+        let dir = temp_dir("detect");
+        let mut ids: Vec<_> = catalog().iter().map(|m| m.id).collect();
+        ids.sort();
+        ids.dedup();
+        assert_eq!(ids.len(), catalog().len());
+        assert!(catalog().iter().any(|m| m.id == "whisper-large-v3-turbo" && m.kind.as_str() == "whisper"));
+
+        assert!(!installed(&dir, "whisper-base"));
+        fs::write(dir.join("ggml-base.bin"), b"x").unwrap();
+        assert!(installed(&dir, "whisper-base"));
+        assert_eq!(path_for(&dir, "whisper-base"), Some(dir.join("ggml-base.bin")));
+        assert!(!installed(&dir, "nope"));
+
+        fs::create_dir_all(dir.join("sherpa-onnx-pyannote-segmentation-3-0")).unwrap();
+        fs::write(dir.join("sherpa-onnx-pyannote-segmentation-3-0/model.onnx"), b"x").unwrap();
+        assert!(installed(&dir, "pyannote-segmentation-3-0"));
+        delete(&dir, "pyannote-segmentation-3-0").unwrap();
+        assert!(!dir.join("sherpa-onnx-pyannote-segmentation-3-0").exists());
+        delete(&dir, "whisper-base").unwrap();
+        assert!(!installed(&dir, "whisper-base"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn download_reports_progress_and_renames() {
+        let dir = temp_dir("plain");
+        let body = vec![7u8; 300_000];
+        let seen = Mutex::new(Vec::new());
+        let entry = fake(serve(body.clone(), "m.bin"), &body, "m.bin");
+        let path = fetch(&dir, &entry, &|p| seen.lock().unwrap().push(p)).unwrap();
+        assert_eq!(fs::read(&path).unwrap(), body);
+        assert!(!dir.join("m.bin.part").exists());
+        let seen = seen.into_inner().unwrap();
+        assert!(seen.windows(2).all(|w| w[0] <= w[1]) && seen.last() == Some(&1.0) && seen.len() > 2);
+        // 1.0 means installed: the UI relies on it, so the transfer alone never reaches it.
+        assert!(seen[..seen.len() - 1].iter().all(|&p| p < 1.0));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn download_extracts_member_from_tar_bz2() {
+        let dir = temp_dir("archive");
+        let mut tar = tar::Builder::new(bzip2::write::BzEncoder::new(Vec::new(), bzip2::Compression::fast()));
+        for (name, data) in [("seg/model.onnx", &b"onnx-bytes"[..]), ("seg/tokens.txt", &b"tokens"[..]), ("seg/test_wavs/fr.wav", &b"wav"[..]), ("other/x", &b"x"[..])] {
+            let mut header = tar::Header::new_gnu();
+            header.set_size(data.len() as u64);
+            header.set_mode(0o644);
+            tar.append_data(&mut header, name, data).unwrap();
+        }
+        let archive = tar.into_inner().unwrap().finish().unwrap();
+        let entry = fake(serve(archive.clone(), "seg.tar.bz2"), &archive, "seg/model.onnx");
+        let path = fetch(&dir, &entry, &|_| {}).unwrap();
+        assert_eq!(path, dir.join("seg/model.onnx"));
+        assert_eq!(fs::read(path).unwrap(), b"onnx-bytes");
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 1, "only seg/ is left");
+        assert_eq!(fs::read(dir.join("seg/tokens.txt")).unwrap(), b"tokens", "siblings are kept");
+        assert!(!dir.join("seg/test_wavs").exists());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn wrong_checksum_leaves_nothing_behind() {
+        let dir = temp_dir("checksum");
+        let entry = fake(serve(b"<html>not found</html>".to_vec(), "big.bin"), b"the real model", "big.bin");
+        assert!(fetch(&dir, &entry, &|_| {}).is_err());
+        assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
+        fs::remove_dir_all(dir).unwrap();
+    }
+}

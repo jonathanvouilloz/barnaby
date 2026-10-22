@@ -1,0 +1,36 @@
+[package]
+name = "barnaby"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Local-first dictation and meeting assistant"
+
+[lib]
+name = "barnaby_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+barnaby-core.workspace = true
+barnaby-engine.workspace = true
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+log.workspace = true
+# macos-private-api: the transparent overlay on macOS; no effect elsewhere.
+tauri = { version = "2.12", features = ["tray-icon", "protocol-asset", "image-png", "macos-private-api"] }
+tauri-plugin-global-shortcut = "2.4"
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-notification = "2.7"
+tauri-plugin-log = "2.10"
+arboard = "3.7"
+enigo = "0.6"
+keyring = "4.2"
+
+[features]
+cuda = ["barnaby-engine/cuda"]
+vulkan = ["barnaby-engine/vulkan"]

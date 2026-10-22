@@ -1,0 +1,101 @@
+name: ci
+
+on:
+  push:
+    branches: [main, phase-1]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+      - name: Core tests
+        run: cargo test -p barnaby-core
+      - name: UI checks
+        working-directory: ui
+        run: bun install --frozen-lockfile && bun run check && bun test
+
+  build:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Portable whisper.cpp on x86: by default ggml targets the build machine's CPU, which may
+      # not match the users' (whisper-rs-sys forwards GGML_* variables to CMake). The macOS
+      # runner is Apple Silicon, where these flags do not apply.
+      - name: Portable x86 whisper.cpp
+        if: runner.os != 'macOS'
+        shell: bash
+        run: printf 'GGML_NATIVE=OFF\nGGML_AVX=ON\nGGML_AVX2=ON\nGGML_FMA=ON\nGGML_F16C=ON\n' >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      # No rust-cache here: a restored sherpa-rs-sys build skips the step that copies its shared
+      # libraries into target/, so tests and the Windows bundle can't find them.
+      - uses: oven-sh/setup-bun@v2
+      - name: Linux system deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libasound2-dev libxdo-dev libssl-dev cmake clang
+      - name: UI deps
+        working-directory: ui
+        run: bun install --frozen-lockfile
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Engine tests
+        run: cargo test -p barnaby-engine
+      - name: Build installers
+        working-directory: src-tauri
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            # The sherpa-onnx DLLs exist only after a release build; tauri-build checks
+            # resource globs at build-script time, hence the two passes.
+            cargo build --release -p barnaby
+            bunx @tauri-apps/cli@2.12.3 build --config tauri.bundle-windows.json
+          else
+            bunx @tauri-apps/cli@2.12.3 build
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: barnaby-${{ runner.os }}
+          path: |
+            target/release/bundle/**/*.deb
+            target/release/bundle/**/*.msi
+            target/release/bundle/**/*-setup.exe
+            target/release/bundle/**/*.dmg
+
+  # A version tag publishes the installers under fixed names, so the site can link
+  # straight to releases/latest/download/<name>.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with: { path: dist }
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir out
+          # Artifact layout depends on the matched paths: find each file by its suffix.
+          cp "$(find dist -name '*-setup.exe')" out/Barnaby-windows-setup.exe
+          cp "$(find dist -name '*.msi')" out/Barnaby-windows.msi
+          cp "$(find dist -name '*.deb')" out/Barnaby-linux-amd64.deb
+          cp "$(find dist -name '*.dmg')" out/Barnaby-macos-arm64.dmg
+          gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --title "Barnaby $GITHUB_REF_NAME" --generate-notes

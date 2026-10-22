@@ -5,3 +5,6 @@ models/
 *.wav
 *.flac
 .env
+design/shots/
+.impeccable/review/
+barnaby.zip

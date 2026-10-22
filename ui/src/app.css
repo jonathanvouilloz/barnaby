@@ -1,0 +1,211 @@
+/* Tokens: "Things, version chouette" (DESIGN.md). Light by default, dark follows the system. */
+:root {
+  color-scheme: light dark;
+  --bg: #fdfdfd;
+  --surface: #ffffff;
+  --sidebar: rgb(248 235 220 / .82);
+  --text: #0f0c2f;
+  --text-2: #6f5b52;
+  --border: rgb(15 12 47 / .09);
+  --border-strong: rgb(15 12 47 / .5); /* fields and choice cards: 3:1 on every ground */
+  --accent: #0170ec;
+  --accent-text: #005fcc; /* blue text that stays AA on the taupe fills */
+  --warm: #b25f00; /* beak orange darkened to 3:1 on the selected sidebar row */
+  --on-accent: #fdfdfd;
+  --rec: #fcaa4f;
+  --on-rec: #0f0c2f; /* ink in both themes: cream text fails on the orange */
+  --danger: #b3261e;
+  --warn: #9a5b00;
+  --ok: #1f7a3a;
+  --fill: rgb(159 136 125 / .10);
+  --fill-strong: rgb(159 136 125 / .16);
+  --spark: #0170ec;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='%236f5b52' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --scrim: rgb(15 12 47 / .28);
+  --shadow-pop: 0 8px 24px rgb(15 12 47 / .16);
+  --shadow-sheet: 0 18px 50px rgb(15 12 47 / .22);
+  --shadow-float: 0 1px 2px rgb(15 12 47 / .14), 0 4px 10px rgb(15 12 47 / .12);
+
+  /* The owl keeps its sheet colours in both themes. */
+  /* The owl art has a dark outline: it sits on a warm field, kraft in the dark theme. */
+  --owl-field: #f8ebdc;
+
+  --r-control: 8px;
+  --r-card: 12px;
+  --r-sheet: 16px;
+  --ease: cubic-bezier(.2, .7, .3, 1);
+  --font: "Valley Sans Variable", system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0c2f;
+    --surface: #18143d;
+    --sidebar: rgb(34 29 78 / .82);
+    --text: #f8ebdc;
+    --text-2: #b9a596;
+    --border: rgb(248 235 220 / .12);
+    --border-strong: rgb(248 235 220 / .42);
+    --accent: #4d9bff;
+    --accent-text: #4d9bff;
+    --warm: #fcaa4f;
+    --on-accent: #0f0c2f;
+    --rec: #fcaa4f;
+    --danger: #ff8a80;
+    --warn: #ffc069;
+    --ok: #5bd17f;
+    --fill: rgb(248 235 220 / .06);
+    --fill-strong: rgb(248 235 220 / .11);
+    --spark: #4d9bff;
+    --owl-field: #decfc5;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='%23b9a596' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --scrim: rgb(0 0 0 / .45);
+    --shadow-pop: 0 8px 24px rgb(0 0 0 / .4);
+    --shadow-sheet: 0 18px 50px rgb(0 0 0 / .5);
+    --shadow-float: 0 1px 2px rgb(0 0 0 / .3), 0 4px 10px rgb(0 0 0 / .25);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 14px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#app { height: 100%; }
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+h1 { font-size: 28px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em; }
+h2 { font-size: 15px; font-weight: 650; line-height: 1.35; }
+ul, ol { padding: 0; list-style: none; }
+
+.secondary { font-size: 12.5px; color: var(--text-2); }
+.tabular { font-variant-numeric: tabular-nums; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--spark) 24%, transparent); }
+
+/* Thin warm scrollbars, both engines. */
+:root { scrollbar-color: color-mix(in srgb, var(--text-2) 45%, transparent) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 5px; background: color-mix(in srgb, var(--text-2) 45%, transparent) padding-box; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* Buttons: one filled primary per screen, the rest quiet. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 32px; padding: 4px 12px;
+  border: 1px solid var(--border); border-radius: var(--r-control);
+  background: var(--surface); color: var(--text);
+  font-size: 14px; font-weight: 550; white-space: nowrap; cursor: pointer;
+  transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
+}
+/* Isolated small controls keep their drawing but take a 40px hit area (not text buttons: wrapped rows would overlap). */
+.btn.icon::before, .hit::before {
+  content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: max(100%, 40px); height: max(100%, 40px);
+}
+.btn.icon, .hit { position: relative; }
+.btn:hover:not(:disabled) { background: var(--fill); }
+.btn:active:not(:disabled) { background: var(--fill-strong); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, var(--text)); }
+.btn.danger { color: var(--danger); }
+.btn.danger-fill { background: var(--danger); border-color: transparent; color: var(--on-accent); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ghost:hover:not(:disabled) { background: var(--fill); }
+.btn.small { min-height: 28px; padding: 0 8px; font-size: 12.5px; }
+.btn.icon { padding: 0; width: 32px; min-height: 32px; }
+.btn.icon.small { width: 28px; min-height: 28px; }
+
+input[type="text"], input[type="email"], input[type="url"], input[type="number"], input[type="password"], input:not([type]), select, textarea {
+  width: 100%; min-height: 32px; padding: 4px 12px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-control);
+  font-size: 14px;
+}
+select {
+  appearance: none; padding-right: 32px; cursor: pointer;
+  background: var(--chevron) no-repeat right 10px center / 14px var(--surface);
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-offset: 0; }
+textarea { resize: vertical; line-height: 1.5; padding: 8px 12px; }
+input[type="checkbox"] { accent-color: var(--accent); }
+
+/* Radios in the palette: a ring that fills with blue. */
+input[type="radio"] {
+  appearance: none; flex: none; width: 16px; height: 16px; margin: 0; align-self: center;
+  border: 1px solid var(--border-strong); border-radius: 50%; background: var(--surface);
+  transition: border-width 150ms var(--ease), border-color 150ms var(--ease);
+}
+input[type="radio"]:checked { border: 5px solid var(--accent); }
+
+/* Booleans read as switches: a native checkbox with role="switch". */
+input[role="switch"] {
+  appearance: none; flex: none; position: relative; width: 32px; height: 18px; margin: 0; cursor: pointer;
+  border-radius: 9px; background: var(--border-strong);
+  transition: background-color 150ms var(--ease);
+}
+input[role="switch"]::before {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+  border-radius: 50%; background: #fdfdfd; box-shadow: var(--shadow-float); /* white knob in both themes, as on macOS */
+  transition: transform 150ms var(--ease);
+}
+input[role="switch"]:checked { background: var(--accent); }
+input[role="switch"]:checked::before { transform: translateX(14px); }
+input[role="switch"]:disabled { opacity: .5; cursor: default; }
+
+/* High contrast: hand the custom controls back to the system so their state stays visible. */
+@media (forced-colors: active) {
+  input[type="radio"], input[role="switch"] { appearance: auto; width: 16px; height: 16px; }
+  input[role="switch"]::before { display: none; }
+}
+
+/* Range: a thin track filled to --p (0 to 1) and a round thumb. */
+input[type="range"] {
+  appearance: none; height: 20px; margin: 0; background: transparent; cursor: pointer; --p: 0;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) calc(var(--p) * 100%), var(--fill-strong) 0);
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow-float);
+}
+::placeholder { color: var(--text-2); opacity: 1; }
+
+label { display: block; }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: 12.5px; font-weight: 550; color: var(--text-2); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card);
+}
+
+/* Screen layout shared by every route. */
+.screen { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.screen-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 28px 40px 20px; min-height: 84px;
+}
+.screen-head h1 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.screen-body { flex: 1; min-height: 0; overflow: auto; padding: 0 40px 40px; }
+
+.empty { color: var(--text-2); padding: 24px 16px; text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

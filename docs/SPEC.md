@@ -94,7 +94,7 @@ Chaque étape passe par un trait `Provider` commun (`transcribe`, `diarize`, `id
 | Mode | Transcription | Diarisation | Identification | Structuration |
 |---|---|---|---|---|
 | `local` | whisper.cpp ou Parakeet | sherpa-onnx | embeddings locaux | Ollama |
-| `api` | Deepgram | intégrée (Deepgram) | intégrée ou embeddings | OpenRouter (modèle au choix) |
+| `api` | Mistral Voxtral (réunions) | sherpa-onnx | embeddings locaux | OpenRouter (modèle au choix) |
 | `hybrid` | local | sherpa-onnx | local | OpenRouter (texte uniquement) |
 
 Le mode Dictée utilise toujours la transcription du mode choisi, mais **sans diarisation ni structuration**.
@@ -171,11 +171,13 @@ Règles :
 - Les deux pistes sont enregistrées séparément, puis mixées pour la transcription. La piste micro identifie l'utilisateur.
 - Format : WAV 16 kHz mono par piste, ou FLAC pour réduire la taille.
 
+La piste système mélange toutes les sorties audio actives (haut-parleurs, casque, sortie mains libres Bluetooth), pas seulement la sortie par défaut : une application d'appel joue souvent ailleurs. Les sorties sont recherchées toutes les 3 s pendant l'enregistrement. Réglages › Réunion permet d'exclure une sortie.
+
 Par système d'exploitation :
 
-- **Windows** : loopback WASAPI pour l'audio système.
+- **Windows** : loopback WASAPI pour l'audio système, une capture par sortie active.
 - **macOS** : ScreenCaptureKit (macOS 13+), avec permission « Enregistrement de l'écran et audio ». Un driver virtuel (BlackHole) est une solution de repli.
-- **Linux** : moniteur PipeWire ou PulseAudio (source `.monitor`).
+- **Linux** : moniteur PipeWire ou PulseAudio (source `.monitor` de chaque sortie).
 
 Erreurs à afficher clairement :
 
