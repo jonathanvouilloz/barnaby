@@ -304,6 +304,8 @@ pub struct Settings {
     pub vocabulary: Vec<String>,
     /// The user saw what leaves the machine in `hybrid`/`api` mode (spec 6).
     pub cloud_disclosure_acknowledged: bool,
+    /// The first-run onboarding was completed or skipped.
+    pub onboarding_done: bool,
 }
 
 impl Default for DictationSettings {
@@ -366,6 +368,19 @@ impl Default for Settings {
             notification_sound: false,
             vocabulary: Vec::new(),
             cloud_disclosure_acknowledged: false,
+            onboarding_done: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Settings;
+
+    #[test]
+    fn onboarding_done_defaults_to_false() {
+        assert!(!Settings::default().onboarding_done);
+        let s: Settings = serde_json::from_str(r#"{"ui_language":"en"}"#).unwrap();
+        assert!(!s.onboarding_done);
     }
 }

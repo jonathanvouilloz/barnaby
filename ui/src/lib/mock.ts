@@ -26,6 +26,7 @@ let settings: Settings = {
   notification_sound: false,
   vocabulary: ['Barber Concept', 'Barnaby'],
   cloud_disclosure_acknowledged: false,
+  onboarding_done: false,
 };
 let webhookSecret = '';
 let llmApiKey = '';
@@ -116,6 +117,7 @@ const meetings: Meeting[] = [
   meeting('m4', 'Comité de pilotage', today(10, 0, 4), 50, 'sent', 3, 3),
 ];
 
+let micTest: ReturnType<typeof setInterval> | undefined;
 let dictations: Dictation[] = [
   { id: 'd1', created_at: today(10, 42), text: 'Merci pour ton retour, je regarde ça cet après-midi et je te tiens au courant.', language: 'fr', duration_ms: 4200, injected_into: 'Slack', provider: 'whisper-base' },
   { id: 'd2', created_at: today(10, 5), text: 'Ajouter un test pour la reprise après coupure réseau dans le module de synchronisation.', language: 'fr', duration_ms: 5100, injected_into: 'Code', provider: 'whisper-base' },
@@ -255,6 +257,13 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     case 'list_dictations': return clone(dictations);
     case 'delete_dictation': dictations = dictations.filter((d) => d.id !== a.id); return null;
     case 'clear_dictations': dictations = []; return null;
+    case 'start_mic_test':
+      micTest ??= setInterval(() => emit('mic-level', 0.35 + 0.3 * Math.sin(Date.now() / 400)), 50);
+      return null;
+    case 'stop_mic_test':
+      clearInterval(micTest);
+      micTest = undefined;
+      return null;
     case 'list_models': return clone(models);
     case 'list_outputs': return [
       { id: 'wasapi:{0.0.0.00000000}.{speakers}', name: 'Haut-parleurs (Realtek Audio)' },

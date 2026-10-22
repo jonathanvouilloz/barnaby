@@ -218,6 +218,16 @@ pub fn clear_dictations(app: AppState) -> CmdResult<()> {
     app.db().clear_dictations().map_err(code("store_failed"))
 }
 
+#[tauri::command]
+pub fn start_mic_test(app: AppState) -> CmdResult<()> {
+    crate::dictation::start_mic_test(&app)
+}
+
+#[tauri::command]
+pub fn stop_mic_test(app: AppState) {
+    crate::dictation::stop_mic_test(&app)
+}
+
 #[derive(Serialize)]
 pub struct ModelInfo {
     id: &'static str,

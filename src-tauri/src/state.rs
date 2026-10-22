@@ -15,7 +15,7 @@ use barnaby_engine::{models, ParakeetTranscriber, Recorder, SherpaDiarizer, Whis
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
 
-use crate::{dictation::Session, sched::Gate};
+use crate::{dictation::{MicTest, Session}, sched::Gate};
 
 pub enum Job {
     Process(Uuid),
@@ -37,6 +37,7 @@ pub struct App {
     pub jobs: Sender<Job>,
     pub recording: Mutex<Option<ActiveMeeting>>,
     pub dictation: Mutex<Option<Session>>,
+    pub mic_test: Mutex<Option<MicTest>>,
     transcribers: Mutex<HashMap<String, Arc<dyn Transcriber>>>,
     diarizer: Mutex<Option<Arc<SherpaDiarizer>>>,
 }
@@ -67,6 +68,7 @@ impl App {
             jobs,
             recording: Mutex::default(),
             dictation: Mutex::default(),
+            mic_test: Mutex::default(),
             transcribers: Mutex::default(),
             diarizer: Mutex::default(),
         }

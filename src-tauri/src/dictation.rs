@@ -29,9 +29,42 @@ pub struct Session {
     end: Sender<End>,
 }
 
+/// The running onboarding mic test.
+pub struct MicTest {
+    end: Sender<()>,
+}
+
 enum End {
     Stop,
     Cancel,
+}
+
+/// Emits `mic-level` until `stop_mic_test`; the samples are only measured, never kept.
+pub fn start_mic_test(app: &Arc<App>) -> Result<(), String> {
+    let mut slot = lock(&app.mic_test);
+    if slot.is_some() {
+        return Ok(());
+    }
+    let mut recorder = DictationRecorder::start().map_err(|e| {
+        log::warn!("mic test start: {e:#}");
+        e.to_string()
+    })?;
+    let (end, rx) = mpsc::channel();
+    *slot = Some(MicTest { end });
+    let handle = app.handle.clone();
+    thread::spawn(move || {
+        while let Err(RecvTimeoutError::Timeout) = rx.recv_timeout(TICK) {
+            let _ = handle.emit("mic-level", level(&recorder.drain()));
+        }
+        recorder.stop();
+    });
+    Ok(())
+}
+
+pub fn stop_mic_test(app: &App) {
+    if let Some(t) = lock(&app.mic_test).take() {
+        let _ = t.end.send(());
+    }
 }
 
 fn status(app: &App, s: &str) {
@@ -156,7 +189,7 @@ fn segment_transcriber(app: Arc<App>, settings: &Settings) -> impl FnMut(&[f32])
 }
 
 /// Mic RMS mapped from -60..-10 dBFS to 0..1, so normal speech sits mid-scale.
-fn level(chunk: &[f32]) -> f32 {
+pub(crate) fn level(chunk: &[f32]) -> f32 {
     let db = 20.0 * rms(chunk).max(1e-6).log10();
     ((db + 60.0) / 50.0).clamp(0.0, 1.0)
 }

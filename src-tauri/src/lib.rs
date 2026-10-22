@@ -103,6 +103,8 @@ pub fn run() {
             commands::list_dictations,
             commands::delete_dictation,
             commands::clear_dictations,
+            commands::start_mic_test,
+            commands::stop_mic_test,
             commands::list_models,
             commands::list_outputs,
             commands::download_model,

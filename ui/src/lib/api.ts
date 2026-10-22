@@ -72,6 +72,7 @@ export interface Settings {
   vocabulary: string[];
   /** The user saw what leaves the machine in hybrid/api mode (spec 6). */
   cloud_disclosure_acknowledged: boolean;
+  onboarding_done: boolean;
 }
 
 /** 'parakeet': fast dictation model (sherpa-onnx); 'whisper': meetings, dictation fallback. */
@@ -121,6 +122,8 @@ export const api = {
   listOutputs: () => invoke<OutputDevice[]>('list_outputs'),
   downloadModel: (id: string) => invoke<void>('download_model', { id }),
   deleteModel: (id: string) => invoke<void>('delete_model', { id }),
+  startMicTest: () => invoke<void>('start_mic_test'),
+  stopMicTest: () => invoke<void>('stop_mic_test'),
 };
 
 export const events = {
@@ -128,6 +131,8 @@ export const events = {
   dictationStatus: (cb: (s: DictationStatus) => void) => listen<DictationStatus>('dictation-status', (e) => cb(e.payload)),
   /** Mic RMS in [0, 1], ~20 per second while dictating (overlay waveform). */
   dictationLevel: (cb: (level: number) => void) => listen<number>('dictation-level', (e) => cb(e.payload)),
+  /** Mic level in [0, 1], ~20 per second during the onboarding mic test (nothing is recorded). */
+  micLevel: (cb: (level: number) => void) => listen<number>('mic-level', (e) => cb(e.payload)),
   dictationDone: (cb: (d: Dictation) => void) => listen<Dictation>('dictation-done', (e) => cb(e.payload)),
   /** RMS levels in [0, 1], ~10 per second while recording a meeting. */
   audioLevel: (cb: (l: { mic: number; system: number }) => void) => listen<{ mic: number; system: number }>('audio-level', (e) => cb(e.payload)),
