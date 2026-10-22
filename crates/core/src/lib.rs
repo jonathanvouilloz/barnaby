@@ -2,6 +2,7 @@ pub mod audio;
 pub mod destination;
 pub mod export;
 pub mod llm;
+pub mod mistral;
 pub mod model;
 pub mod net;
 pub mod pipeline;

@@ -50,3 +50,15 @@ pub trait Destination: Send + Sync {
     fn name(&self) -> &str;
     fn send(&self, doc: &MeetingDoc) -> anyhow::Result<()>;
 }
+
+/// Short error code a provider attaches to a failure; the pipeline stores it on the meeting.
+#[derive(Debug, thiserror::Error)]
+#[error("{0}")]
+pub struct Coded(pub &'static str);
+
+/// The first `Coded` in `err`'s chain.
+pub fn error_code(err: &anyhow::Error) -> Option<&'static str> {
+    err.chain()
+        .find_map(|e| e.downcast_ref::<Coded>())
+        .map(|c| c.0)
+}

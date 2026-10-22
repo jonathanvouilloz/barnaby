@@ -102,6 +102,8 @@ impl Pipeline {
                 Err(e) => {
                     let code = if net::is_blocked(&e) {
                         net::BLOCKED.to_string()
+                    } else if let Some(code) = error_code(&e) {
+                        code.to_string()
                     } else {
                         format!("{step:?}_failed").to_lowercase()
                     };
@@ -393,7 +395,7 @@ mod tests {
     fn pipeline(
         store: &SharedStore,
         data_dir: &std::path::Path,
-        asr: Arc<FakeTranscriber>,
+        asr: Arc<dyn Transcriber>,
         llm: Option<Arc<dyn Structurer>>,
     ) -> Pipeline {
         Pipeline {
@@ -544,6 +546,30 @@ mod tests {
             lock(&store).get_meeting(id).unwrap().error.as_deref(),
             Some("audio_failed")
         );
+    }
+
+    struct QuotaTranscriber;
+    impl Transcriber for QuotaTranscriber {
+        fn name(&self) -> &str {
+            "fake-cloud"
+        }
+        fn transcribe(&self, _: &[f32], _: Option<&str>) -> Result<Transcript> {
+            Err(Coded("mistral_quota").into())
+        }
+    }
+
+    #[test]
+    fn provider_error_code_is_stored() {
+        let (store, dir, id) = setup(&[]);
+        assert!(pipeline(&store, &dir, Arc::new(QuotaTranscriber), None)
+            .run(id)
+            .is_err());
+        let m = lock(&store).get_meeting(id).unwrap();
+        assert_eq!(
+            (m.state, m.error.as_deref()),
+            (MeetingState::Failed, Some("mistral_quota"))
+        );
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     fn llm(base_url: String) -> Option<Arc<dyn Structurer>> {
