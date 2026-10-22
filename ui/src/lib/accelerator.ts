@@ -1,4 +1,6 @@
 // Turns a keydown into a Tauri global-shortcut accelerator string, e.g. `Ctrl+Alt+Space`.
+import { dictionaries, type Lang } from './i18n';
+
 export interface KeyLike { key: string; code: string; ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean }
 
 const MODIFIER_KEYS = new Set(['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'OS', 'Super', 'Hyper']);
@@ -24,4 +26,9 @@ function keyName(code: string): string | null {
   if (digit) return digit[1];
   // Other W3C codes (Space, F5, ArrowUp, Comma, Numpad1...) are accepted as is by global-hotkey.
   return code && code !== 'Unidentified' ? code : null;
+}
+
+/** Accelerator as the keycaps read in the interface language: `Ctrl+Shift+Space` → « Ctrl + Maj + Espace ». */
+export function keyLabel(accel: string, lang: Lang): string {
+  return accel.split('+').map((k) => dictionaries[lang][`key.${k}`] ?? k).join(' + ');
 }

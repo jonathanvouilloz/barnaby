@@ -1,6 +1,6 @@
 <script lang="ts">
   // Where meetings are transcribed, then the models that choice needs, downloaded one after another.
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { api, events, type ModelInfo } from '../lib/api';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
@@ -18,8 +18,10 @@
   let models = $state<ModelInfo[]>([]);
   let choice = $state<Choice | null>(null);
   let mistralOpen = $state(false);
+  let hasKey = $state(false);
   let progress = $state<Record<string, number>>({});
   let failed = $state(false);
+  let announce = $state('');
 
   // The catalog is read once: models installed here stay listed, marked done.
   const list = $derived(choice ? modelsFor(choice, models, app.settings!) : []);
@@ -38,7 +40,9 @@
   });
 
   async function pick(c: Choice) {
-    if (c === 'cloud' && !(await attempt(api.hasMistralApiKey))) {
+    // The disclosure shows on every cloud choice, even with a saved key.
+    if (c === 'cloud') {
+      hasKey = (await attempt(api.hasMistralApiKey)) ?? false;
       mistralOpen = true;
       return;
     }
@@ -68,8 +72,14 @@
         break;
       }
       progress[m.id] = 1;
+      announce = t('onboarding.models.installed', { name: m.name });
     }
     busy = false;
+    if (failed) return;
+    announce = t('onboarding.models.all_in');
+    // The download button goes away: keep the keyboard on the way forward, not on the page body.
+    await tick();
+    document.getElementById('onboarding-continue')?.focus();
   }
 
   const size = (mb: number) => {
@@ -109,17 +119,19 @@
       </ul>
       {#if failed}<p class="problem" role="alert">{t('onboarding.models.failed')}</p>{/if}
       {#if !allIn}
-        <button class="btn" disabled={busy} onclick={download}>
+        <!-- aria-disabled, not disabled: a disabled button would drop the focus during the download. -->
+        <button class="btn" aria-disabled={busy} onclick={() => busy || download()}>
           {failed ? t('common.retry') : t('onboarding.models.download', { size: size(total) })}
         </button>
       {/if}
+      <p class="sr-only" aria-live="polite">{announce}</p>
     </div>
   {:else}
     <p class="secondary" role="status">{t('onboarding.models.ready')}</p>
   {/if}
 {/if}
 
-<MistralSheet open={mistralOpen} oncancel={() => (mistralOpen = false)} onconfirm={() => { mistralOpen = false; save('cloud'); }} />
+<MistralSheet open={mistralOpen} {hasKey} oncancel={() => (mistralOpen = false)} onconfirm={() => { mistralOpen = false; save('cloud'); }} />
 
 <style>
   .lead { font-size: 16px; }
@@ -140,5 +152,6 @@
   .ok { color: var(--ok); }
   progress { grid-column: 1 / -1; width: 100%; height: 4px; accent-color: var(--accent); }
   .problem { color: var(--danger); }
+  [aria-disabled="true"] { opacity: .5; pointer-events: none; }
   @media (max-width: 560px) { .choices { grid-template-columns: 1fr; } }
 </style>

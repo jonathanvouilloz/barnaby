@@ -1,5 +1,6 @@
 <script lang="ts">
   // Three moments of a meeting, each drawn in lines with the ✦ where Barnaby helps.
+  import { keyLabel } from '../lib/accelerator';
   import { t } from '../lib/i18n';
   import { app } from '../lib/state.svelte';
 
@@ -33,7 +34,7 @@
       </svg>
       <h2>{t(`onboarding.tour.${p.id}`)}</h2>
       <p class="secondary">{t(`onboarding.tour.${p.id}_text`)}</p>
-      <p class="key secondary">{t(`settings.sc.${p.key}`)}<kbd>{app.settings!.shortcuts[p.key]}</kbd></p>
+      <p class="key secondary">{t(`settings.sc.${p.key}`)}<kbd>{keyLabel(app.settings!.shortcuts[p.key], app.lang)}</kbd></p>
     </li>
   {/each}
 </ul>

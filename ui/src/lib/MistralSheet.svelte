@@ -5,7 +5,8 @@
   import { attempt, notify } from './state.svelte';
   import Sheet from './Sheet.svelte';
 
-  let { open, oncancel, onconfirm }: { open: boolean; oncancel: () => void; onconfirm: () => void } = $props();
+  // hasKey: a key is already saved, so the sheet only discloses and confirms.
+  let { open, hasKey = false, oncancel, onconfirm }: { open: boolean; hasKey?: boolean; oncancel: () => void; onconfirm: () => void } = $props();
 
   let key = $state('');
 
@@ -15,6 +16,7 @@
   }
 
   async function confirm() {
+    if (hasKey) return onconfirm();
     if ((await attempt(() => api.setMistralApiKey(key.trim()))) === undefined) return;
     key = '';
     notify(t('settings.key_saved'));
@@ -30,12 +32,14 @@
   </ul>
   <p>{t('mistral.price')}</p>
   <p class="secondary">{t('mistral.terms')}</p>
-  <label class="field"><span>{t('mistral.key')}</span>
-    <input type="password" bind:value={key} autocomplete="off" />
-  </label>
+  {#if !hasKey}
+    <label class="field"><span>{t('mistral.key')}</span>
+      <input type="password" bind:value={key} autocomplete="off" />
+    </label>
+  {/if}
   {#snippet actions()}
     <button class="btn" onclick={cancel}>{t('common.cancel')}</button>
-    <button class="btn primary" disabled={!key.trim()} onclick={confirm}>{t('mistral.confirm')}</button>
+    <button class="btn primary" disabled={!hasKey && !key.trim()} onclick={confirm}>{t(hasKey ? 'mistral.use_saved' : 'mistral.confirm')}</button>
   {/snippet}
 </Sheet>
 

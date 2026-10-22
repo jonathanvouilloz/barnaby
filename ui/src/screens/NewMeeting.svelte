@@ -2,6 +2,7 @@
   import { api, type Participant } from '../lib/api';
   import { app, applySettings, attempt, go, notify } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
+  import { consentTemplate } from '../lib/settings';
   import Sheet from '../lib/Sheet.svelte';
 
   let title = $state('');
@@ -12,6 +13,7 @@
   let nameInput: HTMLInputElement;
 
   const consentNeeded = $derived(!app.settings!.consent_acknowledged);
+  const template = $derived(consentTemplate(app.lang, app.settings!.meeting));
   const defaultTitle = t('new.name_default', {
     date: new Intl.DateTimeFormat(app.lang, { day: 'numeric', month: 'long' }).format(new Date()),
   });
@@ -31,7 +33,7 @@
   }
 
   async function copyTemplate() {
-    await attempt(() => navigator.clipboard.writeText(t('consent.template')));
+    await attempt(() => navigator.clipboard.writeText(template));
     notify(t('common.copied'));
   }
 
@@ -94,7 +96,7 @@
 
 <Sheet open={consentNeeded} title={t('consent.title')} onclose={() => go({ name: 'home' })}>
   <p>{t('consent.body')}</p>
-  <blockquote class="template">{t('consent.template')}</blockquote>
+  <blockquote class="template">{template}</blockquote>
   <div><button class="btn small" onclick={copyTemplate}>{t('consent.copy')}</button></div>
   {#snippet actions()}
     <button class="btn" onclick={() => go({ name: 'home' })}>{t('common.cancel')}</button>

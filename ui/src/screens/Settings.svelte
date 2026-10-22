@@ -151,8 +151,8 @@
   function pickMeetingModel(id: string) {
     const previous = draft.meeting.model;
     draft.meeting.model = id;
-    if (id === MISTRAL_MODEL && !hasKeys.mistral) {
-      // Audio leaves the machine: nothing changes until a key is given.
+    if (id === MISTRAL_MODEL) {
+      // Audio leaves the machine: nothing changes until the disclosure is confirmed (and a key given if none is saved).
       mistralFallback = previous;
       mistralOpen = true;
       return;
@@ -481,7 +481,7 @@
   </p>
 {/snippet}
 
-<MistralSheet open={mistralOpen} oncancel={cancelMistral} onconfirm={activateMistral} />
+<MistralSheet open={mistralOpen} hasKey={hasKeys.mistral} oncancel={cancelMistral} onconfirm={activateMistral} />
 
 <Sheet open={disclosureOpen} title={t('cloud.title')} onclose={() => (disclosureOpen = false)}>
   <p>{t('cloud.intro')}</p>
@@ -511,6 +511,8 @@
   }
   .lbl { flex: 1; min-width: 0; display: grid; gap: 2px; }
   .ctl { width: 280px; flex: none; }
+  /* Selects grow to their longest option rather than clip it. */
+  select.ctl { width: auto; min-width: 280px; max-width: 100%; }
   .num { width: 112px; flex: none; text-align: right; }
   .line > input[type="checkbox"] { width: 16px; height: 16px; margin: 0; flex: none; }
   .stack { display: grid; justify-content: stretch; gap: 8px; padding-block: 12px; }
@@ -543,5 +545,5 @@
     color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
     background: color-mix(in srgb, var(--danger) 8%, var(--surface));
   }
-  @media (max-width: 860px) { .ctl { width: 220px; } }
+  @media (max-width: 860px) { .ctl { width: 220px; } select.ctl { min-width: 220px; } }
 </style>

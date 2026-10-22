@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { acceleratorFromKey } from './accelerator';
+  import { acceleratorFromKey, keyLabel } from './accelerator';
   import { t } from './i18n';
+  import { app } from './state.svelte';
 
   let { value = $bindable(), label }: { value: string; label: string } = $props();
 
@@ -32,14 +33,16 @@
     type="button"
     class="btn keys"
     class:capturing
-    aria-label="{label}, {capturing ? t('settings.sc.press') : value}"
+    aria-label="{label}, {capturing ? t('settings.sc.press') : keyLabel(value, app.lang)}"
     onclick={() => (capturing = !capturing)}
     {onkeydown}
     onblur={stop}
   >
-    {#if capturing}{t('settings.sc.press')}{:else}<kbd>{value}</kbd>{/if}
+    {#if capturing}{t('settings.sc.press')}{:else}<kbd>{keyLabel(value, app.lang)}</kbd>{/if}
   </button>
 </div>
+<!-- The button's own label is not re-read when capture starts: this line says it. -->
+<span class="sr-only" aria-live="polite">{capturing ? t('settings.sc.press') : ''}</span>
 {#if hint}<p class="secondary hint" role="status">{hint}</p>{/if}
 
 <style>

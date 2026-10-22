@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
-import { acceleratorFromKey, type KeyLike } from './accelerator';
+import { acceleratorFromKey, keyLabel, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize, groupByDay, localDay } from './format';
-import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments } from './review';
-import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
+import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
+import { addTerm, consentTemplate, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
@@ -51,6 +51,12 @@ describe('accelerator', () => {
   test('uses the physical key, not the layout', () => {
     // AZERTY: the key labelled A sits on code KeyQ
     expect(acceleratorFromKey(key('KeyQ', { ctrlKey: true }, 'a'))).toBe('Ctrl+Q');
+  });
+  test('displays keycaps in the interface language', () => {
+    expect(keyLabel('Ctrl+Alt+Space', 'fr')).toBe('Ctrl + Alt + Espace');
+    expect(keyLabel('Ctrl+Shift+R', 'fr')).toBe('Ctrl + Maj + R');
+    expect(keyLabel('Ctrl+Shift+Space', 'en')).toBe('Ctrl + Shift + Space');
+    expect(keyLabel('F9', 'fr')).toBe('F9');
   });
 });
 
@@ -185,6 +191,44 @@ test('processing mode follows meeting model and summary', () => {
   expect(modeFor(MISTRAL_MODEL, true)).toBe('api');
   expect(modeFor('whisper-small', true)).toBe('hybrid');
   expect(modeFor('whisper-small', false)).toBe('local');
+});
+
+describe('consent template', () => {
+  const tpl = (model: string, retention: Settings['meeting']['retention']) => consentTemplate('fr', { model, retention });
+  test('local model keeps the audio on the computer', () => {
+    expect(tpl('whisper-small', 'on_review')).toContain('reste sur mon ordinateur');
+    expect(tpl('whisper-small', 'on_review')).not.toContain('Mistral');
+  });
+  test('Mistral is named and the audio is not said to stay local', () => {
+    const s = tpl(MISTRAL_MODEL, 'on_review');
+    expect(s).toContain('Mistral');
+    expect(s).not.toContain('reste sur mon ordinateur');
+  });
+  test('states the real retention', () => {
+    expect(tpl('whisper-small', 'on_review')).toContain('une fois le compte rendu relu');
+    expect(tpl('whisper-small', 'seven_days')).toContain('sept jours');
+    expect(tpl('whisper-small', 'forever')).toContain('Je le conserve');
+    expect(tpl('whisper-small', 'forever')).not.toContain('supprime');
+  });
+  test('participants are addressed with vous, in English too', () => {
+    expect(tpl(MISTRAL_MODEL, 'forever')).toContain('Si vous préférez');
+    expect(consentTemplate('en', { model: MISTRAL_MODEL, retention: 'seven_days' })).toContain('Mistral');
+  });
+});
+
+describe('wordDiff', () => {
+  test('marks only the differing words', () => {
+    expect(wordDiff('contre 180 avant', 'contre 120 avant')).toEqual([
+      { text: 'contre ', changed: false }, { text: '120', changed: true }, { text: ' avant', changed: false },
+    ]);
+  });
+  test('identical or fully different texts', () => {
+    expect(wordDiff('même texte', 'même texte')).toEqual([{ text: 'même texte', changed: false }]);
+    expect(wordDiff('abc', 'xyz')).toEqual([{ text: 'xyz', changed: true }]);
+  });
+  test('an insertion at the end', () => {
+    expect(wordDiff('Postgres', 'Postgres 17')).toEqual([{ text: 'Postgres ', changed: false }, { text: '17', changed: true }]);
+  });
 });
 
 describe('days', () => {

@@ -90,12 +90,12 @@
 
   <footer class:wide={step === 'tour'}>
     {#if i > 0}<button class="btn ghost" disabled={downloading} onclick={() => move(-1)}>{t('common.back')}</button>{/if}
-    <span class="grow"></span>
+    <span class="grow">{#if !ready}<span id="continue-hint" class="secondary">{t(`onboarding.${step}.unlock`)}</span>{/if}</span>
     {#if last}
       <button class="btn primary" disabled={finishing} onclick={finish}>{t('onboarding.done.go')}</button>
     {:else}
       <button class="btn ghost" disabled={downloading} onclick={() => move(1)}>{t('onboarding.skip')}</button>
-      <button class="btn primary" disabled={!ready} onclick={() => move(1)}>{t('onboarding.continue')}</button>
+      <button id="onboarding-continue" class="btn primary" disabled={!ready} aria-describedby={ready ? undefined : 'continue-hint'} onclick={() => move(1)}>{t('onboarding.continue')}</button>
     {/if}
   </footer>
 </section>
@@ -130,5 +130,5 @@
     width: min(600px, 100%); justify-self: center; padding: 16px 40px 32px;
   }
   footer.wide { width: min(920px, 100%); }
-  .grow { flex: 1; }
+  .grow { flex: 1; text-align: right; }
 </style>

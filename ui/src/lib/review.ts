@@ -50,3 +50,22 @@ export function speakerName(
   const anon = /^speaker_([a-z])$/.exec(id);
   return anon ? t('speaker.anon', { letter: anon[1].toUpperCase() }) : id;
 }
+
+/** The alternative cut into parts, `changed` on the words that differ from the proposed text (common start and end kept plain). */
+export function wordDiff(base: string, alt: string): { text: string; changed: boolean }[] {
+  const a = base.split(/(\s+)/);
+  const b = alt.split(/(\s+)/);
+  let start = 0;
+  while (start < a.length && start < b.length && a[start] === b[start]) start++;
+  let end = b.length;
+  while (end > start && a.length - (b.length - end) > start && a[a.length - 1 - (b.length - end)] === b[end - 1]) end--;
+  // Spaces at the edges of the change stay plain.
+  if (start < end && /^\s+$/.test(b[start])) start++;
+  if (start < end && /^\s+$/.test(b[end - 1])) end--;
+  const parts = [
+    { text: b.slice(0, start).join(''), changed: false },
+    { text: b.slice(start, end).join(''), changed: true },
+    { text: b.slice(end).join(''), changed: false },
+  ];
+  return parts.filter((p) => p.text);
+}

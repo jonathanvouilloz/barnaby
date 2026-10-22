@@ -2,6 +2,7 @@
   import type { Resolution, ReviewItem } from '../lib/api';
   import { t } from '../lib/i18n';
   import { formatTimestamp } from '../lib/format';
+  import { wordDiff } from '../lib/review';
   import Icon from '../lib/Icon.svelte';
   import Spark from '../lib/Spark.svelte';
 
@@ -64,7 +65,7 @@
   class:current={current && !resolved}
   class:resolved
   tabindex="0"
-  aria-label="{t(`review.kind.${item.kind}`)}, {formatTimestamp(item.start)}"
+  aria-labelledby="zone-kind-{item.id} zone-q-{item.id}"
   {onkeydown}
   {onclick}
   onfocusin={onfocus}
@@ -74,7 +75,7 @@
       {#if resolved}<span class="ok"><Icon name="check" size={14} /></span>{/if}
       <Spark active={!resolved} />
     </span>
-    <span class="kind">{t(`review.kind.${item.kind}`)}</span>
+    <span class="kind" id="zone-kind-{item.id}">{t(`review.kind.${item.kind}`)}</span>
     <button class="btn ghost small tabular" aria-label={t('review.seek', { time: formatTimestamp(item.start) })} onclick={onplay}>
       <Icon name="play" size={10} />{formatTimestamp(item.start)}
     </button>
@@ -84,14 +85,17 @@
     <p class="done">{summary(item.resolution!)}</p>
   {:else if current}
     <div class="detail">
-      <p class="question">{t(`review.q.${item.kind}`)}</p>
+      <p class="question" id="zone-q-{item.id}">{t(`review.q.${item.kind}`)}</p>
       {#if item.proposed_text}
         <blockquote class="proposed" aria-label={t('review.proposed')}>{item.proposed_text}</blockquote>
       {/if}
       {#if item.alternatives.length > 0}
-        <div class="alts" role="group" aria-label={t('review.alternatives')}>
+        <div class="alts" role="group" aria-labelledby="zone-alts-{item.id}">
+          <p class="secondary" id="zone-alts-{item.id}">{t('review.maybe')}</p>
           {#each item.alternatives as alt (alt)}
-            <button class="btn small alt" onclick={() => onresolve({ action: 'correct', text: alt })}>{alt}</button>
+            <button class="btn small alt" onclick={() => onresolve({ action: 'correct', text: alt })}>
+              <span>{#each wordDiff(item.proposed_text, alt) as part, i (i)}{#if part.changed}<strong>{part.text}</strong>{:else}{part.text}{/if}{/each}</span>
+            </button>
           {/each}
         </div>
       {/if}
@@ -153,7 +157,9 @@
     background: var(--fill); font-size: 14px;
   }
   .alts { display: flex; flex-wrap: wrap; gap: 4px; }
-  .alt { white-space: normal; text-align: left; }
+  .alts p { width: 100%; }
+  .alt { white-space: normal; text-align: left; font-weight: 400; color: var(--text-2); }
+  .alt strong { font-weight: 650; color: var(--text); }
   .actions { display: flex; flex-wrap: wrap; gap: 4px; }
   .validate { gap: 4px; color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
   .extra { display: grid; gap: 8px; justify-items: start; }

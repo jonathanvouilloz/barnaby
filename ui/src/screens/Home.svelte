@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api, type Meeting } from '../lib/api';
   import { app, attempt, errorText, go, notify, refreshMeetings } from '../lib/state.svelte';
+  import { keyLabel } from '../lib/accelerator';
   import { t } from '../lib/i18n';
   import { formatDateTime, formatDay, formatTime, groupByDay, localDay } from '../lib/format';
   import Owl from '../lib/Owl.svelte';
@@ -66,7 +67,7 @@
       {#if app.meetings.length === 0}
         <div class="empty">
           {#if app.mascot}<Owl state="idle" size={72} />{/if}
-          <p>{t('home.meetings_empty', { shortcut: shortcuts.meeting_toggle })}</p>
+          <p>{t('home.meetings_empty', { shortcut: keyLabel(shortcuts.meeting_toggle, app.lang) })}</p>
         </div>
       {:else}
         {#each groupByDay(app.meetings, (m) => m.started_at) as group (group.day)}
@@ -112,7 +113,7 @@
         {/if}
       </div>
       {#if app.dictations.length === 0}
-        <p class="secondary quiet">{t('home.dictations_empty', { shortcut: shortcuts.dictation })}</p>
+        <p class="secondary quiet">{t('home.dictations_empty', { shortcut: keyLabel(shortcuts.dictation, app.lang) })}</p>
       {:else}
         <ul>
           {#each app.dictations as d (d.id)}

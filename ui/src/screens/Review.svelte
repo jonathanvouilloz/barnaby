@@ -152,8 +152,10 @@
       <div class="col transcript">
         {#if detail.doc.summary}
           {@const s = detail.doc.summary}
+          <!-- A heading inside <summary> loses its role: the hidden one keeps heading navigation. -->
+          <h2 class="sr-only">{t('review.summary')}</h2>
           <details class="card summary">
-            <summary><h2>{t('review.summary')}</h2></summary>
+            <summary>{t('review.summary')}</summary>
             <p>{s.overview}</p>
             {#if s.decisions.length}<h3>{t('review.decisions')}</h3><ul>{#each s.decisions as d}<li>{d}</li>{/each}</ul>{/if}
             {#if s.action_items.length}
@@ -232,7 +234,7 @@
 
 <style>
   .title { flex: 1; min-width: 0; }
-  .title h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title h1 { white-space: normal; overflow-wrap: anywhere; }
   .player { padding: 0 40px 16px; }
   audio { width: 100%; height: 36px; }
 
@@ -245,7 +247,7 @@
   .summary, .segments { max-width: calc(68ch + 100px); }
   .summary { padding: 12px 16px; margin: 0 0 24px 8px; display: grid; gap: 8px; }
   .summary summary { cursor: pointer; list-style-position: inside; }
-  .summary summary h2 { display: inline; }
+  .summary summary { font-size: 15px; font-weight: 650; line-height: 1.35; }
   .summary h3 { font-size: 12.5px; font-weight: 650; color: var(--text-2); margin-top: 4px; }
   .summary ul { list-style: disc; padding-left: 20px; }
 
