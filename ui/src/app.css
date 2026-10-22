@@ -10,6 +10,7 @@
   --accent: #0170ec;
   --on-accent: #fdfdfd;
   --rec: #fcaa4f;
+  --on-rec: #0f0c2f; /* ink in both themes: cream text fails on the orange */
   --danger: #b3261e;
   --warn: #9a5b00;
   --ok: #1f7a3a;

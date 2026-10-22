@@ -56,13 +56,13 @@
   <header class="screen-head" data-tauri-drag-region>
     <h1>{meeting?.title ?? t('rec.title')}</h1>
     {#if app.recordingId}
-      <button class="btn danger-fill" disabled={stopping} onclick={stop}>{t('rec.stop')}</button>
+      <button class="btn stop" disabled={stopping} onclick={stop}><span class="square" aria-hidden="true"></span>{t('rec.stop')}</button>
     {/if}
   </header>
 
   <div class="screen-body">
     {#if !app.recordingId}
-      <p class="card empty">{t('rec.none')}</p>
+      <p class="empty">{t('rec.none')}</p>
     {:else}
       <div class="live" role="status">
         <span class="rec-dot" aria-hidden="true"></span>
@@ -71,13 +71,13 @@
         <time class="elapsed tabular" aria-hidden="true">{formatTimestamp(elapsed)}</time>
       </div>
 
-      <div aria-live="polite">
+      <div class="warnings" aria-live="polite">
         {#each warnings as w (w)}
           <p class="warning">{t(w)}</p>
         {/each}
       </div>
 
-      <section class="card meters" aria-label={t('rec.levels')}>
+      <section class="meters" aria-label={t('rec.levels')}>
         {#each [['mic', levels.mic], ['system', levels.system]] as [k, v] (k)}
           <div class="meter">
             <span class="label">{t(`rec.${k}`)}</span>
@@ -109,29 +109,35 @@
 </section>
 
 <style>
-  .screen-body { display: grid; gap: 18px; align-content: start; max-width: 680px; }
-  .live { display: flex; align-items: center; gap: 10px; color: var(--text-2); }
-  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
-  .elapsed { margin-left: auto; font-size: 34px; font-weight: 300; color: var(--text); letter-spacing: .5px; }
+  .screen-body { display: grid; gap: 32px; align-content: start; max-width: 640px; }
+  .live { display: flex; align-items: center; gap: 12px; color: var(--text-2); }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rec); animation: pulse 1.4s ease-in-out infinite; }
+  .elapsed { margin-left: auto; font-size: 40px; font-weight: 600; line-height: 1; color: var(--text); letter-spacing: -.01em; }
   @keyframes pulse { 50% { opacity: .35; } }
 
+  .stop { background: var(--rec); border-color: transparent; color: var(--on-rec); }
+  .stop:hover:not(:disabled) { background: color-mix(in srgb, var(--rec) 88%, var(--on-rec)); }
+  .square { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+
+  .warnings { display: grid; gap: 8px; }
+  /* Out of the grid flow while empty, but still in the page so the live region keeps announcing. */
+  .warnings:empty { position: absolute; }
   .warning {
-    padding: 10px 14px; border-radius: var(--r-card);
-    border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
-    background: color-mix(in srgb, var(--warn) 10%, var(--surface));
+    padding: 8px 12px; border-radius: var(--r-control);
+    background: color-mix(in srgb, var(--warn) 12%, var(--surface));
   }
 
-  .meters { padding: 16px; display: grid; gap: 14px; }
-  .meter { display: grid; grid-template-columns: 120px 1fr; align-items: center; gap: 12px; }
-  .label { font-size: 13px; color: var(--text-2); }
-  .bar { height: 8px; border-radius: 4px; background: var(--fill-strong); overflow: hidden; }
+  .meters { display: grid; gap: 16px; }
+  .meter { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 16px; }
+  .label { font-size: 12.5px; color: var(--text-2); }
+  .bar { height: 8px; border-radius: 999px; background: var(--fill-strong); overflow: hidden; }
   .fill {
-    height: 100%; background: var(--ok); transform-origin: left;
+    height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left;
     transition: transform 100ms linear;
   }
 
-  .notes { display: grid; gap: 10px; }
-  ul { display: grid; gap: 6px; }
+  .notes { display: grid; gap: 12px; }
+  ul { display: grid; gap: 4px; }
   li { display: flex; gap: 12px; align-items: baseline; }
   li time { flex: none; }
 </style>

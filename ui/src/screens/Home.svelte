@@ -2,14 +2,23 @@
   import { api, type Meeting } from '../lib/api';
   import { app, attempt, errorText, go, notify, refreshMeetings } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
-  import { formatDateTime, formatTime } from '../lib/format';
-  import StateBadge from '../lib/StateBadge.svelte';
+  import { formatDateTime, formatDay, formatTime, groupByDay, localDay } from '../lib/format';
+  import Owl from '../lib/Owl.svelte';
+  import Spark from '../lib/Spark.svelte';
   import Sheet from '../lib/Sheet.svelte';
 
   let confirmClear = $state(false);
   let toDelete = $state<Meeting | null>(null);
 
   const shortcuts = $derived(app.settings!.shortcuts);
+
+  function dayLabel(day: string) {
+    const now = new Date();
+    if (day === localDay(now.toISOString())) return t('home.today');
+    now.setDate(now.getDate() - 1);
+    if (day === localDay(now.toISOString())) return t('home.yesterday');
+    return formatDay(day, app.lang);
+  }
 
   function open(m: Meeting) {
     if (m.state === 'needs_review') go({ name: 'review', id: m.id });
@@ -47,7 +56,7 @@
     {#if app.recordingId}
       <button class="btn primary" onclick={() => go({ name: 'recording' })}>{t('rec.live')}</button>
     {:else}
-      <button class="btn primary" onclick={() => go({ name: 'new' })}>{t('home.start')}</button>
+      <button class="btn primary" onclick={() => go({ name: 'new' })}>{t('new.title')}</button>
     {/if}
   </header>
 
@@ -55,40 +64,47 @@
     <section class="block" aria-labelledby="meetings-title">
       <h2 id="meetings-title">{t('home.meetings')}</h2>
       {#if app.meetings.length === 0}
-        <p class="card empty">{t('home.meetings_empty', { shortcut: shortcuts.meeting_toggle })}</p>
+        <div class="empty">
+          {#if app.mascot}<Owl state="idle" size={72} />{/if}
+          <p>{t('home.meetings_empty', { shortcut: shortcuts.meeting_toggle })}</p>
+        </div>
       {:else}
-        <ul class="card list">
-          {#each app.meetings as m (m.id)}
-            {@const clickable = m.state === 'needs_review' || m.state === 'recording'}
-            <li class="row">
-              <div class="main">
-                {#if clickable}
-                  <button class="title link" onclick={() => open(m)}>{m.title}</button>
-                {:else}
-                  <span class="title">{m.title}</span>
+        {#each groupByDay(app.meetings, (m) => m.started_at) as group (group.day)}
+          <h3 class="day">{dayLabel(group.day)}</h3>
+          <ul>
+            {#each group.items as m (m.id)}
+              {@const clickable = m.state === 'needs_review' || m.state === 'recording'}
+              <li class="row">
+                <span class="mark"><Spark active={m.state === 'needs_review'} /></span>
+                <div class="main">
+                  {#if clickable}
+                    <button class="title link" onclick={() => open(m)}>{m.title}</button>
+                  {:else}
+                    <span class="title">{m.title}</span>
+                  {/if}
+                  <p class="secondary tabular">
+                    {formatTime(m.started_at, app.lang)}
+                    {#if m.review_items_total > 0}{' · '}{t('home.zones', { done: m.review_items_resolved, total: m.review_items_total })}{/if}
+                  </p>
+                  {#if m.state === 'failed'}<p class="cause">{errorText(m.error)}</p>{/if}
+                </div>
+                <span class="state {m.state}">{t(`state.${m.state}`)}</span>
+                {#if m.state === 'failed'}
+                  <button class="btn small" onclick={() => attempt(() => api.retryMeeting(m.id)).then(refreshMeetings)}>{t('common.retry')}</button>
                 {/if}
-                <p class="secondary">
-                  {formatDateTime(m.started_at, app.lang)}
-                  {#if m.review_items_total > 0}{' · '}{t('home.zones', { done: m.review_items_resolved, total: m.review_items_total })}{/if}
-                </p>
-                {#if m.state === 'failed'}<p class="cause">{errorText(m.error)}</p>{/if}
-              </div>
-              <StateBadge state={m.state} />
-              {#if m.state === 'failed'}
-                <button class="btn small" onclick={() => attempt(() => api.retryMeeting(m.id)).then(refreshMeetings)}>{t('common.retry')}</button>
-              {/if}
-              {#if m.state !== 'recording'}
-                <button class="btn ghost icon" aria-label={t('home.delete_meeting', { title: m.title })} title={t('common.delete')} onclick={() => (toDelete = m)}>
-                  {@render trash()}
-                </button>
-              {/if}
-            </li>
-          {/each}
-        </ul>
+                {#if m.state !== 'recording'}
+                  <button class="btn ghost icon small reveal" aria-label={t('home.delete_meeting', { title: m.title })} title={t('common.delete')} onclick={() => (toDelete = m)}>
+                    {@render trash()}
+                  </button>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/each}
       {/if}
     </section>
 
-    <section class="block" aria-labelledby="dictations-title">
+    <section class="block dictations" aria-labelledby="dictations-title">
       <div class="block-head">
         <h2 id="dictations-title">{t('home.dictations')}</h2>
         {#if app.dictations.length > 0}
@@ -96,9 +112,9 @@
         {/if}
       </div>
       {#if app.dictations.length === 0}
-        <p class="card empty">{t('home.dictations_empty', { shortcut: shortcuts.dictation })}</p>
+        <p class="secondary quiet">{t('home.dictations_empty', { shortcut: shortcuts.dictation })}</p>
       {:else}
-        <ul class="card list">
+        <ul>
           {#each app.dictations as d (d.id)}
             {@const time = formatDateTime(d.created_at, app.lang)}
             <li class="row">
@@ -106,8 +122,8 @@
                 <p class="text">{d.text}</p>
                 <p class="secondary tabular"><time datetime={d.created_at}>{time}</time>{#if d.injected_into}{` · ${d.injected_into}`}{/if}</p>
               </div>
-              <button class="btn small" aria-label={t('home.copy_dictation', { time: formatTime(d.created_at, app.lang) })} onclick={() => copy(d.text)}>{t('common.copy')}</button>
-              <button class="btn ghost icon" aria-label={t('home.delete_dictation', { time: formatTime(d.created_at, app.lang) })} title={t('common.delete')} onclick={() => removeDictation(d.id)}>
+              <button class="btn ghost small reveal" aria-label={t('home.copy_dictation', { time: formatTime(d.created_at, app.lang) })} onclick={() => copy(d.text)}>{t('common.copy')}</button>
+              <button class="btn ghost icon small reveal" aria-label={t('home.delete_dictation', { time: formatTime(d.created_at, app.lang) })} title={t('common.delete')} onclick={() => removeDictation(d.id)}>
                 {@render trash()}
               </button>
             </li>
@@ -136,18 +152,51 @@
 </Sheet>
 
 <style>
-  .block { margin-bottom: 28px; max-width: 760px; }
-  .block > h2, .block-head { margin-bottom: 10px; }
-  .block-head { display: flex; align-items: center; justify-content: space-between; }
-  .list > li + li { border-top: 1px solid var(--border); }
-  .row { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; }
+  .block { max-width: 760px; }
+  .block + .block { margin-top: 40px; }
+  .block > h2, .block-head { margin-bottom: 8px; }
+  .block-head { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
+
+  .day {
+    margin: 20px 0 4px; padding: 0 8px 4px 32px;
+    font-size: 12.5px; font-weight: 650; color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .day::first-letter { text-transform: uppercase; }
+
+  /* Things-like rows: no borders, a soft fill on hover, quiet actions until the row is touched. */
+  .row {
+    position: relative; display: flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 6px 8px; border-radius: var(--r-control);
+    transition: background-color 150ms var(--ease);
+  }
+  .row:hover { background: var(--fill); }
+  .mark { display: inline-flex; justify-content: center; width: 16px; flex: none; }
   .main { flex: 1; min-width: 0; }
   .title { font-weight: 500; }
   .link {
     padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
-    color: var(--text); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px;
+    font-size: 14px; color: var(--text);
   }
-  .link:hover { text-decoration-color: currentColor; }
+  /* The whole row opens the meeting; the other buttons sit above this layer. */
+  .link::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+  .link:focus-visible { outline: none; }
+  .link:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-control); }
+  .row .btn { position: relative; }
+
+  .state { font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+  .state.needs_review, .state.recording { color: var(--text); font-weight: 550; }
+  .state.failed { color: var(--danger); }
   .cause { font-size: 12.5px; color: var(--danger); }
+
+  .reveal { opacity: 0; transition: opacity 150ms var(--ease); }
+  .row:hover .reveal, .row:focus-within .reveal { opacity: 1; }
+  @media (hover: none) { .reveal { opacity: 1; } }
+
   .text { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .dictations .row { padding-left: 32px; }
+  .quiet { padding: 4px 8px; }
+
+  .empty { display: grid; justify-items: center; gap: 12px; padding: 40px 16px; }
+  .empty p { max-width: 40ch; }
 </style>

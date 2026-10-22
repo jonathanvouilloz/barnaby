@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, type KeyLike } from './accelerator';
-import { formatTimestamp, formatSize } from './format';
+import { formatTimestamp, formatSize, groupByDay, localDay } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments } from './review';
 import { addTerm, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
@@ -157,6 +157,21 @@ test('processing mode follows meeting model and summary', () => {
   expect(modeFor(MISTRAL_MODEL, true)).toBe('api');
   expect(modeFor('whisper-small', true)).toBe('hybrid');
   expect(modeFor('whisper-small', false)).toBe('local');
+});
+
+describe('days', () => {
+  test('localDay reads the local calendar day', () => {
+    expect(localDay(new Date(2026, 0, 5, 23, 59).toISOString())).toBe('2026-01-05');
+    expect(localDay(new Date(2026, 0, 6, 0, 1).toISOString())).toBe('2026-01-06');
+  });
+  test('groupByDay keeps first-seen day order and item order', () => {
+    const at = (d: number, h: number) => ({ at: new Date(2026, 0, d, h).toISOString(), d, h });
+    const items = [at(6, 9), at(5, 18), at(6, 8), at(3, 10)];
+    const groups = groupByDay(items, (x) => x.at);
+    expect(groups.map((g) => g.day)).toEqual(['2026-01-06', '2026-01-05', '2026-01-03']);
+    expect(groups[0].items.map((x) => x.h)).toEqual([9, 8]);
+    expect(groupByDay([], (x: { at: string }) => x.at)).toEqual([]);
+  });
 });
 
 describe('design tokens', () => {

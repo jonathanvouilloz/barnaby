@@ -78,6 +78,8 @@ const fr: Record<string, string> = {
   'home.clear_body': 'Le texte des dictées sera supprimé définitivement.',
   'home.copy_dictation': 'Copier la dictée de {time}',
   'home.delete_dictation': 'Supprimer la dictée de {time}',
+  'home.today': 'Aujourd’hui',
+  'home.yesterday': 'Hier',
 
   'consent.title': 'Avant votre première réunion',
   'consent.body': 'Prévenez les participants que vous enregistrez. Vous pouvez lire ce texte ou le coller dans le chat de l’appel.',
@@ -371,6 +373,8 @@ const en: Record<string, string> = {
   'home.clear_body': 'The dictation text will be permanently deleted.',
   'home.copy_dictation': 'Copy dictation from {time}',
   'home.delete_dictation': 'Delete dictation from {time}',
+  'home.today': 'Today',
+  'home.yesterday': 'Yesterday',
 
   'consent.title': 'Before your first meeting',
   'consent.body': 'Let participants know you are recording. You can read this text or paste it in the call chat.',

@@ -50,7 +50,7 @@
   <header class="screen-head" data-tauri-drag-region>
     <button class="btn ghost" onclick={() => go({ name: 'home' })}>{t('common.back')}</button>
     <h1>{t('new.title')}</h1>
-    <button class="btn primary" disabled={starting || consentNeeded} onclick={start}>{t('new.start')}</button>
+    <button class="btn primary" disabled={starting || consentNeeded} onclick={start}><span class="rec" aria-hidden="true"></span>{t('new.start')}</button>
   </header>
 
   <div class="screen-body">
@@ -60,9 +60,11 @@
         <input type="text" bind:value={title} placeholder={defaultTitle} />
       </label>
 
-      <section class="card people" aria-labelledby="people-title">
-        <h2 id="people-title">{t('new.participants')}</h2>
-        <p class="secondary">{t('new.participants_hint')}</p>
+      <section class="people" aria-labelledby="people-title">
+        <div>
+          <h2 id="people-title">{t('new.participants')}</h2>
+          <p class="secondary">{t('new.participants_hint')}</p>
+        </div>
 
         {#if participants.length === 0}
           <p class="secondary none">{t('new.none')}</p>
@@ -101,16 +103,22 @@
 </Sheet>
 
 <style>
-  .form { display: grid; gap: 20px; max-width: 620px; }
-  .people { padding: 16px; display: grid; gap: 8px; }
-  ul { display: grid; margin-top: 4px; }
-  li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .form { display: grid; gap: 40px; max-width: 560px; padding-top: 8px; }
+  .people { display: grid; gap: 16px; }
+  ul { display: grid; gap: 2px; }
+  li {
+    display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 4px 8px;
+    border-radius: var(--r-control); transition: background-color 150ms var(--ease);
+  }
+  li:hover { background: var(--fill); }
   .name { font-weight: 500; }
   li .btn { margin-left: auto; }
   .none { padding: 4px 0; }
-  .add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; margin-top: 8px; }
+  .add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+  .rec { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); }
   .template {
-    margin: 0; padding: 12px 14px; border-radius: var(--r-card);
+    margin: 0; padding: 12px 16px; border-radius: var(--r-card);
     background: var(--fill); font-size: 13.5px; user-select: text;
   }
+  @media (max-width: 720px) { .add { grid-template-columns: 1fr; } }
 </style>

@@ -21,3 +21,25 @@ export function formatSize(mb: number, lang: string): { unit: 'mb' | 'gb'; n: st
   if (mb < 1000) return { unit: 'mb', n: new Intl.NumberFormat(lang, { maximumFractionDigits: 0 }).format(mb) };
   return { unit: 'gb', n: new Intl.NumberFormat(lang, { maximumFractionDigits: 1 }).format(mb / 1000) };
 }
+
+/** Local calendar day of an ISO date, as `YYYY-MM-DD`. */
+export function localDay(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Groups items by local calendar day, days in first-seen order, items in their order. */
+export function groupByDay<T>(items: T[], iso: (item: T) => string): { day: string; items: T[] }[] {
+  const days = new Map<string, T[]>();
+  for (const item of items) {
+    const day = localDay(iso(item));
+    days.set(day, [...(days.get(day) ?? []), item]);
+  }
+  return [...days].map(([day, items]) => ({ day, items }));
+}
+
+/** A `YYYY-MM-DD` day as a long localized date, e.g. "mardi 20 octobre". */
+export function formatDay(day: string, lang: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(y, m - 1, d));
+}
