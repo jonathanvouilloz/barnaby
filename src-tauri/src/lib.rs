@@ -58,6 +58,10 @@ pub fn run() {
             let app = Arc::new(App::new(handle.clone(), store, data_dir, jobs));
             handle.manage(app.clone());
 
+            // macOS: pasting needs the Accessibility permission; ask once at launch rather
+            // than failing the first dictation (enigo opens the system prompt if missing).
+            #[cfg(target_os = "macos")]
+            let _ = enigo::Enigo::new(&enigo::Settings::default());
             tray::create(&handle)?;
             overlay::create(&handle)?;
             app.preload_dictation_model();
@@ -111,6 +115,13 @@ pub fn run() {
             commands::download_model,
             commands::delete_model,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Barnaby");
+        .build(tauri::generate_context!())
+        .expect("error while building Barnaby")
+        .run(|_handle, _event| {
+            // Clicking the Dock icon brings back the window hidden by a close.
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                show_main(_handle, None);
+            }
+        });
 }

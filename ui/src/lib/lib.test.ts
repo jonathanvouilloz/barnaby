@@ -57,6 +57,9 @@ describe('accelerator', () => {
     expect(keyLabel('Ctrl+Shift+R', 'fr')).toBe('Ctrl + Maj + R');
     expect(keyLabel('Ctrl+Shift+Space', 'en')).toBe('Ctrl + Shift + Space');
     expect(keyLabel('F9', 'fr')).toBe('F9');
+    expect(keyLabel('Super+Shift+R', 'fr', true)).toBe('Cmd + Maj + R');
+    expect(keyLabel('Alt+Space', 'en', true)).toBe('Option + Space');
+    expect(keyLabel('Ctrl+Alt+Space', 'fr', false)).toBe('Ctrl + Alt + Espace');
   });
 });
 

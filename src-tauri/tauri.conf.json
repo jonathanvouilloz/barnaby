@@ -20,6 +20,7 @@
         "minHeight": 520
       }
     ],
+    "macOSPrivateApi": true,
     "security": {
       "csp": "default-src 'self'; media-src 'self' asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; img-src 'self' data:",
       "assetProtocol": { "enable": true, "scope": ["$APPDATA/meetings/**"] }

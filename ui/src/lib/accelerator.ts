@@ -28,7 +28,13 @@ function keyName(code: string): string | null {
   return code && code !== 'Unidentified' ? code : null;
 }
 
-/** Accelerator as the keycaps read in the interface language: `Ctrl+Shift+Space` → « Ctrl + Maj + Espace ». */
-export function keyLabel(accel: string, lang: Lang): string {
-  return accel.split('+').map((k) => dictionaries[lang][`key.${k}`] ?? k).join(' + ');
+const MAC = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
+
+/**
+ * Accelerator as the keycaps read in the interface language: `Ctrl+Shift+Space` → « Ctrl + Maj + Espace ».
+ * On a Mac, `Super` and `Alt` read as the keys printed there: Cmd and Option.
+ */
+export function keyLabel(accel: string, lang: Lang, mac = MAC): string {
+  const d = dictionaries[lang];
+  return accel.split('+').map((k) => (mac && d[`key.mac.${k}`]) || d[`key.${k}`] || k).join(' + ');
 }

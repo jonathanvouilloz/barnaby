@@ -1,5 +1,6 @@
 //! Sound outputs (speakers, headsets, HDMI…) recorded into `system.wav`. Every active
-//! output is captured: a call app may play on a different one than the default.
+//! output is captured: a call app may play on a different one than the default. On macOS
+//! a single global tap covers every output at once.
 
 use anyhow::Result;
 use barnaby_core::OutputDevice;
@@ -10,11 +11,13 @@ pub(crate) struct Source {
     pub channels: u16,
     #[cfg(not(target_os = "linux"))]
     _stream: cpal::Stream,
+    #[cfg(target_os = "macos")]
+    _tap: platform::Tap,
     #[cfg(target_os = "linux")]
     parec: std::process::Child,
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 mod platform {
     use super::*;
     use cpal::traits::{DeviceTrait, HostTrait};
@@ -31,7 +34,7 @@ mod platform {
             .collect()
     }
 
-    /// Opens `id` in loopback mode (how WASAPI and CoreAudio capture an output).
+    /// Opens `id` in loopback mode (how WASAPI captures an output).
     pub(crate) fn open(id: &str, on_data: impl FnMut(Vec<f32>) + Send + 'static) -> Result<Source> {
         let device = cpal::default_host()
             .device_by_id(&id.parse()?)
@@ -110,6 +113,137 @@ mod platform {
         fn drop(&mut self) {
             let _ = self.parec.kill();
             let _ = self.parec.wait();
+        }
+    }
+}
+
+/// macOS 14.2+: one source, a global Core Audio process tap (every process, every output,
+/// mixed to stereo) carried by an aggregate device that cpal reads like a microphone. Not
+/// cpal's per-output loopback: on an output that also has an input (AirPods, USB headsets)
+/// cpal records that input, the user's mic, instead of the output.
+#[cfg(target_os = "macos")]
+mod platform {
+    use super::*;
+    use std::ffi::CStr;
+    use std::ptr::NonNull;
+
+    use anyhow::{bail, Context};
+    use cpal::traits::{DeviceTrait, HostTrait};
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::AnyThread;
+    use objc2_core_audio::{
+        kAudioAggregateDeviceIsPrivateKey, kAudioAggregateDeviceNameKey, kAudioAggregateDeviceTapAutoStartKey,
+        kAudioAggregateDeviceTapListKey, kAudioAggregateDeviceUIDKey, kAudioSubTapDriftCompensationKey, kAudioSubTapUIDKey,
+        AudioHardwareCreateAggregateDevice, AudioHardwareCreateProcessTap, AudioHardwareDestroyAggregateDevice,
+        AudioHardwareDestroyProcessTap, AudioObjectID, CATapDescription, CATapMuteBehavior,
+    };
+    use objc2_core_foundation::CFDictionary;
+    use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSString};
+
+    const ID: &str = "system";
+
+    pub fn list() -> Vec<OutputDevice> {
+        vec![OutputDevice { id: ID.into(), name: "Tout le son de l'ordinateur".into() }]
+    }
+
+    /// The tap and its aggregate device; dropped after the stream that reads them.
+    pub(crate) struct Tap {
+        tap: AudioObjectID,
+        aggregate: AudioObjectID,
+    }
+
+    impl Drop for Tap {
+        fn drop(&mut self) {
+            // SAFETY: both ids were created by this process and are destroyed once.
+            unsafe {
+                AudioHardwareDestroyAggregateDevice(self.aggregate);
+                AudioHardwareDestroyProcessTap(self.tap);
+            }
+        }
+    }
+
+    pub(crate) fn open(_id: &str, on_data: impl FnMut(Vec<f32>) + Send + 'static) -> Result<Source> {
+        // A private aggregate should be listed to its own process; if this macOS hides it,
+        // a public one (visible to other apps while recording) is the fallback.
+        let (tap, device) = match aggregate(true)? {
+            (tap, Some(device)) => (tap, device),
+            (tap, None) => {
+                drop(tap);
+                match aggregate(false)? {
+                    (tap, Some(device)) => (tap, device),
+                    _ => bail!("system audio device not found"),
+                }
+            }
+        };
+        let config = device.default_input_config()?;
+        let o = crate::input::open(&device, config, on_data)?;
+        Ok(Source { rate: o.rate, channels: o.channels, _stream: o.stream, _tap: tap })
+    }
+
+    /// Creates the tap (every process, unmuted) and an aggregate device carrying it,
+    /// then finds that device through cpal by its UID.
+    fn aggregate(private: bool) -> Result<(Tap, Option<cpal::Device>)> {
+        let uid = format!("app.barnaby.system-audio.{}.{}", std::process::id(), u8::from(private));
+        // SAFETY: plain Core Audio calls on objects created here; every status is checked.
+        let tap = unsafe {
+            let desc = CATapDescription::initStereoGlobalTapButExcludeProcesses(CATapDescription::alloc(), &NSArray::new());
+            desc.setName(&NSString::from_str("Barnaby"));
+            desc.setPrivate(true);
+            desc.setMuteBehavior(CATapMuteBehavior::Unmuted);
+            let mut tap: AudioObjectID = 0;
+            check(AudioHardwareCreateProcessTap(Some(&desc), &mut tap), "tap")?;
+
+            let true_ = NSNumber::new_bool(true);
+            let sub_tap: Retained<NSDictionary<NSString, AnyObject>> = NSDictionary::from_slices(
+                &[&*key(kAudioSubTapUIDKey), &*key(kAudioSubTapDriftCompensationKey)],
+                &[obj(&*desc.UUID().UUIDString()), obj(&*true_)],
+            );
+            let props: Retained<NSDictionary<NSString, AnyObject>> = NSDictionary::from_slices(
+                &[
+                    &*key(kAudioAggregateDeviceNameKey),
+                    &*key(kAudioAggregateDeviceUIDKey),
+                    &*key(kAudioAggregateDeviceTapListKey),
+                    &*key(kAudioAggregateDeviceTapAutoStartKey),
+                    &*key(kAudioAggregateDeviceIsPrivateKey),
+                ],
+                &[
+                    obj(&*NSString::from_str("Barnaby system audio")),
+                    obj(&*NSString::from_str(&uid)),
+                    obj(&*NSArray::from_retained_slice(&[sub_tap])),
+                    obj(&*true_),
+                    obj(&*NSNumber::new_bool(private)),
+                ],
+            );
+            // NSDictionary is toll-free bridged to CFDictionary.
+            let props = &*(Retained::as_ptr(&props).cast::<CFDictionary>());
+            let mut aggregate: AudioObjectID = 0;
+            let status = AudioHardwareCreateAggregateDevice(props, NonNull::from(&mut aggregate));
+            if status != 0 {
+                AudioHardwareDestroyProcessTap(tap);
+            }
+            check(status, "aggregate")?;
+            Tap { tap, aggregate }
+        };
+        let id = cpal::DeviceId::new(cpal::HostId::CoreAudio, &uid);
+        Ok((tap, cpal::default_host().device_by_id(&id)))
+    }
+
+    fn obj<T: AsRef<AnyObject>>(t: &T) -> &AnyObject {
+        t.as_ref()
+    }
+
+    fn key(k: &CStr) -> Retained<NSString> {
+        NSString::from_str(k.to_str().unwrap_or_default())
+    }
+
+    fn check(status: i32, what: &str) -> Result<()> {
+        if status == 0 { Ok(()) } else { Err(anyhow::anyhow!("core audio {what} failed: {status}")).context("system_audio") }
+    }
+
+    impl Source {
+        pub fn alive(&mut self) -> bool {
+            true
         }
     }
 }

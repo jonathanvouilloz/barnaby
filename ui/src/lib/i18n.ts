@@ -116,6 +116,8 @@ const fr: Record<string, string> = {
   'home.yesterday': 'Hier',
 
   'key.Shift': 'Maj',
+  'key.mac.Super': 'Cmd',
+  'key.mac.Alt': 'Option',
   'key.Space': 'Espace',
   'key.Enter': 'Entrée',
 
@@ -276,7 +278,7 @@ const fr: Record<string, string> = {
   'settings.sc.review_queue': 'Ouvrir la relecture',
   'settings.sc.press': 'Appuie sur la combinaison…',
   'settings.sc.hint': 'Clique sur un raccourci, puis appuie sur la nouvelle combinaison. Échap pour annuler.',
-  'settings.sc.need_modifier': 'Ajoute Ctrl, Alt, Maj ou Super.',
+  'settings.sc.need_modifier': 'Ajoute Ctrl, Alt, Maj ou Super (Cmd ou Option sur Mac).',
   'settings.destinations': 'Destinations',
   'settings.folder_enabled': 'Enregistrer dans un dossier',
   'settings.folder_path': 'Chemin du dossier',
@@ -463,6 +465,8 @@ const en: Record<string, string> = {
   'home.yesterday': 'Yesterday',
 
   'key.Shift': 'Shift',
+  'key.mac.Super': 'Cmd',
+  'key.mac.Alt': 'Option',
   'key.Space': 'Space',
   'key.Enter': 'Enter',
 
@@ -623,7 +627,7 @@ const en: Record<string, string> = {
   'settings.sc.review_queue': 'Open review',
   'settings.sc.press': 'Press the keys…',
   'settings.sc.hint': 'Click a shortcut, then press the new combination. Escape to cancel.',
-  'settings.sc.need_modifier': 'Add Ctrl, Alt, Shift or Super.',
+  'settings.sc.need_modifier': 'Add Ctrl, Alt, Shift or Super (Cmd or Option on a Mac).',
   'settings.destinations': 'Destinations',
   'settings.folder_enabled': 'Save to a folder',
   'settings.folder_path': 'Folder path',

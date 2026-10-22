@@ -21,7 +21,8 @@ serde_json.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 log.workspace = true
-tauri = { version = "2.12", features = ["tray-icon", "protocol-asset", "image-png"] }
+# macos-private-api: the transparent overlay on macOS; no effect elsewhere.
+tauri = { version = "2.12", features = ["tray-icon", "protocol-asset", "image-png", "macos-private-api"] }
 tauri-plugin-global-shortcut = "2.4"
 tauri-plugin-single-instance = "2.5"
 tauri-plugin-notification = "2.7"
