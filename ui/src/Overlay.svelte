@@ -55,10 +55,8 @@
     display: flex; align-items: center; gap: 12px;
     height: 44px; padding: 0 16px 0 10px;
     border-radius: 999px;
-    /* One field with the owl's: its round blends in. Opaque, or the blur would show the round again.
-       The field stays light in both themes, so the ink colours are pinned. */
-    --text: #0f0c2f; --text-2: #6f5b52; --accent: #0170ec;
-    border: 1px solid rgb(15 12 47 / .09);
+    /* One field with the owl's: its round blends in. Opaque, or the blur would show the round again. */
+    border: 1px solid var(--border);
     background: var(--owl-field);
     color: var(--text);
     /* Two shadows: a tight one to detach from any wallpaper, a soft one for depth. */

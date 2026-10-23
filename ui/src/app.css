@@ -66,6 +66,14 @@
   }
 }
 
+/* Dictation pill: it sits on the owl field, light in both themes, so it keeps the light inks. */
+:root.overlay {
+  --text: #0f0c2f;
+  --text-2: #6f5b52;
+  --border: rgb(15 12 47 / .09);
+  --accent: #0170ec;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body { margin: 0; height: 100%; }
