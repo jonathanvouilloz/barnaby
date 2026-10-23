@@ -98,6 +98,18 @@
     notify(t(value ? 'settings.secret_saved' : 'settings.secret_cleared'));
   }
 
+  async function browseFolder() {
+    const current = draft.destinations.folder.path || (await api.defaultFolder().catch(() => ''));
+    const picked = await api.pickFolder(current).catch(() => null);
+    if (picked) draft.destinations.folder.path = picked;
+  }
+
+  async function suggestFolder() {
+    if (draft.destinations.folder.enabled && !draft.destinations.folder.path) {
+      draft.destinations.folder.path = await api.defaultFolder().catch(() => '');
+    }
+  }
+
   function addVocabulary(e: SubmitEvent) {
     e.preventDefault();
     const next = addTerm(draft.vocabulary, term);
@@ -348,12 +360,15 @@
         <div class="box">
           <label class="line">
             <span class="lbl">{t('settings.folder_enabled')}</span>
-            <input type="checkbox" role="switch" bind:checked={draft.destinations.folder.enabled} />
+            <input type="checkbox" role="switch" bind:checked={draft.destinations.folder.enabled} onchange={suggestFolder} />
           </label>
-          <label class="line">
-            <span class="lbl">{t('settings.folder_path')}</span>
-            <input class="ctl" type="text" bind:value={draft.destinations.folder.path} disabled={!draft.destinations.folder.enabled} />
-          </label>
+          <div class="line">
+            <label class="lbl" for="folder-path">{t('settings.folder_path')}</label>
+            <span class="pick">
+              <input id="folder-path" class="ctl" type="text" bind:value={draft.destinations.folder.path} disabled={!draft.destinations.folder.enabled} />
+              <button class="btn" type="button" onclick={browseFolder} disabled={!draft.destinations.folder.enabled}>{t('settings.folder_browse')}</button>
+            </span>
+          </div>
         </div>
         <div class="box">
           <label class="line">
@@ -511,6 +526,7 @@
   }
   .lbl { flex: 1; min-width: 0; display: grid; gap: 2px; }
   .ctl { width: 280px; flex: none; }
+  .pick { display: flex; gap: 8px; align-items: center; }
   /* Selects grow to their longest option rather than clip it. */
   select.ctl { width: auto; min-width: 280px; max-width: 100%; }
   .num { width: 112px; flex: none; text-align: right; }

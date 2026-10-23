@@ -49,6 +49,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|tauri_app| {
             let handle = tauri_app.handle().clone();
             let data_dir = handle.path().app_data_dir()?;

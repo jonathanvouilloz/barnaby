@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@fontsource-variable/valley-sans": "5.3.1",
-    "@tauri-apps/api": "^2.12.4"
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "~2.8.1"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

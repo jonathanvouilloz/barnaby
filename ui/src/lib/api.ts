@@ -2,6 +2,8 @@
 // Types mirror crates/core/src/model.rs: change both together.
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+import { documentDir, join } from '@tauri-apps/api/path';
+import { open } from '@tauri-apps/plugin-dialog';
 
 export type MeetingState =
   | 'recording' | 'captured' | 'queued' | 'processing'
@@ -93,6 +95,9 @@ export const api = {
   suspendShortcuts: () => invoke<void>('suspend_shortcuts'),
   resumeShortcuts: () => invoke<void>('resume_shortcuts'),
   checkShortcut: (accel: string) => invoke<boolean>('check_shortcut', { accel }),
+  /** System folder picker; `null` when cancelled. */
+  pickFolder: (defaultPath?: string) => open({ directory: true, defaultPath: defaultPath || undefined }),
+  defaultFolder: async () => join(await documentDir(), 'Barnaby'),
   /** Cloud LLM key (OpenRouter), stored in the OS keyring. Empty string clears it. */
   setLlmApiKey: (key: string) => invoke<void>('set_llm_api_key', { key }),
   hasLlmApiKey: () => invoke<boolean>('has_llm_api_key'),
