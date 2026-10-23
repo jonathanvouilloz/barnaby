@@ -3,6 +3,7 @@ node_modules/
 dist/
 models/
 *.wav
+!crates/engine/assets/*.wav
 *.flac
 .env
 design/shots/
