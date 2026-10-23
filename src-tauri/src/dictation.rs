@@ -218,16 +218,18 @@ fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms:
     let injected_into = inject::active_app();
     // Nothing to paste into (desktop, taskbar): the text waits on the clipboard, say so.
     let no_target = inject::no_target() == Some(true);
+    // Asked before the paste: the focus is what it lands in. In doubt, say the text is copied.
+    let field = !no_target && inject::text_field() == Some(true);
     // A failed paste is not fatal: the text stays in the history and on the clipboard (spec 7.1).
-    if let Err(e) = inject::paste_text(&text, Duration::from_millis(settings.dictation.paste_delay_before_ms), !no_target) {
-        log::warn!("paste failed: {e:#}");
-    }
-    // The pill says "copied" after every dictation: whether the focused window had a text field is unknowable.
+    let pasted = inject::paste_text(&text, Duration::from_millis(settings.dictation.paste_delay_before_ms), !no_target)
+        .inspect_err(|e| log::warn!("paste failed: {e:#}"))
+        .is_ok();
+    let landed = field && pasted;
     // A dictation started meanwhile owns the pill.
-    let pill = settings.dictation.show_overlay && !is_recording(app);
+    let pill = !landed && settings.dictation.show_overlay && !is_recording(app);
     if pill {
         status(app, "copied");
-    } else if no_target {
+    } else if !landed && !settings.dictation.show_overlay {
         alert(app, Alert::Copied);
     }
     let dictation = Dictation {

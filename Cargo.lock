@@ -303,6 +303,7 @@ dependencies = [
  "barnaby-core",
  "barnaby-engine",
  "chrono",
+ "core-foundation",
  "enigo",
  "keyring",
  "log",
@@ -316,6 +317,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-single-instance",
  "uuid",
+ "windows 0.61.3",
  "windows-sys 0.59.0",
 ]
 

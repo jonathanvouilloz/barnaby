@@ -34,6 +34,10 @@ keyring = "4.2"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Accessibility"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10"
 
 [features]
 cuda = ["barnaby-engine/cuda"]
