@@ -83,7 +83,7 @@ export type ModelKind = 'whisper' | 'parakeet' | 'diarization_segmentation' | 'd
 export interface OutputDevice { id: string; name: string }
 export interface ModelInfo { id: string; kind: ModelKind; name: string; size_mb: number; installed: boolean }
 
-export type DictationStatus = 'idle' | 'recording' | 'transcribing';
+export type DictationStatus = 'idle' | 'recording' | 'transcribing' | 'copied';
 
 export const api = {
   getSettings: () => invoke<Settings>('get_settings'),

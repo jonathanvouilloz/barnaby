@@ -30,16 +30,21 @@
   });
 
   const scale = (i: number) => Math.min(1, 0.14 + 0.86 * level * WEIGHTS[i] * jitter[i]);
+  const owl = $derived(status === 'copied' ? 'success' : status === 'transcribing' ? 'thinking' : 'listening');
 </script>
 
 <div class="pill" class:thinking={status === 'transcribing'}>
-  <Owl state={status === 'transcribing' ? 'thinking' : 'listening'} size={28} />
-  <div class="wave" style:--level={level.toFixed(2)}>
-    {#each WEIGHTS as w, i (i)}
-      <span style:--s={scale(i).toFixed(3)} style:--w={w} style:--i={i}></span>
-    {/each}
-  </div>
-  <p class="sr-only" aria-live="polite">{t(status === 'transcribing' ? 'status.transcribing' : 'status.recording')}</p>
+  <Owl state={owl} size={28} />
+  {#if status === 'copied'}
+    <p class="copied" aria-live="polite">{t('status.copied')}</p>
+  {:else}
+    <div class="wave" style:--level={level.toFixed(2)}>
+      {#each WEIGHTS as w, i (i)}
+        <span style:--s={scale(i).toFixed(3)} style:--w={w} style:--i={i}></span>
+      {/each}
+    </div>
+    <p class="sr-only" aria-live="polite">{t(status === 'transcribing' ? 'status.transcribing' : 'status.recording')}</p>
+  {/if}
 </div>
 
 <style>
@@ -57,6 +62,7 @@
     box-shadow: var(--shadow-float);
     animation: appear 180ms var(--ease);
   }
+  .copied { margin: 0; font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; }
   .wave { display: flex; align-items: center; gap: 3px; height: 24px; }
   .wave span {
     width: 3px; height: 24px; border-radius: 2px;

@@ -14,6 +14,7 @@ const fr: Record<string, string> = {
   'status.idle': 'Prêt',
   'status.recording': 'Dictée en cours',
   'status.transcribing': 'Transcription…',
+  'status.copied': 'Texte copié',
   'status.meeting': 'Réunion en cours',
 
   'state.recording': 'En cours',
@@ -388,6 +389,7 @@ const en: Record<string, string> = {
   'status.idle': 'Ready',
   'status.recording': 'Dictating',
   'status.transcribing': 'Transcribing…',
+  'status.copied': 'Text copied',
   'status.meeting': 'Meeting in progress',
 
   'state.recording': 'Recording',

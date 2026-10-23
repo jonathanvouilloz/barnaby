@@ -171,10 +171,15 @@ fn run(app: &Arc<App>, mut recorder: DictationRecorder, end: Receiver<End>, mute
     samples += tail.len();
     live.push(&tail);
     let duration_ms = samples as u64 * 1000 / u64::from(SAMPLE_RATE);
-    if let Err(e) = live.finish().and_then(|t| deliver(app, &settings, &t, duration_ms)) {
-        log::warn!("dictation failed: {e:#}");
-        if e.to_string() == "model_missing" {
-            alert(app, Alert::ModelMissing);
+    match live.finish().and_then(|t| deliver(app, &settings, &t, duration_ms)) {
+        // Long enough to read, short enough not to linger over the next window.
+        Ok(true) => thread::sleep(Duration::from_millis(1800)),
+        Ok(false) => {}
+        Err(e) => {
+            log::warn!("dictation failed: {e:#}");
+            if e.to_string() == "model_missing" {
+                alert(app, Alert::ModelMissing);
+            }
         }
     }
     // A new dictation may have started while this one was transcribing.
@@ -203,11 +208,12 @@ pub(crate) fn level(chunk: &[f32]) -> f32 {
     ((db + 60.0) / 50.0).clamp(0.0, 1.0)
 }
 
-fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms: u64) -> anyhow::Result<()> {
+/// `Ok(true)` when the pill now says "copied" and should stay up a moment.
+fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms: u64) -> anyhow::Result<bool> {
     let text = transcript.segments.iter().map(|s| s.text.trim()).filter(|t| !t.is_empty()).collect::<Vec<_>>().join(" ");
     let text = barnaby_core::vocabulary::correct(&text, &settings.vocabulary);
     if text.is_empty() {
-        return Ok(());
+        return Ok(false);
     }
     let injected_into = inject::active_app();
     // Nothing to paste into (desktop, taskbar): the text waits on the clipboard, say so.
@@ -216,7 +222,12 @@ fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms:
     if let Err(e) = inject::paste_text(&text, Duration::from_millis(settings.dictation.paste_delay_before_ms), !no_target) {
         log::warn!("paste failed: {e:#}");
     }
-    if no_target {
+    // The pill says "copied" after every dictation: whether the focused window had a text field is unknowable.
+    // A dictation started meanwhile owns the pill.
+    let pill = settings.dictation.show_overlay && !is_recording(app);
+    if pill {
+        status(app, "copied");
+    } else if no_target {
         alert(app, Alert::Copied);
     }
     let dictation = Dictation {
@@ -232,7 +243,7 @@ fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms:
         app.db().add_dictation(&dictation)?;
     }
     let _ = app.handle.emit("dictation-done", &dictation);
-    Ok(())
+    Ok(pill)
 }
 
 enum Alert {
