@@ -14,14 +14,13 @@ Mise à jour : 2026-10-23
 - `cargo clippy --workspace --all-targets -- -D warnings` : propre. `cargo test -p barnaby-core` : 46 ok. `cargo test -p barnaby-engine cue` : 2 ok. `cd ui && bun run check` : 0 erreur ; `bun test` : 41 ok.
 - Code Windows (`no_target`, remontée de l'overlay par `SetWindowPos`) : `cargo check --target x86_64-pc-windows-msvc` d'une crate isolée, sans erreur ; jamais exécuté.
 - CI run 39983075946 (tag `v0.4.0`) : checks, builds Ubuntu, Windows, macOS et job `release` verts. Liens `releases/latest/download/…` (exe, dmg, deb) : 200.
-- Site : `curl https://mybarnaby.app/` 200, certificat Google Trust Services avec 2 SCT ; contrôles Playwright (pas d'erreur, tout visible après un saut à #questions, mouvement réduit = page fixe, Windows simulé = carte Windows en premier, aucun téléchargement au premier clic).
+- Site : `curl https://mybarnaby.app/` et `https://www.mybarnaby.app/` 200, certificat Google Trust Services avec 2 SCT ; contrôles Playwright (pas d'erreur, tout visible après un saut à #questions, mouvement réduit = page fixe, Windows simulé = carte Windows en premier, aucun téléchargement au premier clic).
 - Non vérifié : comportement réel sous Windows et macOS ; erreur `ERR_CERTIFICATE_TRANSPARENCY_REQUIRED` vue par des proches de Jon (probablement les premières minutes après l'émission du certificat).
 
 ## État non commité
 - Rien hors `barnaby.zip` et `.wrangler/` (ignorés). Branche `phase-1`.
 
 ## Bloquants et actions du propriétaire
-- `www.mybarnaby.app` : aucun enregistrement dans le DNS Cloudflare (le CNAME `www` → `barnaby-eod.pages.dev` manque ou est mal nommé) ; le domaine est attaché au projet Pages.
 - Le jeton Cloudflare du serveur (`CLOUDFLARE_API_TOKEN`) n'a pas le droit DNS : enregistrements DNS à faire par Jon dans le tableau de bord.
 - Site : vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`) ; Jon prévoit une ou deux vidéos d'installation.
 - À trancher : sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral ; réunion à un seul micro (tout le monde étiqueté « Moi »).
