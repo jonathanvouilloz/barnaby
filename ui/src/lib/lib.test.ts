@@ -162,8 +162,8 @@ describe('missingRequired', () => {
 
 describe('onboarding', () => {
   const m = (id: string, kind: ModelInfo['kind'], installed = false): ModelInfo => ({ id, kind, name: id, size_mb: 1, installed });
-  const settings = { dictation: { model: 'parakeet-v3' }, meeting: { model: 'whisper-small' } } as Settings;
-  const catalog = [m('parakeet-v3', 'parakeet'), m('whisper-small', 'whisper'), m('whisper-base', 'whisper'),
+  const settings = { dictation: { model: 'parakeet-v3' }, meeting: { model: 'whisper-large-v3-turbo' } } as Settings;
+  const catalog = [m('parakeet-v3', 'parakeet'), m('whisper-large-v3-turbo', 'whisper'),
     m('seg', 'diarization_segmentation'), m('emb', 'diarization_embedding'), m('vad', 'vad')];
   test('steps come in order', () => {
     expect(STEPS).toEqual(['welcome', 'mic', 'models', 'dictation', 'tour', 'done']);
@@ -177,13 +177,13 @@ describe('onboarding', () => {
     expect(modelsFor('cloud', catalog, settings).map((x) => x.id)).toEqual(['parakeet-v3', 'seg', 'emb', 'vad']);
   });
   test('local choice includes the meeting model, even after a cloud choice', () => {
-    expect(modelsFor('local', catalog, settings).map((x) => x.id)).toEqual(['parakeet-v3', 'whisper-small', 'seg', 'emb', 'vad']);
+    expect(modelsFor('local', catalog, settings).map((x) => x.id)).toEqual(['parakeet-v3', 'whisper-large-v3-turbo', 'seg', 'emb', 'vad']);
     const cloud = { ...settings, meeting: { model: MISTRAL_MODEL } } as Settings;
-    expect(modelsFor('local', catalog, cloud).map((x) => x.id)).toContain('whisper-small');
+    expect(modelsFor('local', catalog, cloud).map((x) => x.id)).toContain('whisper-large-v3-turbo');
   });
   test('an installed model is never offered again', () => {
     const resumed = catalog.map((x) => (x.id === 'parakeet-v3' || x.id === 'seg' ? { ...x, installed: true } : x));
-    expect(modelsFor('local', resumed, settings).map((x) => x.id)).toEqual(['whisper-small', 'emb', 'vad']);
+    expect(modelsFor('local', resumed, settings).map((x) => x.id)).toEqual(['whisper-large-v3-turbo', 'emb', 'vad']);
   });
 });
 
