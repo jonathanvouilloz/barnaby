@@ -48,8 +48,22 @@ pub fn show(handle: &AppHandle) {
     if !cfg!(target_os = "windows") {
         let _ = w.show();
     }
-    // Back to the top of the always-on-top windows opened since; tao only acts on a change,
-    // and does so with SWP_NOACTIVATE, so this never takes the focus.
+    raise(&w);
+}
+
+/// Back to the top of the always-on-top windows opened since. Windows: straight SetWindowPos
+/// with SWP_NOACTIVATE, because tao's set_always_on_top ends in ShowWindow(SW_SHOW).
+#[cfg(target_os = "windows")]
+fn raise(w: &tauri::WebviewWindow) {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE};
+    let Ok(hwnd) = w.hwnd() else { return };
+    // SAFETY: a live window handle owned by this process; no pointers are passed.
+    unsafe { SetWindowPos(hwnd.0, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE) };
+}
+
+/// Elsewhere the window was just shown, never focusable: re-assert "above" (tao acts only on a change).
+#[cfg(not(target_os = "windows"))]
+fn raise(w: &tauri::WebviewWindow) {
     let _ = w.set_always_on_top(false);
     let _ = w.set_always_on_top(true);
 }

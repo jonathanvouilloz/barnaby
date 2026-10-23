@@ -13,15 +13,15 @@ pub fn paste_text(text: &str, before_paste: Duration, paste: bool) -> Result<()>
     let _one_at_a_time = PASTE.lock().unwrap_or_else(|e| e.into_inner());
     let mut clipboard = arboard::Clipboard::new().context("clipboard_unavailable")?;
     set_private(&mut clipboard, text).context("clipboard_write")?;
+    // Linux (X11, Wayland): the text lives as long as its owner; keep it for a manual paste.
+    // arboard shares one clipboard, so this keeps a single reference alive, not one per dictation.
+    #[cfg(target_os = "linux")]
+    std::mem::forget(clipboard);
     if !paste {
         return Ok(());
     }
     thread::sleep(before_paste);
-    let pasted = simulate_paste();
-    // Linux (X11, Wayland): the clipboard lives as long as its owner; keep it for a manual paste.
-    #[cfg(target_os = "linux")]
-    std::mem::forget(clipboard);
-    pasted
+    simulate_paste()
 }
 
 /// Keeps dictated text out of clipboard managers and Windows cloud sync (local-first).
