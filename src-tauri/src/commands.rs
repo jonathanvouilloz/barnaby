@@ -43,6 +43,21 @@ pub fn save_settings(app: AppState, settings: Settings) -> CmdResult<()> {
 }
 
 #[tauri::command]
+pub fn suspend_shortcuts(app: AppState) {
+    shortcuts::suspend(&app.handle);
+}
+
+#[tauri::command]
+pub fn resume_shortcuts(app: AppState) -> CmdResult<()> {
+    shortcuts::register(&app.handle, &app.settings())
+}
+
+#[tauri::command]
+pub fn check_shortcut(app: AppState, accel: String) -> bool {
+    shortcuts::taken_elsewhere(&app.handle, &accel)
+}
+
+#[tauri::command]
 pub fn set_webhook_secret(secret: String) -> CmdResult<()> {
     set_secret(WEBHOOK_SECRET_USER, &secret)
 }

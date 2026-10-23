@@ -211,6 +211,9 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     }
     case 'set_webhook_secret': webhookSecret = a.secret; return null;
     case 'has_webhook_secret': return webhookSecret !== '';
+    case 'suspend_shortcuts': case 'resume_shortcuts': return null;
+    // Demo conflict: another app holds Ctrl+Alt+D.
+    case 'check_shortcut': return a.accel === 'Ctrl+Alt+D';
     case 'set_llm_api_key': llmApiKey = a.key; return null;
     case 'has_llm_api_key': return llmApiKey !== '';
     case 'set_mistral_api_key': mistralApiKey = a.key; return null;

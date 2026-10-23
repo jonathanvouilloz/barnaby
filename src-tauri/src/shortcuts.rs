@@ -44,6 +44,22 @@ pub fn register(handle: &AppHandle, settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
+/// Lets the settings capture a key combination that is currently bound (it would never reach the webview).
+pub fn suspend(handle: &AppHandle) {
+    let _ = handle.global_shortcut().unregister_all();
+}
+
+/// Whether another application already holds `accel` system-wide. Call while suspended,
+/// or Barnaby's own binding would count. Wayland and macOS may not report every conflict.
+pub fn taken_elsewhere(handle: &AppHandle, accel: &str) -> bool {
+    let gs = handle.global_shortcut();
+    let taken = gs.register(accel).is_err();
+    if !taken {
+        let _ = gs.unregister(accel);
+    }
+    taken
+}
+
 #[derive(Clone, Copy)]
 enum Action {
     Dictation { hold: bool },

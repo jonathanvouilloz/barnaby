@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { acceleratorFromKey, keyLabel } from './accelerator';
+  import { acceleratorFromKey, keyLabel, shortcutWarning } from './accelerator';
+  import { api } from './api';
   import { t } from './i18n';
   import { app } from './state.svelte';
 
@@ -7,8 +8,15 @@
 
   let capturing = $state(false);
   let hint = $state('');
+  const warning = $derived(shortcutWarning(value));
 
-  function onkeydown(e: KeyboardEvent) {
+  // Barnaby's own shortcuts are off while capturing, or the current one never reaches this button.
+  function start() {
+    capturing = true;
+    api.suspendShortcuts().catch(() => {});
+  }
+
+  async function onkeydown(e: KeyboardEvent) {
     if (!capturing) return;
     if (e.key === 'Tab') return;
     e.preventDefault();
@@ -16,14 +24,20 @@
     const accel = acceleratorFromKey(e);
     if (accel === 'need_modifier') hint = t('settings.sc.need_modifier');
     else if (accel) {
+      if (await api.checkShortcut(accel).catch(() => false)) {
+        hint = t('settings.sc.taken', { keys: keyLabel(accel, app.lang) });
+        return;
+      }
       value = accel;
       stop();
     }
   }
 
   function stop() {
+    if (!capturing) return;
     capturing = false;
     hint = '';
+    api.resumeShortcuts().catch(() => {});
   }
 </script>
 
@@ -34,7 +48,7 @@
     class="btn keys"
     class:capturing
     aria-label="{label}, {capturing ? t('settings.sc.press') : keyLabel(value, app.lang)}"
-    onclick={() => (capturing = !capturing)}
+    onclick={() => (capturing ? stop() : start())}
     {onkeydown}
     onblur={stop}
   >
@@ -43,7 +57,8 @@
 </div>
 <!-- The button's own label is not re-read when capture starts: this line says it. -->
 <span class="sr-only" aria-live="polite">{capturing ? t('settings.sc.press') : ''}</span>
-{#if hint}<p class="secondary hint" role="status">{hint}</p>{/if}
+{#if hint}<p class="secondary hint" role="status">{hint}</p>
+{:else if warning && !capturing}<p class="secondary hint" role="status">{t(`settings.sc.warn_${warning}`, { keys: keyLabel(value, app.lang) })}</p>{/if}
 
 <style>
   .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

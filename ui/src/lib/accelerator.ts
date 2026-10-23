@@ -3,6 +3,9 @@ import { dictionaries, type Lang } from './i18n';
 
 export interface KeyLike { key: string; code: string; ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean }
 
+// Keys that type nothing, so a global shortcut on them alone does not swallow typing.
+const SINGLE_KEY = /^(F\d{1,2}|Pause|Insert|ScrollLock|PrintScreen)$/;
+
 const MODIFIER_KEYS = new Set(['Control', 'Alt', 'AltGraph', 'Shift', 'Meta', 'OS', 'Super', 'Hyper']);
 
 /**
@@ -15,8 +18,19 @@ export function acceleratorFromKey(e: KeyLike): string | 'need_modifier' | null 
   const key = keyName(e.code);
   if (!key) return null;
   const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean);
-  if (mods.length === 0 && !/^F\d{1,2}$/.test(key)) return 'need_modifier';
+  if (mods.length === 0 && !SINGLE_KEY.test(key)) return 'need_modifier';
   return [...mods, key].join('+');
+}
+
+// Shortcuts nearly every app already uses: a global shortcut steals them everywhere.
+const COMMON = new Set('ACVXZYSPONWTFRQ');
+
+/** Why a valid accelerator may still be a poor choice; `null` when it is fine. */
+export function shortcutWarning(accel: string, mac = MAC): 'single_key' | 'common' | null {
+  const parts = accel.split('+');
+  if (parts.length === 1) return 'single_key';
+  const [mod, key] = parts;
+  return parts.length === 2 && mod === (mac ? 'Super' : 'Ctrl') && COMMON.has(key) ? 'common' : null;
 }
 
 function keyName(code: string): string | null {

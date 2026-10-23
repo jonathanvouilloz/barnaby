@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
-import { acceleratorFromKey, keyLabel, type KeyLike } from './accelerator';
+import { acceleratorFromKey, keyLabel, shortcutWarning, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize, groupByDay, localDay } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
 import { addTerm, consentTemplate, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
@@ -44,9 +44,17 @@ describe('accelerator', () => {
   test('waits while only modifiers are held', () => {
     expect(acceleratorFromKey(key('ControlLeft', { ctrlKey: true }, 'Control'))).toBeNull();
   });
-  test('refuses bare keys but allows function keys', () => {
-    expect(acceleratorFromKey(key('KeyA', {}, 'a'))).toBe('need_modifier');
-    expect(acceleratorFromKey(key('F9'))).toBe('F9');
+  test('refuses bare typing keys but allows non-printing keys alone', () => {
+    for (const c of ['KeyA', 'Digit1', 'Space', 'Enter']) expect(acceleratorFromKey(key(c, {}, 'x'))).toBe('need_modifier');
+    for (const c of ['F9', 'F24', 'Pause', 'Insert', 'ScrollLock', 'PrintScreen']) expect(acceleratorFromKey(key(c))).toBe(c);
+  });
+  test('warns about single keys and shortcuts other apps use', () => {
+    expect(shortcutWarning('F8')).toBe('single_key');
+    expect(shortcutWarning('Ctrl+P')).toBe('common');
+    expect(shortcutWarning('Super+C', true)).toBe('common');
+    expect(shortcutWarning('Super+C', false)).toBeNull();
+    expect(shortcutWarning('Ctrl+Shift+Space')).toBeNull();
+    expect(shortcutWarning('Ctrl+Shift+P')).toBeNull();
   });
   test('uses the physical key, not the layout', () => {
     // AZERTY: the key labelled A sits on code KeyQ

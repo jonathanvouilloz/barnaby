@@ -90,6 +90,9 @@ export const api = {
   /** Stored in the OS keyring. Empty string clears it. */
   setWebhookSecret: (secret: string) => invoke<void>('set_webhook_secret', { secret }),
   hasWebhookSecret: () => invoke<boolean>('has_webhook_secret'),
+  suspendShortcuts: () => invoke<void>('suspend_shortcuts'),
+  resumeShortcuts: () => invoke<void>('resume_shortcuts'),
+  checkShortcut: (accel: string) => invoke<boolean>('check_shortcut', { accel }),
   /** Cloud LLM key (OpenRouter), stored in the OS keyring. Empty string clears it. */
   setLlmApiKey: (key: string) => invoke<void>('set_llm_api_key', { key }),
   hasLlmApiKey: () => invoke<boolean>('has_llm_api_key'),

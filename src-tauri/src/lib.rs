@@ -87,6 +87,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::save_settings,
+            commands::suspend_shortcuts,
+            commands::resume_shortcuts,
+            commands::check_shortcut,
             commands::set_webhook_secret,
             commands::has_webhook_secret,
             commands::set_llm_api_key,
