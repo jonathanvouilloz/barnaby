@@ -68,7 +68,6 @@
       <p class="lead">Tu parles, et Barnaby écrit pour toi, dans n’importe quelle app. Il écrit aussi tout ce qui se dit pendant tes réunions.</p>
       <div class="cta">
         <a class="button" id="download" href="#installer">Télécharger Barnaby</a>
-        <a class="quiet" href="#installer">Autres systèmes</a>
       </div>
       <p class="platforms">Gratuit, pour Windows, Mac et Linux.</p>
     </section>
@@ -167,11 +166,31 @@
         <li>
           <h3>Télécharge Barnaby</h3>
           <p>Choisis ton système, puis ouvre le fichier téléchargé.</p>
-          <p class="downloads">
-            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe">Pour Windows</a>
-            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-macos-arm64.dmg">Pour Mac (puce Apple)</a>
-            <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb">Pour Linux (Ubuntu, Debian)</a>
-          </p>
+          <!-- Sizes from the latest release: update them with each version. -->
+          <ul class="packages">
+            <li class="pkg" data-os="Windows">
+              <div>
+                <p class="pkg-name">Windows <span class="pkg-badge" hidden>Recommandé pour toi</span></p>
+                <p class="pkg-meta">Windows 10 et 11, fichier .exe de 11 Mo</p>
+              </div>
+              <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe">Télécharger pour Windows</a>
+            </li>
+            <li class="pkg" data-os="Mac">
+              <div>
+                <p class="pkg-name">Mac <span class="pkg-badge" hidden>Recommandé pour toi</span></p>
+                <p class="pkg-meta">Puce Apple (M1 et plus récent), macOS 14.2 ou plus récent, fichier .dmg de 16 Mo</p>
+              </div>
+              <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-macos-arm64.dmg">Télécharger pour Mac</a>
+            </li>
+            <li class="pkg" data-os="Linux">
+              <div>
+                <p class="pkg-name">Linux <span class="pkg-badge" hidden>Recommandé pour toi</span></p>
+                <p class="pkg-meta">Ubuntu, Debian et dérivés, fichier .deb de 17 Mo</p>
+              </div>
+              <a class="button small ghost" href="https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb">Télécharger pour Linux</a>
+            </li>
+          </ul>
+          <p class="pkg-note">Version 0.4.0, gratuite et open source. À l’installation, Windows et le Mac affichent un avertissement, car l’app n’est pas signée : <a href="#avertissement">c’est normal, voici quoi faire</a>.</p>
         </li>
         <li>
           <h3>Laisse-toi guider</h3>
@@ -205,7 +224,7 @@
         <summary>Il me faut quel ordinateur ?</summary>
         <p>La dictée marche bien sur un ordinateur ordinaire. Pour les réunions, un ordinateur modeste met du temps à tout écrire. Dans ce cas, Mistral le fait plus vite, en ligne.</p>
       </details>
-      <details>
+      <details id="avertissement">
         <summary>Pourquoi Windows affiche un avertissement à l’installation ?</summary>
         <p>C’est normal : l’installeur n’est pas signé, car la signature coûte cher pour un projet gratuit. Clique sur « Informations complémentaires », puis sur « Exécuter quand même ».</p>
       </details>

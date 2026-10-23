@@ -121,9 +121,18 @@ h1 { margin-top: 20px; font-size: clamp(42px, 7.4vw, 68px); line-height: 1.04; f
 .button:active { transform: translateY(1px); }
 .button.small { min-height: 44px; padding: 0 18px; font-size: 16px; }
 .button.ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: none; }
-.downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.quiet { color: var(--text); font-weight: 600; font-size: 16px; text-decoration: none; padding: 8px 4px; }
-.quiet:hover { text-decoration: underline; }
+/* Two steps to a download: the hero leads here, the visitor picks a package, then the file starts. */
+.packages { list-style: none; display: grid; gap: 10px; margin-top: 16px; padding: 0; }
+.pkg {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 20px;
+  padding: 14px 16px 14px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+}
+.pkg.recommended { border-color: var(--accent); box-shadow: var(--shadow-float); }
+.pkg .button { flex: none; }
+.pkg-name { font-weight: 700; font-size: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.pkg-badge { font-size: 13px; font-weight: 650; color: var(--accent-text); background: var(--fill); padding: 2px 10px; border-radius: 999px; }
+.pkg-meta { margin-top: 2px; font-size: 15px; color: var(--text-2); }
+.pkg-note { margin-top: 14px; font-size: 14px; color: var(--text-2); }
 .platforms { margin-top: 12px; text-align: center; font-size: 14px; color: var(--text-2); }
 
 /* Signature: a dictation shown at work in a plain text field. */
@@ -174,14 +183,14 @@ section p { max-width: 68ch; }
 .spark { display: inline-block; fill: var(--spark); vertical-align: -.05em; }
 
 .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; counter-reset: step; }
-.steps li { display: grid; grid-template-columns: 36px 1fr; column-gap: 16px; counter-increment: step; }
-.steps li::before {
+.steps > li { display: grid; grid-template-columns: 36px 1fr; column-gap: 16px; counter-increment: step; }
+.steps > li::before {
   content: counter(step); grid-row: span 2;
   display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
   background: var(--fill-strong); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums;
 }
 
-.steps li > * { grid-column: 2; }
+.steps > li > * { grid-column: 2; }
 .shots { gap: 44px; }
 .shots picture { margin-top: 16px; }
 .shots img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow-window); }
@@ -223,6 +232,7 @@ footer { display: grid; justify-items: center; gap: 8px; margin-top: 80px; paddi
   .hero-owl img, .hero-owl video { width: 170px; }
   .cta { flex-direction: column; align-items: stretch; text-align: center; margin-top: 32px; }
   .button { justify-content: center; }
+  .pkg { flex-direction: column; align-items: stretch; }
   .field { font-size: 17px; }
   .pair, .grid { grid-template-columns: 1fr; gap: 28px; }
   main > section:not(.hero) { padding-top: 44px; margin-top: 44px; }

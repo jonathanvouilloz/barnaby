@@ -1,23 +1,30 @@
-// Point the download buttons at what the visitor's device can install; no tracking, nothing stored.
+// Marks the visitor's system among the download packages; no tracking, nothing stored.
 const ua = navigator.userAgent;
 const phone = /Android|iPhone|iPad|Mobile/.test(ua);
 const os = phone ? null : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : /Mac/.test(ua) ? 'Mac' : null;
-const files = {
-  Windows: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-windows-setup.exe',
-  Linux: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-linux-amd64.deb',
-  // Apple Silicon only; browsers do not tell an Intel Mac apart, the FAQ does.
-  Mac: 'https://github.com/jonathanvouilloz/barnaby/releases/latest/download/Barnaby-macos-arm64.dmg',
-};
 const main = document.getElementById('download');
 const nav = document.getElementById('nav-download');
-if (files[os]) {
+// Two steps: the buttons up top only lead to the packages; the visitor's own system is marked there.
+const card = document.querySelector(`.pkg[data-os="${os}"]`);
+if (card) {
   main.textContent = `Télécharger pour ${os}`;
-  main.href = nav.href = files[os];
+  card.classList.add('recommended');
+  card.querySelector('.pkg-badge').hidden = false;
+  card.querySelector('.button').classList.remove('ghost');
+  card.parentElement.prepend(card);
 } else if (phone) {
   // A phone cannot install it: the main button says so; a second "Télécharger" would contradict it.
   main.textContent = 'À installer sur ton ordinateur';
   nav.hidden = true;
 }
+
+// A link to a question (#avertissement) opens it.
+const openTarget = () => {
+  const d = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (d?.tagName === 'DETAILS') d.open = true;
+};
+openTarget();
+addEventListener('hashchange', openTarget);
 
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window);
 
@@ -94,6 +101,11 @@ if (window.gsap && window.ScrollTrigger) {
     // end 'max': anything already scrolled past (a jump to #questions, a reload mid-page) counts as entered.
     ScrollTrigger.batch(items, { start: 'top 90%', end: 'max', once: true, onEnter: reveal });
 
+    // The hero button scrolls to the packages; the recommended one answers with a small nudge.
+    const nudge = () => card && gsap.fromTo(card, { scale: 0.97 }, { scale: 1, duration: 0.6, delay: 0.6, ease: 'back.out(2.5)', overwrite: true });
+    main.addEventListener('click', nudge);
+    nav.addEventListener('click', nudge);
+
     // Questions unfold and fold instead of snapping open.
     const offs = [...document.querySelectorAll('details')].map((d) => {
       const body = d.querySelector('p');
@@ -124,6 +136,6 @@ if (window.gsap && window.ScrollTrigger) {
       summary.addEventListener('click', toggle);
       return () => summary.removeEventListener('click', toggle);
     });
-    return () => offs.forEach((off) => off());
+    return () => { offs.forEach((off) => off()); main.removeEventListener('click', nudge); nav.removeEventListener('click', nudge); };
   });
 }
