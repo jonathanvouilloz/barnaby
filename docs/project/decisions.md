@@ -124,6 +124,10 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - À rouvrir si : les mesures (s'il y en a un jour) montrent qu'on perd des gens entre les deux clics.
 
 ## 2026-10-23 — Dictée : presse-papiers gardé, raccourcis à une touche
-- Choix : le texte dicté reste au presse-papiers (plus de restauration) ; sans fenêtre active, pas de collage. Quand le collage n'a pas trouvé de champ de texte, ou en cas de doute, la pastille affiche « Texte copié » 1,8 s (pastille désactivée : notification système). Détection : UI Automation et caret sous Windows, API d'accessibilité sous macOS ; sous Linux, seul le bureau compte comme « pas de champ » (X11), Wayland reste dans le doute. Une touche seule non imprimable (F1–F24, Pause, Inser, Impr écran, Arrêt défil) est acceptée comme raccourci, avec avertissement ; Ctrl+lettre courante (Ctrl+P…) est signalé.
+- Choix : le texte dicté reste au presse-papiers (plus de restauration) ; sans fenêtre active, pas de collage. Quand le collage n'a pas trouvé de champ de texte, ou en cas de doute, la pastille affiche « Texte copié » 1,8 s, même si la pastille de dictée est coupée ; réglage « Afficher « Texte copié » à la fin » pour la couper (plus de notification système). Détection : UI Automation et caret sous Windows, API d'accessibilité sous macOS ; sous Linux, seul le bureau compte comme « pas de champ » (X11), Wayland reste dans le doute. Une touche seule non imprimable (F1–F24, Pause, Inser, Impr écran, Arrêt défil) est acceptée comme raccourci, avec avertissement ; Ctrl+lettre courante (Ctrl+P…) est signalé.
 - Écarté : restaurer l'ancien presse-papiers sauf sans fenêtre (ne couvre pas une fenêtre sans champ de texte) ; refuser toute touche seule.
 - À rouvrir si : des utilisateurs se plaignent de perdre ce qu'ils avaient copié avant de dicter.
+
+## 2026-10-23 — Catalogue : Whisper tiny, base et small retirés
+- Choix : seul Whisper large-v3 turbo reste côté Whisper, et devient le modèle par défaut des réunions ; un réglage qui nommait un modèle retiré revient au défaut au chargement. Les fichiers déjà téléchargés restent sur le disque.
+- Pourquoi : Jon juge les petits Whisper inutiles ; Whisper small était déjà inutilisable en réunion réelle.

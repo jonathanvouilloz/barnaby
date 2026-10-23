@@ -14,7 +14,7 @@ export function shouldOnboard(settings: Settings, missing: ModelInfo[]): 'show' 
 /** Meeting model saved for a choice: local keeps the chosen Whisper, or falls back to the default after Mistral. */
 export function meetingModelFor(choice: 'local' | 'cloud', settings: Settings): string {
   if (choice === 'cloud') return MISTRAL_MODEL;
-  return settings.meeting.model === MISTRAL_MODEL ? 'whisper-small' : settings.meeting.model;
+  return settings.meeting.model === MISTRAL_MODEL ? 'whisper-large-v3-turbo' : settings.meeting.model;
 }
 
 export function modelsFor(choice: 'local' | 'cloud', models: ModelInfo[], settings: Settings): ModelInfo[] {

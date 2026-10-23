@@ -226,6 +226,8 @@ pub struct DictationSettings {
     pub show_overlay: bool,
     /// Short sounds when a dictation starts and stops.
     pub sound_cues: bool,
+    /// "Text copied" pill when the paste found no text field.
+    pub show_copied: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -318,6 +320,7 @@ impl Default for DictationSettings {
             keep_history: true,
             show_overlay: true,
             sound_cues: true,
+            show_copied: true,
         }
     }
 }
@@ -325,7 +328,7 @@ impl Default for DictationSettings {
 impl Default for MeetingSettings {
     fn default() -> Self {
         Self {
-            model: "whisper-small".into(),
+            model: "whisper-large-v3-turbo".into(),
             confidence_threshold: 0.6,
             retention: AudioRetention::OnReview,
             excluded_outputs: Vec::new(),
@@ -365,6 +368,21 @@ impl Default for LlmSettings {
     }
 }
 
+/// Left the model catalog in 0.4.2: a setting still naming one falls back to the default.
+const RETIRED_MODELS: [&str; 3] = ["whisper-tiny", "whisper-base", "whisper-small"];
+
+impl Settings {
+    pub fn without_retired_models(mut self) -> Self {
+        if RETIRED_MODELS.contains(&self.dictation.model.as_str()) {
+            self.dictation.model = DictationSettings::default().model;
+        }
+        if RETIRED_MODELS.contains(&self.meeting.model.as_str()) {
+            self.meeting.model = MeetingSettings::default().model;
+        }
+        self
+    }
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -394,6 +412,17 @@ mod tests {
         assert!(!Settings::default().onboarding_done);
         let s: Settings = serde_json::from_str(r#"{"ui_language":"en"}"#).unwrap();
         assert!(!s.onboarding_done);
+    }
+
+    #[test]
+    fn retired_models_fall_back_to_defaults() {
+        let s: Settings = serde_json::from_str(r#"{"dictation":{"model":"whisper-base"},"meeting":{"model":"whisper-small"}}"#).unwrap();
+        let s = s.without_retired_models();
+        assert_eq!(s.dictation.model, "parakeet-v3");
+        assert_eq!(s.meeting.model, "whisper-large-v3-turbo");
+        let mut kept = Settings::default();
+        kept.meeting.model = "mistral-voxtral".into();
+        assert_eq!(kept.clone().without_retired_models(), kept);
     }
 
     #[test]

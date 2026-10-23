@@ -71,6 +71,7 @@ fn status(app: &App, s: &str) {
     let _ = app.handle.emit("dictation-status", s);
     match s {
         "recording" if app.settings().dictation.show_overlay => overlay::show(&app.handle),
+        "copied" => overlay::show(&app.handle),
         "idle" => overlay::hide(&app.handle),
         _ => {}
     }
@@ -226,11 +227,9 @@ fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms:
         .is_ok();
     let landed = field && pasted;
     // A dictation started meanwhile owns the pill.
-    let pill = !landed && settings.dictation.show_overlay && !is_recording(app);
+    let pill = !landed && settings.dictation.show_copied && !is_recording(app);
     if pill {
         status(app, "copied");
-    } else if !landed && !settings.dictation.show_overlay {
-        alert(app, Alert::Copied);
     }
     let dictation = Dictation {
         id: uuid::Uuid::new_v4(),
@@ -252,7 +251,6 @@ enum Alert {
     NoMic,
     MicDenied,
     ModelMissing,
-    Copied,
 }
 
 /// Dictation runs with the window hidden: failures surface as system notifications.
@@ -265,8 +263,6 @@ fn alert(app: &App, alert: Alert) {
         (Alert::MicDenied, true) => "Microphone access denied. Allow Barnaby in the system settings.",
         (Alert::ModelMissing, false) => "Modèle de dictée absent. Télécharge-le dans Réglages › Modèles.",
         (Alert::ModelMissing, true) => "Dictation model missing. Download it in Settings › Models.",
-        (Alert::Copied, false) => "Texte copié, tu n’as plus qu’à coller.",
-        (Alert::Copied, true) => "Text copied, just paste it.",
     };
     let _ = app.handle.notification().builder().title("Barnaby").body(body).show();
 }

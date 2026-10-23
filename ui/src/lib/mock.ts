@@ -17,8 +17,8 @@ let settings: Settings = {
   ui_language: 'fr',
   transcription_language: 'auto',
   processing_mode: 'local',
-  dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, keep_history: true, show_overlay: true, sound_cues: true },
-  meeting: { model: 'whisper-small', confidence_threshold: 0.6, retention: 'on_review', excluded_outputs: [] },
+  dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, keep_history: true, show_overlay: true, sound_cues: true, show_copied: true },
+  meeting: { model: 'whisper-large-v3-turbo', confidence_threshold: 0.6, retention: 'on_review', excluded_outputs: [] },
   shortcuts: { dictation: 'Ctrl+Alt+Space', meeting_toggle: 'Ctrl+Shift+R', marker: 'Ctrl+Shift+M', review_queue: 'Ctrl+Shift+L' },
   destinations: { folder: { enabled: true, path: '/home/camille/Documents/Réunions' }, webhook: { enabled: false, url: '' } },
   llm: { enabled: false, base_url: 'http://localhost:11434/v1', model: 'qwen2.5:7b' },
@@ -73,7 +73,7 @@ function addDetail(m: Meeting, participants: Participant[], segments: Segment[],
       segments,
       notes: [{ id: 'n1', at: 82, text: 'Démo décalée au 4/11', source: 'manual' }],
       summary,
-      processing: { mode: 'local', providers: { stt: 'whisper-small', diarization: 'sherpa-onnx' }, review_items_total: items.length, review_items_resolved: 0 },
+      processing: { mode: 'local', providers: { stt: 'whisper-large-v3-turbo', diarization: 'sherpa-onnx' }, review_items_total: items.length, review_items_resolved: 0 },
     },
     review_items: items,
     audio_path: audio ? `/home/camille/.local/share/barnaby/meetings/${m.id}/mix.wav` : null,
@@ -119,16 +119,13 @@ const meetings: Meeting[] = [
 
 let micTest: ReturnType<typeof setInterval> | undefined;
 let dictations: Dictation[] = [
-  { id: 'd1', created_at: today(10, 42), text: 'Merci pour ton retour, je regarde ça cet après-midi et je te tiens au courant.', language: 'fr', duration_ms: 4200, injected_into: 'Slack', provider: 'whisper-base' },
-  { id: 'd2', created_at: today(10, 5), text: 'Ajouter un test pour la reprise après coupure réseau dans le module de synchronisation.', language: 'fr', duration_ms: 5100, injected_into: 'Code', provider: 'whisper-base' },
-  { id: 'd3', created_at: today(17, 48, 1), text: 'Bonjour Madame Leroy, je vous confirme notre rendez-vous de mardi à 14 heures dans nos locaux.', language: 'fr', duration_ms: 6300, injected_into: null, provider: 'whisper-base' },
+  { id: 'd1', created_at: today(10, 42), text: 'Merci pour ton retour, je regarde ça cet après-midi et je te tiens au courant.', language: 'fr', duration_ms: 4200, injected_into: 'Slack', provider: 'parakeet-v3' },
+  { id: 'd2', created_at: today(10, 5), text: 'Ajouter un test pour la reprise après coupure réseau dans le module de synchronisation.', language: 'fr', duration_ms: 5100, injected_into: 'Code', provider: 'parakeet-v3' },
+  { id: 'd3', created_at: today(17, 48, 1), text: 'Bonjour Madame Leroy, je vous confirme notre rendez-vous de mardi à 14 heures dans nos locaux.', language: 'fr', duration_ms: 6300, injected_into: null, provider: 'parakeet-v3' },
 ];
 
 const models: ModelInfo[] = [
   { id: 'parakeet-v3', kind: 'parakeet', name: 'Parakeet v3 (dictée rapide)', size_mb: 487, installed: false },
-  { id: 'whisper-tiny', kind: 'whisper', name: 'Whisper tiny', size_mb: 78, installed: false },
-  { id: 'whisper-base', kind: 'whisper', name: 'Whisper base', size_mb: 148, installed: true },
-  { id: 'whisper-small', kind: 'whisper', name: 'Whisper small', size_mb: 488, installed: true },
   { id: 'whisper-large-v3-turbo', kind: 'whisper', name: 'Whisper large-v3 turbo', size_mb: 1625, installed: false },
   { id: 'pyannote-segmentation-3-0', kind: 'diarization_segmentation', name: 'Pyannote segmentation 3.0', size_mb: 7, installed: true },
   // Missing on purpose: the onboarding shows up in dev.

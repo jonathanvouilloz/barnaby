@@ -589,9 +589,10 @@ impl Store {
             .query_row("SELECT json FROM settings WHERE id = 1", [], |r| r.get(0))
             .optional()?;
         Ok(json
-            .map(|j| serde_json::from_str(&j))
+            .map(|j| serde_json::from_str::<Settings>(&j))
             .transpose()?
-            .unwrap_or_default())
+            .unwrap_or_default()
+            .without_retired_models())
     }
 
     pub fn save_settings(&self, settings: &Settings) -> Result<()> {

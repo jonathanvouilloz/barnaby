@@ -50,9 +50,6 @@ pub struct ModelEntry {
 use ModelKind::*;
 
 static CATALOG: &[ModelEntry] = &[
-    ModelEntry { id: "whisper-tiny", kind: Whisper, name: "Whisper tiny", size_mb: 78, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin", sha256: "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21", file_name: "ggml-tiny.bin" },
-    ModelEntry { id: "whisper-base", kind: Whisper, name: "Whisper base", size_mb: 148, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.bin", sha256: "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe", file_name: "ggml-base.bin" },
-    ModelEntry { id: "whisper-small", kind: Whisper, name: "Whisper small", size_mb: 488, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-small.bin", sha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b", file_name: "ggml-small.bin" },
     ModelEntry {
         id: "whisper-large-v3-turbo",
         kind: Whisper,
@@ -95,8 +92,15 @@ pub fn catalog() -> &'static [ModelEntry] {
 }
 
 fn find(id: &str) -> Option<&'static ModelEntry> {
-    CATALOG.iter().find(|m| m.id == id)
+    let found = CATALOG.iter().find(|m| m.id == id);
+    #[cfg(test)]
+    let found = found.or((id == TINY.id).then_some(&TINY));
+    found
 }
+
+/// The ignored engine tests download the smallest whisper, no longer offered to users.
+#[cfg(test)]
+static TINY: ModelEntry = ModelEntry { id: "whisper-tiny", kind: Whisper, name: "Whisper tiny", size_mb: 78, url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-tiny.bin", sha256: "be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21", file_name: "ggml-tiny.bin" };
 
 pub fn path_for(models_dir: &Path, id: &str) -> Option<PathBuf> {
     find(id).map(|m| models_dir.join(m.file_name)).filter(|p| p.is_file())
@@ -262,10 +266,10 @@ pub(crate) mod tests {
         assert_eq!(ids.len(), catalog().len());
         assert!(catalog().iter().any(|m| m.id == "whisper-large-v3-turbo" && m.kind.as_str() == "whisper"));
 
-        assert!(!installed(&dir, "whisper-base"));
-        fs::write(dir.join("ggml-base.bin"), b"x").unwrap();
-        assert!(installed(&dir, "whisper-base"));
-        assert_eq!(path_for(&dir, "whisper-base"), Some(dir.join("ggml-base.bin")));
+        assert!(!installed(&dir, "whisper-large-v3-turbo"));
+        fs::write(dir.join("ggml-large-v3-turbo.bin"), b"x").unwrap();
+        assert!(installed(&dir, "whisper-large-v3-turbo"));
+        assert_eq!(path_for(&dir, "whisper-large-v3-turbo"), Some(dir.join("ggml-large-v3-turbo.bin")));
         assert!(!installed(&dir, "nope"));
 
         fs::create_dir_all(dir.join("sherpa-onnx-pyannote-segmentation-3-0")).unwrap();
@@ -273,8 +277,8 @@ pub(crate) mod tests {
         assert!(installed(&dir, "pyannote-segmentation-3-0"));
         delete(&dir, "pyannote-segmentation-3-0").unwrap();
         assert!(!dir.join("sherpa-onnx-pyannote-segmentation-3-0").exists());
-        delete(&dir, "whisper-base").unwrap();
-        assert!(!installed(&dir, "whisper-base"));
+        delete(&dir, "whisper-large-v3-turbo").unwrap();
+        assert!(!installed(&dir, "whisper-large-v3-turbo"));
         fs::remove_dir_all(dir).unwrap();
     }
 
