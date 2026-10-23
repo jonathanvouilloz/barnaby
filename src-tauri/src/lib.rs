@@ -93,6 +93,8 @@ pub fn run() {
             commands::check_shortcut,
             commands::set_webhook_secret,
             commands::has_webhook_secret,
+            commands::test_webhook,
+            commands::generate_webhook_secret,
             commands::set_llm_api_key,
             commands::has_llm_api_key,
             commands::set_mistral_api_key,

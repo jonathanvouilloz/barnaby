@@ -98,6 +98,30 @@
     notify(t(value ? 'settings.secret_saved' : 'settings.secret_cleared'));
   }
 
+  let hookTest = $state<'idle' | 'running' | 'ok' | 'refused' | 'server' | 'unreachable'>('idle');
+  let hookCode = $state('');
+  let generated = $state('');
+
+  async function testWebhook() {
+    hookTest = 'running';
+    try {
+      await api.testWebhook(draft.destinations.webhook.url);
+      hookTest = 'ok';
+    } catch (e) {
+      // `http_404` (refused at once) or `webhook_failed:http_503` / `webhook_failed:transport`.
+      const m = /http_(\d+)/.exec(String(e));
+      hookCode = m?.[1] ?? '';
+      hookTest = !m ? 'unreachable' : m[1].startsWith('4') ? 'refused' : 'server';
+    }
+  }
+
+  async function generateSecret() {
+    const s = await attempt(api.generateWebhookSecret);
+    if (s === undefined) return;
+    generated = s;
+    hasSecret = true;
+  }
+
   async function browseFolder() {
     const current = draft.destinations.folder.path || (await api.defaultFolder().catch(() => ''));
     const picked = await api.pickFolder(current).catch(() => null);
@@ -375,10 +399,28 @@
             <span class="lbl">{t('settings.webhook_enabled')}</span>
             <input type="checkbox" role="switch" bind:checked={draft.destinations.webhook.enabled} />
           </label>
-          <label class="line">
-            <span class="lbl">{t('settings.webhook_url')}</span>
-            <input class="ctl" type="url" bind:value={draft.destinations.webhook.url} placeholder="https://" disabled={!draft.destinations.webhook.enabled} />
-          </label>
+          <div class="line">
+            <label class="lbl" for="webhook-url">{t('settings.webhook_url')}</label>
+            <span class="pick">
+              <input id="webhook-url" class="ctl" type="url" bind:value={draft.destinations.webhook.url} placeholder="https://" disabled={!draft.destinations.webhook.enabled} />
+              <button class="btn" type="button" onclick={testWebhook} disabled={!draft.destinations.webhook.enabled || !draft.destinations.webhook.url || hookTest === 'running'}>
+                {t(hookTest === 'running' ? 'settings.webhook_testing' : 'settings.webhook_test')}
+              </button>
+            </span>
+          </div>
+          {#if hookTest !== 'idle' && hookTest !== 'running'}
+            <p class="line secondary" role="status" class:ok={hookTest === 'ok'}>{t(`settings.webhook_${hookTest}`, { code: hookCode })}</p>
+          {/if}
+          <details class="line stack">
+            <summary>{t('settings.secret_advanced')}</summary>
+            <p class="secondary">{t('settings.secret_hint')}</p>
+            <div class="pick">
+              <button class="btn" type="button" onclick={generateSecret}>{t('settings.secret_generate')}</button>
+              {#if generated}
+                <input class="ctl" type="text" readonly value={generated} aria-label={t('settings.secret')} />
+                <button class="btn" type="button" onclick={() => navigator.clipboard.writeText(generated).then(() => notify(t('settings.secret_copied')))}>{t('settings.secret_copy')}</button>
+              {/if}
+            </div>
           <form class="line secret" onsubmit={(e) => { e.preventDefault(); if (secret) storeSecret(secret); }}>
             <label class="field grow"><span>{t('settings.secret')}</span>
               <input type="password" bind:value={secret} autocomplete="off" aria-describedby="secret-state" />
@@ -389,6 +431,7 @@
             {t(hasSecret ? 'settings.secret_set' : 'settings.secret_none')}
             {#if hasSecret}<button class="btn ghost small danger" onclick={() => storeSecret('')}>{t('settings.secret_clear')}</button>{/if}
           </p>
+          </details>
         </div>
       </section>
 
@@ -526,7 +569,9 @@
   }
   .lbl { flex: 1; min-width: 0; display: grid; gap: 2px; }
   .ctl { width: 280px; flex: none; }
-  .pick { display: flex; gap: 8px; align-items: center; }
+  .pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  p.ok { color: var(--ok); }
+  summary { cursor: pointer; font-weight: 500; }
   /* Selects grow to their longest option rather than clip it. */
   select.ctl { width: auto; min-width: 280px; max-width: 100%; }
   .num { width: 112px; flex: none; text-align: right; }

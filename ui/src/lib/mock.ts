@@ -211,6 +211,10 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     }
     case 'set_webhook_secret': webhookSecret = a.secret; return null;
     case 'has_webhook_secret': return webhookSecret !== '';
+    // Demo: an URL ending in /ok answers, any other one is a 404.
+    case 'test_webhook':
+      return new Promise((ok, ko) => setTimeout(() => (a.url.endsWith('/ok') ? ok(null) : ko('http_404')), 600));
+    case 'generate_webhook_secret': webhookSecret = 'a3f9c2e8b1d74f6e9c0a5b2d8e1f7c4a6b9d0e3f2a8c5b1e7d4f9a6c3b0e8d2f'; return webhookSecret;
     case 'suspend_shortcuts': case 'resume_shortcuts': return null;
     // Demo conflict: another app holds Ctrl+Alt+D.
     case 'check_shortcut': return a.accel === 'Ctrl+Alt+D';

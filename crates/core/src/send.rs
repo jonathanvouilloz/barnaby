@@ -77,6 +77,7 @@ mod tests {
                 url,
                 secret: None,
                 retry_base: Duration::from_millis(1),
+                attempts: 4,
             }),
         ];
         assert!(send_meeting(&store, &dests, &dir, id).is_err());

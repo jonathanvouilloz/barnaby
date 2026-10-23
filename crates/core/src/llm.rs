@@ -124,7 +124,7 @@ pub(crate) mod tests {
 
     #[test]
     fn posts_schema_request_and_parses_summary() {
-        let doc = crate::export::tests::sample_doc();
+        let doc = crate::export::sample_doc();
         let expected = doc.summary.clone().unwrap();
         let (url, rx) = serve(vec![(200, chat_reply(&expected))]);
         let s = OpenAiStructurer {

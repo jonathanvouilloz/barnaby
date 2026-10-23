@@ -92,6 +92,8 @@ export const api = {
   /** Stored in the OS keyring. Empty string clears it. */
   setWebhookSecret: (secret: string) => invoke<void>('set_webhook_secret', { secret }),
   hasWebhookSecret: () => invoke<boolean>('has_webhook_secret'),
+  testWebhook: (url: string) => invoke<void>('test_webhook', { url }),
+  generateWebhookSecret: () => invoke<string>('generate_webhook_secret'),
   suspendShortcuts: () => invoke<void>('suspend_shortcuts'),
   resumeShortcuts: () => invoke<void>('resume_shortcuts'),
   checkShortcut: (accel: string) => invoke<boolean>('check_shortcut', { accel }),

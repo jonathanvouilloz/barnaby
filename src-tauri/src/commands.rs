@@ -62,6 +62,26 @@ pub fn set_webhook_secret(secret: String) -> CmdResult<()> {
     set_secret(WEBHOOK_SECRET_USER, &secret)
 }
 
+/// Sends a made-up meeting once, so the user sees right away whether the URL works.
+#[tauri::command]
+pub async fn test_webhook(app: AppState<'_>, url: String) -> CmdResult<()> {
+    let secret = app.webhook_secret();
+    tauri::async_runtime::spawn_blocking(move || {
+        let hook = barnaby_core::destination::WebhookDestination { attempts: 1, ..barnaby_core::destination::WebhookDestination::new(url, secret) };
+        barnaby_core::provider::Destination::send(&hook, &barnaby_core::export::sample_doc()).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|_| "webhook_failed:transport".to_string())?
+}
+
+/// 256 bits from two v4 UUIDs (OS randomness), stored in the keyring and returned once to copy.
+#[tauri::command]
+pub fn generate_webhook_secret() -> CmdResult<String> {
+    let secret = format!("{}{}", Uuid::new_v4().simple(), Uuid::new_v4().simple());
+    set_secret(WEBHOOK_SECRET_USER, &secret)?;
+    Ok(secret)
+}
+
 #[tauri::command]
 pub fn has_webhook_secret(app: AppState) -> bool {
     app.webhook_secret().is_some()

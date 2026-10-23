@@ -5,7 +5,7 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::model::MeetingDoc;
+use crate::model::{ActionItem, MeetingDoc, MeetingInfo, Note, Participant, Processing, ProcessingMode, Segment, Summary};
 
 pub fn write_folder(doc: &MeetingDoc, dir: &Path) -> Result<()> {
     std::fs::create_dir_all(dir)?;
@@ -106,72 +106,73 @@ fn mmss(t: f64) -> String {
     format!("{:02}:{:02}", s / 60, s % 60)
 }
 
+/// A made-up meeting, sent by the webhook test button and used by the tests.
+pub fn sample_doc() -> MeetingDoc {
+    MeetingDoc {
+        schema_version: crate::model::SCHEMA_VERSION.into(),
+        meeting: MeetingInfo {
+            id: uuid::Uuid::new_v4(),
+            title: "Point hebdo".into(),
+            started_at: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap_or_default(),
+            ended_at: None,
+            language: Some("fr".into()),
+            participants: vec![Participant {
+                id: "me".into(),
+                name: "Moi".into(),
+                email: None,
+                confirmed: true,
+            }],
+        },
+        segments: vec![
+            Segment {
+                id: "s1".into(),
+                start: 75.2,
+                end: 80.0,
+                speaker_id: Some("me".into()),
+                text: "Bonjour".into(),
+                confidence: 0.9,
+                reviewed: true,
+            },
+            Segment {
+                id: "s2".into(),
+                start: 81.0,
+                end: 82.0,
+                speaker_id: Some("speaker_a".into()),
+                text: "Salut".into(),
+                confidence: 0.9,
+                reviewed: true,
+            },
+        ],
+        notes: vec![Note {
+            id: "n1".into(),
+            at: 3.0,
+            text: "budget".into(),
+            source: "manual".into(),
+        }],
+        summary: Some(Summary {
+            overview: "Tour d'horizon".into(),
+            decisions: vec!["Livrer vendredi".into()],
+            action_items: vec![ActionItem {
+                owner: Some("me".into()),
+                task: "Écrire la doc".into(),
+                due: None,
+            }],
+            open_questions: vec![],
+        }),
+        processing: Processing {
+            mode: ProcessingMode::Local,
+            providers: Default::default(),
+            review_items_total: 0,
+            review_items_resolved: 0,
+        },
+    }
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
     use crate::model::*;
-    use chrono::DateTime;
 
-    pub(crate) fn sample_doc() -> MeetingDoc {
-        MeetingDoc {
-            schema_version: SCHEMA_VERSION.into(),
-            meeting: MeetingInfo {
-                id: uuid::Uuid::new_v4(),
-                title: "Point hebdo".into(),
-                started_at: DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
-                ended_at: None,
-                language: Some("fr".into()),
-                participants: vec![Participant {
-                    id: "me".into(),
-                    name: "Moi".into(),
-                    email: None,
-                    confirmed: true,
-                }],
-            },
-            segments: vec![
-                Segment {
-                    id: "s1".into(),
-                    start: 75.2,
-                    end: 80.0,
-                    speaker_id: Some("me".into()),
-                    text: "Bonjour".into(),
-                    confidence: 0.9,
-                    reviewed: true,
-                },
-                Segment {
-                    id: "s2".into(),
-                    start: 81.0,
-                    end: 82.0,
-                    speaker_id: Some("speaker_a".into()),
-                    text: "Salut".into(),
-                    confidence: 0.9,
-                    reviewed: true,
-                },
-            ],
-            notes: vec![Note {
-                id: "n1".into(),
-                at: 3.0,
-                text: "budget".into(),
-                source: "manual".into(),
-            }],
-            summary: Some(Summary {
-                overview: "Tour d'horizon".into(),
-                decisions: vec!["Livrer vendredi".into()],
-                action_items: vec![ActionItem {
-                    owner: Some("me".into()),
-                    task: "Écrire la doc".into(),
-                    due: None,
-                }],
-                open_questions: vec![],
-            }),
-            processing: Processing {
-                mode: ProcessingMode::Local,
-                providers: Default::default(),
-                review_items_total: 0,
-                review_items_resolved: 0,
-            },
-        }
-    }
 
     #[test]
     fn writes_json_and_markdown() {

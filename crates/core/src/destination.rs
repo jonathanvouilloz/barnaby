@@ -31,9 +31,8 @@ pub struct WebhookDestination {
     pub secret: Option<String>,
     /// Delay before the 2nd attempt; doubles after each failure.
     pub retry_base: Duration,
+    pub attempts: u32,
 }
-
-const ATTEMPTS: u32 = 4;
 
 impl WebhookDestination {
     pub fn new(url: String, secret: Option<String>) -> Self {
@@ -41,6 +40,7 @@ impl WebhookDestination {
             url,
             secret,
             retry_base: Duration::from_secs(1),
+            attempts: 4,
         }
     }
 }
@@ -54,7 +54,7 @@ impl Destination for WebhookDestination {
         let body = serde_json::to_vec(doc)?;
         let agent = crate::net::agent(Duration::from_secs(30));
         let mut last = String::new();
-        for attempt in 0..ATTEMPTS {
+        for attempt in 0..self.attempts {
             if attempt > 0 {
                 sleep(self.retry_base * 2u32.pow(attempt - 1));
             }
@@ -176,12 +176,13 @@ pub(crate) mod tests {
             url,
             secret: Some("s3cret".into()),
             retry_base: Duration::from_millis(1),
+            attempts: 4,
         }
     }
 
     #[test]
     fn webhook_retries_then_succeeds_with_signed_headers() {
-        let doc = crate::export::tests::sample_doc();
+        let doc = crate::export::sample_doc();
         let (url, rx) = serve(vec![
             (500, String::new()),
             (429, String::new()),
@@ -202,8 +203,20 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn webhook_test_single_attempt() {
+        let doc = crate::export::sample_doc();
+        let (url, rx) = serve(vec![(500, String::new()); 2]);
+        let hook = WebhookDestination { attempts: 1, ..hook(url) };
+        assert_eq!(hook.send(&doc).unwrap_err().to_string(), "webhook_failed:http_500");
+        let reqs: Vec<_> = rx.try_iter().collect();
+        assert_eq!(reqs.len(), 1);
+        let has = |h: &str| reqs[0].0.iter().any(|l| l.eq_ignore_ascii_case(h));
+        assert!(has(&format!("x-signature: sha256={}", sign("s3cret", reqs[0].1.as_bytes()))));
+    }
+
+    #[test]
     fn webhook_gives_up_after_four_attempts_and_on_4xx() {
-        let doc = crate::export::tests::sample_doc();
+        let doc = crate::export::sample_doc();
         let (url, rx) = serve(vec![(503, String::new()); 5]);
         assert!(hook(url).send(&doc).is_err());
         assert_eq!(rx.try_iter().count(), 4);
