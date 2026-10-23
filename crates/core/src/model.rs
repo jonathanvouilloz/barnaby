@@ -221,7 +221,6 @@ pub struct DictationSettings {
     /// Model id from the model catalog.
     pub model: String,
     pub paste_delay_before_ms: u64,
-    pub paste_delay_after_ms: u64,
     pub keep_history: bool,
     /// Small always-on-top recording indicator while dictating.
     pub show_overlay: bool,
@@ -316,7 +315,6 @@ impl Default for DictationSettings {
             mode: DictationMode::Toggle,
             model: "parakeet-v3".into(),
             paste_delay_before_ms: 50,
-            paste_delay_after_ms: 300,
             keep_history: true,
             show_overlay: true,
             sound_cues: true,
@@ -396,5 +394,12 @@ mod tests {
         assert!(!Settings::default().onboarding_done);
         let s: Settings = serde_json::from_str(r#"{"ui_language":"en"}"#).unwrap();
         assert!(!s.onboarding_done);
+    }
+
+    #[test]
+    fn old_restore_delay_is_ignored() {
+        let s: Settings = serde_json::from_str(r#"{"dictation":{"paste_delay_after_ms":300,"keep_history":false}}"#).unwrap();
+        assert!(!s.dictation.keep_history);
+        assert!(!serde_json::to_string(&s).unwrap().contains("paste_delay_after_ms"));
     }
 }

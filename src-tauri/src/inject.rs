@@ -1,29 +1,26 @@
-//! Text injection at the cursor (spec 7.2): clipboard, simulated paste, then restore.
+//! Text injection at the cursor (spec 7.2): clipboard, then simulated paste. The text stays
+//! on the clipboard, so it can still be pasted by hand when the paste lands nowhere.
 
 use std::{sync::Mutex, thread, time::Duration};
 
 use anyhow::{Context, Result};
 
-pub struct Delays {
-    pub before_paste: Duration,
-    pub before_restore: Duration,
-}
-
-/// Two dictations finishing close together must not interleave their set/paste/restore.
+/// Two dictations finishing close together must not interleave their set/paste.
 static PASTE: Mutex<()> = Mutex::new(());
 
-pub fn paste_text(text: &str, delays: &Delays) -> Result<()> {
+/// Puts `text` on the clipboard, then pastes it after `before_paste` when `paste` is set.
+pub fn paste_text(text: &str, before_paste: Duration, paste: bool) -> Result<()> {
     let _one_at_a_time = PASTE.lock().unwrap_or_else(|e| e.into_inner());
     let mut clipboard = arboard::Clipboard::new().context("clipboard_unavailable")?;
-    let previous = clipboard.get_text().ok();
     set_private(&mut clipboard, text).context("clipboard_write")?;
-    thread::sleep(delays.before_paste);
-    let pasted = simulate_paste();
-    thread::sleep(delays.before_restore);
-    // Restore even when the paste failed. Text only: an image on the clipboard is not restored.
-    if let Some(prev) = previous {
-        let _ = clipboard.set_text(prev);
+    if !paste {
+        return Ok(());
     }
+    thread::sleep(before_paste);
+    let pasted = simulate_paste();
+    // Linux (X11, Wayland): the clipboard lives as long as its owner; keep it for a manual paste.
+    #[cfg(target_os = "linux")]
+    std::mem::forget(clipboard);
     pasted
 }
 
@@ -87,6 +84,39 @@ fn enigo_paste() -> Result<()> {
     let click = enigo.key(v, Direction::Click);
     enigo.key(modifier, Direction::Release).context("paste_failed")?;
     click.context("paste_failed")
+}
+
+/// `Some(true)` when no window can take the paste (desktop, taskbar, nothing focused);
+/// `None` when this platform cannot tell.
+pub fn no_target() -> Option<bool> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows_sys::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetForegroundWindow};
+        // SAFETY: plain Win32 calls; the buffer outlives the call and its length is passed.
+        let class = unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.is_null() {
+                return Some(true);
+            }
+            let mut buf = [0u16; 64];
+            let n = GetClassNameW(hwnd, buf.as_mut_ptr(), buf.len() as i32);
+            String::from_utf16_lossy(&buf[..n.max(0) as usize])
+        };
+        Some(matches!(class.as_str(), "Progman" | "WorkerW" | "Shell_TrayWnd" | "Shell_SecondaryTrayWnd"))
+    }
+    #[cfg(target_os = "linux")]
+    {
+        // Without xdotool, or on Wayland (XWayland sees no native window), the answer is unknown.
+        if std::env::var_os("WAYLAND_DISPLAY").is_some() {
+            return None;
+        }
+        let out = std::process::Command::new("xdotool").arg("getactivewindow").output().ok()?;
+        out.status.success().then_some(false).or(Some(true))
+    }
+    #[cfg(target_os = "macos")]
+    {
+        None
+    }
 }
 
 /// Process name of the focused application, best effort, for `Dictation::injected_into`.

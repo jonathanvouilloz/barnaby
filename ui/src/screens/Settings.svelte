@@ -69,7 +69,6 @@
     // An emptied number field binds to null; the backend expects whole milliseconds.
     const ms = (v: number) => Math.max(0, Math.round(Number(v) || 0));
     next.dictation.paste_delay_before_ms = ms(next.dictation.paste_delay_before_ms);
-    next.dictation.paste_delay_after_ms = ms(next.dictation.paste_delay_after_ms);
     try {
       await api.saveSettings(next);
       applySettings(next);
@@ -265,10 +264,6 @@
           <label class="line">
             <span class="lbl">{t('settings.delay_before')}</span>
             <input class="num" type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} />
-          </label>
-          <label class="line">
-            <span class="lbl">{t('settings.delay_after')}</span>
-            <input class="num" type="number" min="0" max="5000" step="50" bind:value={draft.dictation.paste_delay_after_ms} />
           </label>
           <label class="line">
             <span class="lbl">{t('settings.keep_history')}</span>

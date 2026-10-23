@@ -210,13 +210,14 @@ fn deliver(app: &App, settings: &Settings, transcript: &Transcript, duration_ms:
         return Ok(());
     }
     let injected_into = inject::active_app();
-    let delays = inject::Delays {
-        before_paste: Duration::from_millis(settings.dictation.paste_delay_before_ms),
-        before_restore: Duration::from_millis(settings.dictation.paste_delay_after_ms),
-    };
-    // A failed paste is not fatal: the text stays in the history (spec 7.1).
-    if let Err(e) = inject::paste_text(&text, &delays) {
+    // Nothing to paste into (desktop, taskbar): the text waits on the clipboard, say so.
+    let no_target = inject::no_target() == Some(true);
+    // A failed paste is not fatal: the text stays in the history and on the clipboard (spec 7.1).
+    if let Err(e) = inject::paste_text(&text, Duration::from_millis(settings.dictation.paste_delay_before_ms), !no_target) {
         log::warn!("paste failed: {e:#}");
+    }
+    if no_target {
+        alert(app, Alert::Copied);
     }
     let dictation = Dictation {
         id: uuid::Uuid::new_v4(),
@@ -238,6 +239,7 @@ enum Alert {
     NoMic,
     MicDenied,
     ModelMissing,
+    Copied,
 }
 
 /// Dictation runs with the window hidden: failures surface as system notifications.
@@ -250,6 +252,8 @@ fn alert(app: &App, alert: Alert) {
         (Alert::MicDenied, true) => "Microphone access denied. Allow Barnaby in the system settings.",
         (Alert::ModelMissing, false) => "Modèle de dictée absent. Télécharge-le dans Réglages › Modèles.",
         (Alert::ModelMissing, true) => "Dictation model missing. Download it in Settings › Models.",
+        (Alert::Copied, false) => "Texte copié, tu n’as plus qu’à coller.",
+        (Alert::Copied, true) => "Text copied, just paste it.",
     };
     let _ = app.handle.notification().builder().title("Barnaby").body(body).show();
 }

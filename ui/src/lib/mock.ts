@@ -17,7 +17,7 @@ let settings: Settings = {
   ui_language: 'fr',
   transcription_language: 'auto',
   processing_mode: 'local',
-  dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, paste_delay_after_ms: 300, keep_history: true, show_overlay: true, sound_cues: true },
+  dictation: { mode: 'toggle', model: 'parakeet-v3', paste_delay_before_ms: 60, keep_history: true, show_overlay: true, sound_cues: true },
   meeting: { model: 'whisper-small', confidence_threshold: 0.6, retention: 'on_review', excluded_outputs: [] },
   shortcuts: { dictation: 'Ctrl+Alt+Space', meeting_toggle: 'Ctrl+Shift+R', marker: 'Ctrl+Shift+M', review_queue: 'Ctrl+Shift+L' },
   destinations: { folder: { enabled: true, path: '/home/camille/Documents/Réunions' }, webhook: { enabled: false, url: '' } },

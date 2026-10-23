@@ -63,7 +63,7 @@ export interface Settings {
   ui_language: 'fr' | 'en';
   transcription_language: 'auto' | 'fr' | 'en';
   processing_mode: ProcessingMode;
-  dictation: { mode: DictationMode; model: string; paste_delay_before_ms: number; paste_delay_after_ms: number; keep_history: boolean; show_overlay: boolean; sound_cues: boolean };
+  dictation: { mode: DictationMode; model: string; paste_delay_before_ms: number; keep_history: boolean; show_overlay: boolean; sound_cues: boolean };
   meeting: { model: string; confidence_threshold: number; retention: AudioRetention; excluded_outputs: string[] };
   shortcuts: { dictation: string; meeting_toggle: string; marker: string; review_queue: string };
   destinations: { folder: { enabled: boolean; path: string }; webhook: { enabled: boolean; url: string } };

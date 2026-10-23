@@ -32,6 +32,9 @@ arboard = "3.7"
 enigo = "0.6"
 keyring = "4.2"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+
 [features]
 cuda = ["barnaby-engine/cuda"]
 vulkan = ["barnaby-engine/vulkan"]
