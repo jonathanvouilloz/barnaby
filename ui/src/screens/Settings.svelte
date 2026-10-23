@@ -417,7 +417,7 @@
               {/if}
             </div>
           <form class="line secret" onsubmit={(e) => { e.preventDefault(); if (secret) storeSecret(secret); }}>
-            <label class="field grow"><span>{t('settings.secret')}</span>
+            <label class="field grow"><span>{t('settings.secret_own')}</span>
               <input type="password" bind:value={secret} autocomplete="off" aria-describedby="secret-state" />
             </label>
             <button class="btn" type="submit" disabled={!secret}>{t('settings.secret_save')}</button>
@@ -567,6 +567,7 @@
   .pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   p.ok { color: var(--ok); }
   summary { cursor: pointer; font-weight: 500; }
+  .stack .line { padding-inline: 0; }
   /* Selects grow to their longest option rather than clip it. */
   select.ctl { width: auto; min-width: 280px; max-width: 100%; }
   .num { width: 112px; flex: none; text-align: right; }
