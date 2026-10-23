@@ -107,3 +107,23 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : le son choisi par Jon (banque Pixabay, licence Pixabay : usage dans une app autorisé, sans attribution ; redistribution du fichier seul interdite), coupé à 0,12 s dans `crates/engine/assets/start.wav`. Joué au démarrage seulement ; le micro ignore ses 160 premières millisecondes pour ne pas le transcrire. Interrupteur dans Réglages, actif par défaut.
 - Écarté : son synthétisé (moins agréable pour Jon) ; son à l'arrêt (inutile, on vient d'appuyer).
 - À rouvrir si : la source exacte sur Pixabay ne peut pas être retrouvée (Jon pense qu'il vient de là, sans certitude).
+
+## 2026-10-23 — Site sur Cloudflare Pages, domaine mybarnaby.app
+- Choix : projet Pages `barnaby` (compte Cloudflare personnel de Jon), domaine `mybarnaby.app` acheté par Jon ; publication à la main depuis le serveur (commande dans `handoff.md`).
+- Écarté : sous-domaine de Jon Labs (Jon a pris un domaine propre) ; GitHub Pages (Cloudflare déjà prévu) ; publication automatique à chaque push sur `main` (Jon : peu de pushs, pas besoin).
+- À rouvrir si : les mises à jour du site deviennent fréquentes ou oubliées (alors une action GitHub avec un jeton Cloudflare).
+
+## 2026-10-23 — Mouvement du site avec GSAP
+- Choix : GSAP 3.15 + ScrollTrigger servis depuis `site/vendor/` (pas de CDN tiers), dans `gsap.matchMedia` sur `prefers-reduced-motion: no-preference` ; questions qui se déplient, entrée du hero, blocs révélés au défilement. Demande explicite de Jon, qui prime sur « CSS d'abord ».
+- Écarté : animations CSS seules (Jon trouvait l'ouverture des questions sèche) ; GSAP depuis un CDN (requête vers un tiers).
+- À rouvrir si : le poids de la page (≈ 115 Ko de GSAP) gêne sur mobile.
+
+## 2026-10-23 — Téléchargement en deux temps
+- Choix : le bouton du haut mène aux trois cartes de L'installer ; le fichier ne part qu'au clic sur une carte. Celle du système détecté est en premier, mise en avant.
+- Écarté : téléchargement direct au premier clic (fait peur, dit Jon) ; fenêtre par-dessus la page (un élément de plus à fermer, cache la page).
+- À rouvrir si : les mesures (s'il y en a un jour) montrent qu'on perd des gens entre les deux clics.
+
+## 2026-10-23 — Dictée : presse-papiers gardé, raccourcis à une touche
+- Choix : le texte dicté reste au presse-papiers (plus de restauration) ; sans fenêtre active, pas de collage et notification « Texte copié ». Une touche seule non imprimable (F1–F24, Pause, Inser, Impr écran, Arrêt défil) est acceptée comme raccourci, avec avertissement ; Ctrl+lettre courante (Ctrl+P…) est signalé.
+- Écarté : restaurer l'ancien presse-papiers sauf sans fenêtre (ne couvre pas une fenêtre sans champ de texte) ; refuser toute touche seule.
+- À rouvrir si : des utilisateurs se plaignent de perdre ce qu'ils avaient copié avant de dicter.

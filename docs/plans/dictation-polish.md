@@ -44,14 +44,14 @@ Le travail overlay est déjà dans l'arbre de travail, non commité : `src-tauri
 **Interfaces:**
 - Produces: `barnaby_engine::cue::play_start()` (bloque jusqu'à la fin du son, erreurs journalisées), `cue::MIC_MUTE: Duration`.
 
-- [ ] **Step 1: Convertir le son.** Le son utile est entre 0,059 s et 0,098 s du mp3, le reste est du silence.
+- [x] **Step 1: Convertir le son.** Le son utile est entre 0,059 s et 0,098 s du mp3, le reste est du silence.
   Run: `ffmpeg -i sound.mp3 -ss 0.05 -t 0.12 -ac 1 -ar 48000 -c:a pcm_s16le -af "afade=t=out:st=0.10:d=0.02" crates/engine/assets/start.wav`
   Expected: `ffprobe` donne ~0,12 s, mono, 48 kHz ; écoute : même son que le mp3.
-- [ ] **Step 2: Test qui échoue** dans `cue.rs` : `start_sound_decodes` (non vide, mono, `|x| <= 1`), `resample_keeps_duration` (`resample(&s, 48_000, 44_100).len()` ≈ `s.len() * 44_100 / 48_000` à 1 échantillon près).
-- [ ] **Step 3: Implémenter.** `include_bytes!("../assets/start.wav")` décodé avec `hound::WavReader::new(Cursor)` ; `fn resample(s: &[f32], from: u32, to: u32) -> Vec<f32>` par interpolation linéaire ; supprimer `tone`, `Cue`, `RISING`, l'ancien test. `MIC_MUTE` = 160 ms. Garder un gain de lecture (`VOLUME` = 0,5, à ajuster à l'oreille par Jon).
-- [ ] **Step 4: Retirer le son d'arrêt** dans `dictation.rs` (bloc `End::Stop` de `end`), appeler `cue::play_start()` au démarrage. Textes : « Faire un petit son au démarrage de la dictée » / « Play a short sound when dictation starts ».
-- [ ] **Step 5: Vérifier.** Tests engine `cue`, clippy, `bun run check`. Supprimer `sound.mp3`.
-- [ ] **Step 6: Commit** `add dictation start sound, raise overlay on each dictation`. Demander à Jon la source du son et la noter dans `docs/project/decisions.md` (licence).
+- [x] **Step 2: Test qui échoue** dans `cue.rs` : `start_sound_decodes` (non vide, mono, `|x| <= 1`), `resample_keeps_duration` (`resample(&s, 48_000, 44_100).len()` ≈ `s.len() * 44_100 / 48_000` à 1 échantillon près).
+- [x] **Step 3: Implémenter.** `include_bytes!("../assets/start.wav")` décodé avec `hound::WavReader::new(Cursor)` ; `fn resample(s: &[f32], from: u32, to: u32) -> Vec<f32>` par interpolation linéaire ; supprimer `tone`, `Cue`, `RISING`, l'ancien test. `MIC_MUTE` = 160 ms. Garder un gain de lecture (`VOLUME` = 0,5, à ajuster à l'oreille par Jon).
+- [x] **Step 4: Retirer le son d'arrêt** dans `dictation.rs` (bloc `End::Stop` de `end`), appeler `cue::play_start()` au démarrage. Textes : « Faire un petit son au démarrage de la dictée » / « Play a short sound when dictation starts ».
+- [x] **Step 5: Vérifier.** Tests engine `cue`, clippy, `bun run check`. Supprimer `sound.mp3`.
+- [x] **Step 6: Commit** `add dictation start sound, raise overlay on each dictation`. Demander à Jon la source du son et la noter dans `docs/project/decisions.md` (licence).
 
 ### Task 2: Saisie du raccourci
 
@@ -63,26 +63,26 @@ Cause du bug : le raccourci actuel est déjà enregistré globalement ; le syst�
 **Interfaces:**
 - Produces: commandes `suspend_shortcuts()` (`unregister_all`), `resume_shortcuts(app)` (`shortcuts::register(&app.handle, &app.settings())`) et `check_shortcut(accel: String) -> bool` (`true` si une autre application l'a déjà pris : tentative d'enregistrement puis désenregistrement, raccourcis de Barnaby suspendus) ; `api.checkShortcut(accel)` ; `api.suspendShortcuts()`, `api.resumeShortcuts()` ; `shortcutWarning(accel: string): 'single_key' | 'common' | null` dans `accelerator.ts`.
 
-- [ ] **Step 1: Tests qui échouent** dans `lib.test.ts` :
+- [x] **Step 1: Tests qui échouent** dans `lib.test.ts` :
   - `acceleratorFromKey` accepte seuls `F1`–`F24`, `Pause`, `Insert`, `ScrollLock`, `PrintScreen` ; renvoie toujours `'need_modifier'` pour `KeyA`, `Digit1`, `Space`, `Enter`.
   - `shortcutWarning('F8') === 'single_key'` ; `shortcutWarning('Ctrl+P') === 'common'` (liste : Ctrl+ A C V X Z Y S P O N W T F R Q, et la même chose avec Super sous macOS) ; `shortcutWarning('Ctrl+Shift+Space') === null`.
-- [ ] **Step 2: Implémenter** `accelerator.ts`. Vérifier dans la source de `global-hotkey` installée que `Pause`, `Insert`, `ScrollLock`, `PrintScreen` sont analysés ; retirer de la liste ceux qui ne le sont pas.
-- [ ] **Step 3: Suspendre pendant la saisie.** `ShortcutInput` appelle `suspendShortcuts()` à l'entrée en saisie et `resumeShortcuts()` dans `stop()` (Échap, blur, touche validée). Test : le mock compte les appels ; après blur, autant de `resume` que de `suspend`.
-- [ ] **Step 3b: Conflit avec une autre application.** Après chaque combinaison validée, `checkShortcut` ; si `true`, message `settings.sc.taken` (« Ce raccourci est déjà pris par une autre application. Choisis-en un autre. ») et la valeur n'est pas retenue. Les raccourcis internes aux applis (Ctrl+P dans Word) ne sont détectables sur aucun système : c'est le rôle de `shortcutWarning`. Wayland : non fiable, pas de message.
-- [ ] **Step 4: Textes.** Sous la case : l'avertissement de `shortcutWarning` (`settings.sc.warn_single_key` : la touche ne marchera plus pour autre chose dans aucune appli ; `settings.sc.warn_common` : « {keys} sert déjà à {action} dans la plupart des applis : il ne marchera plus là-bas »). Réécrire `settings.sc.hint` et `settings.sc.need_modifier` : une touche Ctrl, Alt, Maj ou Win + une lettre ; conseillé : Ctrl + Maj + Espace ; Échap pour annuler.
-- [ ] **Step 5: Vérifier** `bun test`, `bun run check`, clippy, capture des Réglages (mock).
-- [ ] **Step 6: Commit** `fix shortcut capture, allow single keys with warnings`.
+- [x] **Step 2: Implémenter** `accelerator.ts`. Vérifier dans la source de `global-hotkey` installée que `Pause`, `Insert`, `ScrollLock`, `PrintScreen` sont analysés ; retirer de la liste ceux qui ne le sont pas.
+- [x] **Step 3: Suspendre pendant la saisie.** `ShortcutInput` appelle `suspendShortcuts()` à l'entrée en saisie et `resumeShortcuts()` dans `stop()` (Échap, blur, touche validée). Test : le mock compte les appels ; après blur, autant de `resume` que de `suspend`.
+- [x] **Step 3b: Conflit avec une autre application.** Après chaque combinaison validée, `checkShortcut` ; si `true`, message `settings.sc.taken` (« Ce raccourci est déjà pris par une autre application. Choisis-en un autre. ») et la valeur n'est pas retenue. Les raccourcis internes aux applis (Ctrl+P dans Word) ne sont détectables sur aucun système : c'est le rôle de `shortcutWarning`. Wayland : non fiable, pas de message.
+- [x] **Step 4: Textes.** Sous la case : l'avertissement de `shortcutWarning` (`settings.sc.warn_single_key` : la touche ne marchera plus pour autre chose dans aucune appli ; `settings.sc.warn_common` : « {keys} sert déjà à {action} dans la plupart des applis : il ne marchera plus là-bas »). Réécrire `settings.sc.hint` et `settings.sc.need_modifier` : une touche Ctrl, Alt, Maj ou Win + une lettre ; conseillé : Ctrl + Maj + Espace ; Échap pour annuler.
+- [x] **Step 5: Vérifier** `bun test`, `bun run check`, clippy, capture des Réglages (mock).
+- [x] **Step 6: Commit** `fix shortcut capture, allow single keys with warnings`.
 
 ### Task 3: Choisir le dossier de destination
 
 **Files:**
 - Modify: `src-tauri/Cargo.toml` (`tauri-plugin-dialog`), `src-tauri/src/lib.rs` (`.plugin(tauri_plugin_dialog::init())`), `src-tauri/capabilities/default.json` (`dialog:allow-open`), `ui/package.json` (`@tauri-apps/plugin-dialog`, même version mineure que le crate), `ui/src/screens/Settings.svelte`, `ui/src/lib/mock.ts`, `ui/src/lib/i18n.ts`
 
-- [ ] **Step 1: Lire la doc officielle** du plugin dialog v2 (`open({ directory: true, defaultPath })`) pour la version installée.
-- [ ] **Step 2: Bouton « Parcourir… »** à droite du champ (le champ reste éditable). `defaultPath` = chemin actuel, sinon `documentDir()` de `@tauri-apps/api/path`. Annulation (`null`) : ne rien changer.
-- [ ] **Step 3: Dossier proposé** : en activant l'interrupteur avec un chemin vide, remplir `<Documents>/Barnaby`. `write_folder` crée-t-il le dossier ? Le vérifier dans `crates/core/src/export.rs`, sinon `create_dir_all` avant écriture, avec test core.
-- [ ] **Step 4: Mock** : `open` renvoie `/home/demo/Documents/Barnaby`. Vérifier `bun run check`, clippy, capture.
-- [ ] **Step 5: Commit** `add folder picker for the folder destination`.
+- [x] **Step 1: Lire la doc officielle** du plugin dialog v2 (`open({ directory: true, defaultPath })`) pour la version installée.
+- [x] **Step 2: Bouton « Parcourir… »** à droite du champ (le champ reste éditable). `defaultPath` = chemin actuel, sinon `documentDir()` de `@tauri-apps/api/path`. Annulation (`null`) : ne rien changer.
+- [x] **Step 3: Dossier proposé** : en activant l'interrupteur avec un chemin vide, remplir `<Documents>/Barnaby`. `write_folder` crée-t-il le dossier ? Le vérifier dans `crates/core/src/export.rs`, sinon `create_dir_all` avant écriture, avec test core.
+- [x] **Step 4: Mock** : `open` renvoie `/home/demo/Documents/Barnaby`. Vérifier `bun run check`, clippy, capture.
+- [x] **Step 5: Commit** `add folder picker for the folder destination`.
 
 ### Task 4: Webhook clé en main
 
@@ -92,11 +92,11 @@ Cause du bug : le raccourci actuel est déjà enregistré globalement ; le syst�
 **Interfaces:**
 - Produces: champ `WebhookDestination::attempts: u32` (4 via `new`) ; `pub fn sample_doc() -> MeetingDoc` (réunion d'exemple, titre « Test Barnaby », un segment, id fixe) ; commandes `test_webhook(url: String) -> CmdResult<()>` (une tentative, délai 10 s, secret du trousseau, erreur `http_<code>` ou `transport`) et `generate_webhook_secret() -> CmdResult<String>` (64 caractères hexadécimaux : deux `Uuid::new_v4().simple()`, stocké dans le trousseau, renvoyé pour copie).
 
-- [ ] **Step 1: Test core qui échoue** : `webhook_test_single_attempt` contre un serveur local qui répond 500 : une seule requête reçue, erreur `webhook_failed:http_500` ; le corps signé vérifie avec `sign`.
-- [ ] **Step 2: Implémenter** `attempts` et `sample_doc`, puis les deux commandes.
-- [ ] **Step 3: Interface.** Bouton « Tester » à côté de l'URL (désactivé si l'URL est vide) : état en cours, puis « Reçu » ou le code d'erreur expliqué. Secret : bloc repliable « Avancé : signature » avec « Générer un secret » puis « Copier » ; saisie manuelle conservée dedans.
-- [ ] **Step 4: Vérifier** `cargo test -p barnaby-core`, clippy, `bun run check`, capture.
-- [ ] **Step 5: Commit** `add webhook test button and generated secret`.
+- [x] **Step 1: Test core qui échoue** : `webhook_test_single_attempt` contre un serveur local qui répond 500 : une seule requête reçue, erreur `webhook_failed:http_500` ; le corps signé vérifie avec `sign`.
+- [x] **Step 2: Implémenter** `attempts` et `sample_doc`, puis les deux commandes.
+- [x] **Step 3: Interface.** Bouton « Tester » à côté de l'URL (désactivé si l'URL est vide) : état en cours, puis « Reçu » ou le code d'erreur expliqué. Secret : bloc repliable « Avancé : signature » avec « Générer un secret » puis « Copier » ; saisie manuelle conservée dedans.
+- [x] **Step 4: Vérifier** `cargo test -p barnaby-core`, clippy, `bun run check`, capture.
+- [x] **Step 5: Commit** `add webhook test button and generated secret`.
 
 ### Task 5: Le texte dicté reste au presse-papiers
 
@@ -106,14 +106,14 @@ Cause du bug : le raccourci actuel est déjà enregistré globalement ; le syst�
 **Interfaces:**
 - Produces: `inject::paste_text(text, delays)` sans restauration ; `inject::no_target() -> Option<bool>` (`Some(true)` = aucune fenêtre active, `None` = inconnu) ; `Alert::Copied` dans `dictation.rs`.
 
-- [ ] **Step 1: Retirer la restauration** dans `paste_text` et le champ `paste_delay_after_ms` partout (modèle, `Delays::before_restore`, api, mock, Réglages, textes `settings.delay_after`). Serde ignore le champ dans les réglages déjà enregistrés : le vérifier par un test core qui relit un JSON contenant `paste_delay_after_ms`.
-- [ ] **Step 2: `no_target`.** Windows : `GetForegroundWindow()` nul, ou classe (`GetClassNameW`) `Progman`, `WorkerW`, `Shell_TrayWnd` → `Some(true)`. Linux : `xdotool getactivewindow` en échec avec `xdotool` présent → `Some(true)`, sinon `None`. macOS : `None`. Appeler avant le collage.
-- [ ] **Step 3: Notification** `Alert::Copied` : « Texte copié, tu n'as plus qu'à coller. » / « Text copied, just paste it. », via `alert` existant.
-- [ ] **Step 4: Vérifier** clippy, `cargo test -p barnaby-core`, `bun run check && bun test`. Le cas Windows ne se vérifie que sur la machine de Jon.
-- [ ] **Step 5: Commit** `keep dictated text on the clipboard, notify when nothing is focused`.
+- [x] **Step 1: Retirer la restauration** dans `paste_text` et le champ `paste_delay_after_ms` partout (modèle, `Delays::before_restore`, api, mock, Réglages, textes `settings.delay_after`). Serde ignore le champ dans les réglages déjà enregistrés : le vérifier par un test core qui relit un JSON contenant `paste_delay_after_ms`.
+- [x] **Step 2: `no_target`.** Windows : `GetForegroundWindow()` nul, ou classe (`GetClassNameW`) `Progman`, `WorkerW`, `Shell_TrayWnd` → `Some(true)`. Linux : `xdotool getactivewindow` en échec avec `xdotool` présent → `Some(true)`, sinon `None`. macOS : `None`. Appeler avant le collage.
+- [x] **Step 3: Notification** `Alert::Copied` : « Texte copié, tu n'as plus qu'à coller. » / « Text copied, just paste it. », via `alert` existant.
+- [x] **Step 4: Vérifier** clippy, `cargo test -p barnaby-core`, `bun run check && bun test`. Le cas Windows ne se vérifie que sur la machine de Jon.
+- [x] **Step 5: Commit** `keep dictated text on the clipboard, notify when nothing is focused`.
 
 ### Task 6: Contrôle sur Windows
 
-- [ ] **Step 1:** `fr-typography` sur les nouveaux textes, `review-ui` sur les Réglages modifiés.
-- [ ] **Step 2:** build Windows par la CI (push sur `phase-1`), artefact donné à Jon. Pas de tag ni de release sans son accord.
+- [x] **Step 1:** `fr-typography` sur les nouveaux textes, `review-ui` sur les Réglages modifiés.
+- [x] **Step 2:** build Windows par la CI (push sur `phase-1`), artefact donné à Jon. Pas de tag ni de release sans son accord.
 - [ ] **Step 3:** Jon vérifie : pastille devant une fenêtre « toujours devant » sans voler le focus, son audible et absent du texte, Ctrl+P ressaisi, sélecteur de dossier, « Tester », dictée sur le bureau puis Ctrl+V.

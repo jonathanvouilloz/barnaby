@@ -10,20 +10,21 @@ Indépendants et petites équipes francophones qui tombent sur le lien (réseaux
 
 ## Contenu, dans l'ordre
 1. En-tête : chouette, « Barnaby », liens GitHub et Télécharger.
-2. Accroche : la chouette animée en grand, ce que fait l'app en une phrase simple, bouton Télécharger qui pointe directement vers le fichier du système (Windows, Linux ; macOS « bientôt »).
+2. Accroche : la chouette animée en grand, ce que fait l'app en une phrase simple, bouton « Télécharger pour <système> » qui mène à la section L'installer, sans rien télécharger (demande de Jon du 2026-10-23 : un téléchargement au premier clic fait peur).
 3. Vidéo de Jon (YouTube intégré en mode sans cookies). Tant qu'elle n'existe pas, la section est cachée.
 4. À quoi ça sert : dictée au curseur, et réunions (enregistrer, transcrire, relire, résumé).
 5. Comment ça marche : une réunion en trois étapes (écoute, texte, vérification), chacune avec une capture de l'app sur des données d'exemple.
-6. Comment l'utiliser : installer, choisir ses modèles à l'onboarding, raccourci de dictée, lancer une réunion.
+6. Comment l'utiliser : installer (trois cartes Windows, Mac, Linux, celle du système du visiteur en premier et « Recommandé pour toi » ; le fichier part au clic sur sa carte), choisir ses modèles à l'onboarding, raccourci de dictée, lancer une réunion.
 7. Questions fréquentes : gratuit ? où vont mes données ? quel ordinateur ? macOS ?
-8. Remerciements : Handy, Whisper, Parakeet, sherpa-onnx, Mistral.
-9. Don : cachée tant que Jon n'a pas de lien.
-10. Pied de page : GitHub, licence MIT, lien vers Jon Labs.
+8. Qui l'a fait : photo de Jon, une phrase, liens jonlabs.ch et X (@jonvolio).
+9. Remerciements : Handy, Whisper, Parakeet, sherpa-onnx, Mistral.
+10. Don : cachée tant que Jon n'a pas de lien.
+11. Pied de page : GitHub, licence MIT, lien vers Jon Labs.
 
 ## Contraintes
 - Français seulement (fr-CH), tutoiement, ton de l'app (`PRODUCT.md`).
 - Look de l'app : couleurs, police et chouette de `DESIGN.md`. Clair et sombre.
-- Liens de téléchargement directs (`releases/latest/download/Barnaby-windows-setup.exe`, `Barnaby-linux-amd64.deb`) : un tag `v*` publie la release avec ces noms (job `release` de la CI). Le dépôt devient public le jour du lancement (action de Jon).
+- Liens de téléchargement (`releases/latest/download/Barnaby-windows-setup.exe`, `Barnaby-macos-arm64.dmg`, `Barnaby-linux-amd64.deb`) : un tag `v*` publie la release avec ces noms (job `release` de la CI). Les tailles et le numéro de version écrits dans les cartes sont à mettre à jour à chaque release.
 - Texte compréhensible par un enfant de 7 ans : ce que ça fait, pas comment c'est fait (demande de Jon).
 - Aucun pistage, aucun cookie hors vidéo YouTube sans cookies.
 - Page légère, lisible sur téléphone.
