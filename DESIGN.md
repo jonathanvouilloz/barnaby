@@ -263,7 +263,9 @@ Le site (`site/`, HTML et CSS statiques) porte le monde de l'app. Ses tokens son
 - **Démo de dictée (signature)** : un champ de texte blanc (filet, rayon carte, ombre window) où la phrase s'écrit mot à mot derrière un curseur bleu ; en bas, la bulle de dictée, pilule encre portant la chouette (30px) et cinq barres orange bec (rec) qui s'animent pendant l'écoute. La chouette passe d'écoute à succès. Avec `prefers-reduced-motion`, le texte est entier et rien ne bouge.
 - **Chouette** : en grand au centre du hero (232px, 170px sur téléphone), la boucle animée détourée (`img/owl-loop.webm`, VP9 avec transparence ; image fixe sous Safari et en mouvement réduit), posée sur la page en clair et sur un disque crème en sombre. Ailleurs, une chouette de 56px surgit à côté de trois titres, une fois, avec un petit saut. 36px dans la marque et le pied de page. Poses copiées de `ui/src/assets/owl/`.
 - **Captures de l'app** : une par étape de « Une réunion avec Barnaby », données d'exemple, version claire et sombre (`picture`), filet, rayon carte et ombre window.
-- **Étapes** : numéros dans un disque de 32px en lavis fort, chiffres tabulaires. Questions : `details` entre filets, chevron dessiné qui tourne de 180°.
+- **Étapes** : numéros dans un disque de 32px en lavis fort, chiffres tabulaires. Questions : `details` entre filets, chevron dessiné qui tourne de 180° en 240ms ; la réponse se déplie et se replie (GSAP, 0,45s et 0,35s).
+- **Mouvement du site (GSAP 3.15, servi depuis `site/vendor/`, demande de Jon)** : entrée du hero (la chouette se pose, puis titre, chapeau et boutons en cascade) ; chaque bloc monte de 28px en apparaissant au défilement, quelques-uns à la fois. Tout est dans `gsap.matchMedia` sur `prefers-reduced-motion: no-preference` : sans GSAP ou en mouvement réduit, la page est complète et fixe.
+- **Qui l'a fait** : portrait rond de Jon (96px, filet), une phrase, liens Jon Labs et X. Les liens externes s'ouvrent dans un nouvel onglet, sauf les téléchargements directs.
 
 ## Do's and Don'ts
 

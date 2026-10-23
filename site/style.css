@@ -197,10 +197,19 @@ summary::-webkit-details-marker { display: none; }
 summary::after {
   content: ""; flex: none; width: 16px; height: 16px; background: currentColor; opacity: .6;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 8 10.5 12.5 6' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
-  transition: rotate 150ms var(--ease);
+  transition: rotate 240ms var(--ease);
 }
-details[open] summary::after { rotate: 180deg; }
+/* `closing`: main.js keeps the panel open while it folds, the chevron turns back right away. */
+details[open]:not(.closing) summary::after { rotate: 180deg; }
+summary:hover::after { opacity: 1; }
 details p { padding-bottom: 18px; color: var(--text-2); }
+
+.maker { display: flex; align-items: center; gap: 20px; }
+.maker img { flex: none; width: 96px; height: 96px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; }
+.maker-links { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 8px; font-weight: 600; }
+
+/* Set in <head> for visitors who accept motion: GSAP reveals the hero, a timer shows it if a script fails. */
+.anim .hero > * { visibility: hidden; }
 
 footer { display: grid; justify-items: center; gap: 8px; margin-top: 80px; padding: 32px 0 48px; border-top: 1px solid var(--border); text-align: center; font-size: 14px; color: var(--text-2); }
 
