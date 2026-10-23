@@ -2,6 +2,7 @@
 //! and the local model catalog. Knows nothing of Tauri or SQLite.
 
 pub mod capture;
+pub mod cue;
 pub mod diarize;
 mod dsp;
 mod input;

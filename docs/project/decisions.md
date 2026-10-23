@@ -102,3 +102,8 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Écarté : Astro (outil plus gros que le besoin) ; SvelteKit statique (JavaScript inutile pour une page sans interaction).
 - Pourquoi : une seule page de texte, en français, sans interaction ; le plus léger pour le visiteur et posable n'importe où.
 - À rouvrir si : le site passe à plusieurs pages ou à l'anglais (alors Astro).
+
+## 2026-10-23 — Son de démarrage de la dictée
+- Choix : le son choisi par Jon (banque Pixabay, licence Pixabay : usage dans une app autorisé, sans attribution ; redistribution du fichier seul interdite), coupé à 0,12 s dans `crates/engine/assets/start.wav`. Joué au démarrage seulement ; le micro ignore ses 160 premières millisecondes pour ne pas le transcrire. Interrupteur dans Réglages, actif par défaut.
+- Écarté : son synthétisé (moins agréable pour Jon) ; son à l'arrêt (inutile, on vient d'appuyer).
+- À rouvrir si : la source exacte sur Pixabay ne peut pas être retrouvée (Jon pense qu'il vient de là, sans certitude).

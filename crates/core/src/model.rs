@@ -225,6 +225,8 @@ pub struct DictationSettings {
     pub keep_history: bool,
     /// Small always-on-top recording indicator while dictating.
     pub show_overlay: bool,
+    /// Short sounds when a dictation starts and stops.
+    pub sound_cues: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -317,6 +319,7 @@ impl Default for DictationSettings {
             paste_delay_after_ms: 300,
             keep_history: true,
             show_overlay: true,
+            sound_cues: true,
         }
     }
 }

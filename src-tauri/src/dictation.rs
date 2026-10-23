@@ -12,7 +12,7 @@ use std::{
 
 use anyhow::anyhow;
 use barnaby_core::{audio::rms, Dictation, Settings, Transcript, SAMPLE_RATE};
-use barnaby_engine::{models, DictationRecorder, LiveDictation, VadStream};
+use barnaby_engine::{cue, models, DictationRecorder, LiveDictation, VadStream};
 use tauri::Emitter;
 use tauri_plugin_notification::NotificationExt;
 
@@ -102,8 +102,15 @@ pub fn start(app: &Arc<App>) {
         m.recorder.pause_mic(true);
     }
     status(app, "recording");
+    // The mic hears the start cue: its first samples are zeroed so it is never transcribed.
+    let mute = if app.settings().dictation.sound_cues {
+        thread::spawn(cue::play_start);
+        cue::MIC_MUTE.as_millis() as usize * SAMPLE_RATE as usize / 1000
+    } else {
+        0
+    };
     let app = app.clone();
-    thread::spawn(move || run(&app, recorder, rx));
+    thread::spawn(move || run(&app, recorder, rx, mute));
 }
 
 pub fn stop(app: &Arc<App>) {
@@ -136,7 +143,7 @@ fn resume_meeting_mic(app: &App) {
 }
 
 /// Worker thread of one dictation, from the first sample to the paste.
-fn run(app: &Arc<App>, mut recorder: DictationRecorder, end: Receiver<End>) {
+fn run(app: &Arc<App>, mut recorder: DictationRecorder, end: Receiver<End>, mute: usize) {
     let settings = app.settings();
     // Without the VAD model the whole recording is transcribed at the end.
     let vad = models::path_for(&app.models_dir, "silero-vad").and_then(|p| VadStream::new(&p).inspect_err(|e| log::warn!("vad: {e:#}")).ok());
@@ -145,7 +152,9 @@ fn run(app: &Arc<App>, mut recorder: DictationRecorder, end: Receiver<End>) {
     let stopped = loop {
         match end.recv_timeout(TICK) {
             Err(RecvTimeoutError::Timeout) => {
-                let chunk = recorder.drain();
+                let mut chunk = recorder.drain();
+                let quiet = mute.saturating_sub(samples).min(chunk.len());
+                chunk[..quiet].fill(0.0);
                 let _ = app.handle.emit("dictation-level", level(&chunk));
                 samples += chunk.len();
                 live.push(&chunk);

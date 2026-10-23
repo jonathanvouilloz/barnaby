@@ -222,6 +222,10 @@
             <span class="lbl"><label for="show-overlay">{t('settings.show_overlay')}</label><span class="secondary" id="overlay-hint">{t('settings.show_overlay_hint')}</span></span>
             <input id="show-overlay" type="checkbox" role="switch" bind:checked={draft.dictation.show_overlay} aria-describedby="overlay-hint" />
           </div>
+          <div class="line">
+            <span class="lbl"><label for="sound-cues">{t('settings.sound_cues')}</label><span class="secondary" id="cues-hint">{t('settings.sound_cues_hint')}</span></span>
+            <input id="sound-cues" type="checkbox" role="switch" bind:checked={draft.dictation.sound_cues} aria-describedby="cues-hint" />
+          </div>
           <label class="line">
             <span class="lbl">{t('settings.delay_before')}</span>
             <input class="num" type="number" min="0" max="2000" step="10" bind:value={draft.dictation.paste_delay_before_ms} />

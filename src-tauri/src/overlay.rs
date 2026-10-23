@@ -10,7 +10,7 @@ const HEIGHT: f64 = 56.0;
 const MARGIN: f64 = 32.0;
 
 pub fn create(handle: &AppHandle) -> tauri::Result<()> {
-    WebviewWindowBuilder::new(handle, LABEL, WebviewUrl::App("index.html#overlay".into()))
+    let w = WebviewWindowBuilder::new(handle, LABEL, WebviewUrl::App("index.html#overlay".into()))
         .title("Barnaby")
         .inner_size(WIDTH, HEIGHT)
         .decorations(false)
@@ -24,6 +24,8 @@ pub fn create(handle: &AppHandle) -> tauri::Result<()> {
         // Windows: shown once here, never re-shown (see `show`).
         .visible(cfg!(target_os = "windows"))
         .build()?;
+    // Click-through: the pill never catches the mouse.
+    let _ = w.set_ignore_cursor_events(true);
     // Not `.position(OFF_SCREEN)`: tao ignores a start position outside every monitor.
     hide(handle);
     Ok(())
@@ -46,6 +48,10 @@ pub fn show(handle: &AppHandle) {
     if !cfg!(target_os = "windows") {
         let _ = w.show();
     }
+    // Back to the top of the always-on-top windows opened since; tao only acts on a change,
+    // and does so with SWP_NOACTIVATE, so this never takes the focus.
+    let _ = w.set_always_on_top(false);
+    let _ = w.set_always_on_top(true);
 }
 
 pub fn hide(handle: &AppHandle) {
