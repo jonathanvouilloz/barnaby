@@ -8,7 +8,7 @@ Mise à jour : 2026-10-22
 
 ## Prochaine action
 1. Jon teste le `.dmg` sur un Mac : installation, dictée (⌘⇧Espace), réunion avec du son système (visio), permissions.
-2. Liste de l'app faite sur `phase-1` (logo, barre de titre, badge « Recommandé », réglage du son renommé) : à tester dans un vrai build (barre de titre Windows et Linux : déplacer, redimensionner, double-clic), puis le test du son sous Windows.
+2. Liste de l'app faite et publiée en `v0.3.0` (run 39875559898, job `release` vert, quatre fichiers) (logo, barre de titre, badge « Recommandé », réglage du son renommé) : à tester dans un vrai build (barre de titre Windows et Linux : déplacer, redimensionner, double-clic), puis le test du son sous Windows.
 
 ## Vérifications (2026-10-22)
 - CI run 39829286125 (tag `v0.2.0`) : checks, build Ubuntu, Windows et macOS-14 verts ; artefacts `.deb`, `.exe`/`.msi`, `.dmg` (14 Mo) ; job `release` non démarré (facturation).
@@ -27,7 +27,7 @@ Mise à jour : 2026-10-22
 - Réunion à un seul micro (analyse du 2026-10-22) : sans son système, tout le monde est étiqueté « Moi », ce qui fausse les tâches du résumé ; `whisper-small` par défaut est faible en salle. Correctifs proposés, pas encore décidés.
 
 ## En production
-- GitHub : releases `v0.1.0` (Windows, Linux) et `v0.2.0` (plus macOS), dépôt public.
+- GitHub : dernière release `v0.3.0` (Windows, Linux, macOS), dépôt public.
 - Site : non déployé (prévu sur Cloudflare).
 
 ## Pièges connus
