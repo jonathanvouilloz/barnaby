@@ -115,6 +115,8 @@ export const api = {
   hasMistralApiKey: () => invoke<boolean>('has_mistral_api_key'),
 
   listMeetings: () => invoke<Meeting[]>('list_meetings'),
+  /** Writes `<id>.md` and `<id>.json` into `dir`; rejects with `export_failed`. */
+  exportMeeting: (id: string, dir: string) => invoke<void>('export_meeting', { id, dir }),
   getMeeting: (id: string) => invoke<MeetingDetail>('get_meeting', { id }),
   startMeeting: (title: string, participants: Participant[]) => invoke<string>('start_meeting', { title, participants }),
   stopMeeting: () => invoke<void>('stop_meeting'),

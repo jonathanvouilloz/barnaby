@@ -5,7 +5,7 @@
   import { app, attempt, go, notify } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatDateTime, formatTimestamp } from '../lib/format';
-  import { canSend, flaggedSegments, isOpen, nextOpenAfter, remaining, segmentAt, speakerIds, speakerName, stepId } from '../lib/review';
+  import { canSend, flaggedSegments, isOpen, isReadOnly, nextOpenAfter, remaining, segmentAt, speakerIds, speakerName, stepId } from '../lib/review';
   import Icon from '../lib/Icon.svelte';
   import Spark from '../lib/Spark.svelte';
   import ReviewZone from './ReviewZone.svelte';
@@ -29,6 +29,8 @@
   }
   load();
 
+  const readOnly = $derived(!!detail && isReadOnly(detail.meeting.state, detail.meeting.error));
+  const back = $derived(readOnly ? 'home' : 'queue');
   const items = $derived(detail?.review_items ?? []);
   const segments = $derived(detail?.doc.segments ?? []);
   const participants = $derived(detail?.doc.meeting.participants ?? []);
@@ -77,7 +79,7 @@
 
   function onkeydown(e: KeyboardEvent) {
     const el = e.target as HTMLElement;
-    if (e.ctrlKey || e.metaKey || e.altKey || el.closest('input, textarea, select, [contenteditable="true"], dialog')) return;
+    if (readOnly || e.ctrlKey || e.metaKey || e.altKey || el.closest('input, textarea, select, [contenteditable="true"], dialog')) return;
     if (e.key !== 'j' && e.key !== 'k') return;
     e.preventDefault();
     const next = stepId(items, focusedId, e.key === 'j' ? 1 : -1);
@@ -85,6 +87,7 @@
   }
 
   function startEdit(s: Segment) {
+    if (readOnly) return;
     editing = s.id;
     editText = s.text;
   }
@@ -114,6 +117,12 @@
     await load();
   }
 
+  async function exportMeeting() {
+    const start = app.settings?.destinations.folder.path || (await api.defaultFolder().catch(() => ''));
+    const dir = await api.pickFolder(start).catch(() => null);
+    if (dir && (await attempt(() => api.exportMeeting(id, dir))) !== undefined) notify(t('review.exported'));
+  }
+
   async function send() {
     sending = true;
     if ((await attempt(() => api.validateReview(id))) !== undefined) {
@@ -128,17 +137,21 @@
 
 <section class="screen">
   <header class="screen-head" data-tauri-drag-region>
-    <button class="btn ghost" onclick={() => go({ name: 'queue' })}>{t('common.back')}</button>
+    <button class="btn ghost" onclick={() => go({ name: back })}>{t('common.back')}</button>
     <div class="title">
       <h1>{detail?.meeting.title ?? ''}</h1>
       {#if detail}
-        <p class="secondary">{formatDateTime(detail.meeting.started_at, app.lang)} · {t('review.progress', { done: items.length - left, total: items.length })}</p>
+        <p class="secondary">{formatDateTime(detail.meeting.started_at, app.lang)}{#if !readOnly}{' · '}{t('review.progress', { done: items.length - left, total: items.length })}{/if}</p>
       {/if}
     </div>
-    {#if left > 0}<span id="send-hint" class="secondary">{t('review.remaining', { n: left })}</span>{/if}
-    <button class="btn primary" disabled={!detail || !canSend(items) || sending} aria-describedby={left > 0 ? 'send-hint' : undefined} onclick={send}>
-      {t('review.send')}
-    </button>
+    {#if readOnly}
+      <button class="btn" onclick={exportMeeting}>{t('review.export')}</button>
+    {:else}
+      {#if left > 0}<span id="send-hint" class="secondary">{t('review.remaining', { n: left })}</span>{/if}
+      <button class="btn primary" disabled={!detail || !canSend(items) || sending} aria-describedby={left > 0 ? 'send-hint' : undefined} onclick={send}>
+        {t('review.send')}
+      </button>
+    {/if}
   </header>
 
   {#if detail}
@@ -160,7 +173,7 @@
       {/if}
     </div>
 
-    <div class="columns">
+    <div class="columns" class:single={readOnly}>
       <div class="col transcript">
         {#if detail.doc.summary}
           {@const s = detail.doc.summary}
@@ -194,9 +207,11 @@
                 {:else}
                   <!-- svelte-ignore a11y_no_static_element_interactions -->
                   <p class="text" ondblclick={() => startEdit(s)}>{s.text || '…'}</p>
+                  {#if !readOnly}
                   <button class="btn ghost icon edit" aria-label={t('review.edit', { time: formatTimestamp(s.start) })} title={t('review.edit', { time: formatTimestamp(s.start) })} onclick={() => startEdit(s)}>
                     <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10.5 3.5l2 2L6 12H4v-2zM9.5 4.5l2 2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>
                   </button>
+                  {/if}
                 {/if}
               </div>
             </li>
@@ -204,6 +219,7 @@
         </ol>
       </div>
 
+      {#if !readOnly}
       <aside class="col side">
         <section aria-labelledby="zones-title">
           <div class="side-head">
@@ -240,6 +256,7 @@
           </ul>
         </section>
       </aside>
+      {/if}
     </div>
   {/if}
 </section>
@@ -255,6 +272,7 @@
   .tick { position: absolute; top: 50%; left: calc(7px + (100% - 14px) * var(--at)); translate: -50% -50%; display: inline-flex; pointer-events: none; }
 
   .columns { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; border-top: 1px solid var(--border); }
+  .columns.single { grid-template-columns: minmax(0, 1fr); }
   .col { overflow: auto; min-height: 0; }
   .transcript { padding: 24px 24px 40px 32px; }
   .side { padding: 24px 24px 40px; border-left: 1px solid var(--border); display: grid; gap: 32px; align-content: start; }

@@ -3,11 +3,23 @@ import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, keyLabel, shortcutWarning, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize, groupByDay, localDay, progressLabel } from './format';
-import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
+import { canSend, isReadOnly, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
 import { addTerm, consentTemplate, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
+
+describe('isReadOnly', () => {
+  test('validated meetings open read-only, the rest do not', () => {
+    expect(isReadOnly('sent', null)).toBe(true);
+    expect(isReadOnly('reviewed', null)).toBe(true);
+    expect(isReadOnly('sending', null)).toBe(true);
+    expect(isReadOnly('failed', 'send_failed:webhook')).toBe(true);
+    expect(isReadOnly('failed', 'mistral_auth')).toBe(false);
+    expect(isReadOnly('needs_review', null)).toBe(false);
+    expect(isReadOnly('processing', null)).toBe(false);
+  });
+});
 
 describe('progressLabel', () => {
   test('names the step and its position', () => {

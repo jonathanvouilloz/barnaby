@@ -111,6 +111,7 @@ pub fn run() {
             commands::update_segment_text,
             commands::validate_review,
             commands::retry_meeting,
+            commands::export_meeting,
             commands::delete_meeting,
             commands::list_dictations,
             commands::delete_dictation,

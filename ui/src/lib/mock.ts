@@ -109,12 +109,19 @@ addDetail(atelier, [{ id: 'p_sophie', name: 'Sophie Lambert', email: null, confi
   item('r5', 'm2', atelierSegs[2], 'inaudible', ''),
 ], false);
 
+const comite = meeting('m4', 'Comité de pilotage', today(10, 0, 4), 50, 'sent', 3, 3);
+addDetail(comite, [{ id: 'p_sophie', name: 'Sophie Lambert', email: null, confirmed: true }], [
+  seg('c1', 0, 8, 'me', 'Merci à tous d’être là, on fait le point sur le budget.'),
+  seg('c2', 8, 19, 'p_sophie', 'Le budget du deuxième semestre est tenu, avec une marge de 4 %.'),
+  seg('c3', 19, 27, 'me', 'Parfait, on valide la suite du projet.'),
+], [], false);
+
 const meetings: Meeting[] = [
   hebdo,
   meeting('m5', 'Rétro sprint 42', today(11, 0), 35, 'processing'),
   atelier,
   meeting('m3', 'Entretien fournisseur', today(14, 15, 2), 25, 'failed', 0, 0, 'model_missing'),
-  meeting('m4', 'Comité de pilotage', today(10, 0, 4), 50, 'sent', 3, 3),
+  comite,
 ];
 
 let micTest: ReturnType<typeof setInterval> | undefined;
@@ -260,6 +267,7 @@ function handle(cmd: string, a: Record<string, any>): unknown {
       setState(a.id, 'queued');
       setTimeout(() => setState(a.id, 'processing'), 800);
       return null;
+    case 'export_meeting': return new Promise((ok) => setTimeout(() => ok(null), 300));
     case 'delete_meeting': {
       const i = meetings.findIndex((m) => m.id === a.id);
       if (i !== -1) meetings.splice(i, 1);

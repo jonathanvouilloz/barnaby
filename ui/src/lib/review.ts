@@ -1,4 +1,9 @@
-import type { Participant, ReviewItem, Segment } from './api';
+import type { MeetingState, Participant, ReviewItem, Segment } from './api';
+
+/** Validated meetings (sent, being sent, or whose send failed) open read-only, with an export. */
+export function isReadOnly(state: MeetingState, error: string | null): boolean {
+  return state === 'reviewed' || state === 'sending' || state === 'sent' || (state === 'failed' && !!error?.startsWith('send_failed'));
+}
 
 export const isOpen = (i: ReviewItem) => i.resolution === null;
 

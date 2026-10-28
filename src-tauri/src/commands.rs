@@ -246,6 +246,17 @@ pub fn retry_meeting(app: AppState, id: String) -> CmdResult<()> {
     Ok(())
 }
 
+/// Writes the meeting as `<id>.md` and `<id>.json` into `dir`, like the folder destination.
+#[tauri::command]
+pub fn export_meeting(app: AppState, id: String, dir: String) -> CmdResult<()> {
+    let id = parse_id(&id)?;
+    let doc = app.db().meeting_doc(id).map_err(code("store_failed"))?;
+    barnaby_core::export::write_folder(&doc, std::path::Path::new(&dir)).map_err(|e| {
+        log::warn!("meeting {id} export failed: {}", e.root_cause());
+        "export_failed".to_string()
+    })
+}
+
 #[tauri::command]
 pub fn delete_meeting(app: AppState, id: String) -> CmdResult<()> {
     let id = parse_id(&id)?;

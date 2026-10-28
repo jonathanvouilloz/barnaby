@@ -4,6 +4,7 @@
   import { keyLabel } from '../lib/accelerator';
   import { t } from '../lib/i18n';
   import { formatDateTime, formatDay, formatTime, groupByDay, localDay, progressLabel } from '../lib/format';
+  import { isReadOnly } from '../lib/review';
   import Owl from '../lib/Owl.svelte';
   import Spark from '../lib/Spark.svelte';
   import Sheet from '../lib/Sheet.svelte';
@@ -22,7 +23,7 @@
   }
 
   function open(m: Meeting) {
-    if (m.state === 'needs_review') go({ name: 'review', id: m.id });
+    if (m.state === 'needs_review' || isReadOnly(m.state, m.error)) go({ name: 'review', id: m.id });
     else if (m.state === 'recording') go({ name: 'recording' });
   }
 
@@ -74,7 +75,7 @@
           <h3 class="day">{dayLabel(group.day)}</h3>
           <ul>
             {#each group.items as m (m.id)}
-              {@const clickable = m.state === 'needs_review' || m.state === 'recording'}
+              {@const clickable = m.state === 'needs_review' || m.state === 'recording' || isReadOnly(m.state, m.error)}
               <li class="row">
                 <span class="mark"><Spark active={m.state === 'needs_review'} /></span>
                 <div class="main">
