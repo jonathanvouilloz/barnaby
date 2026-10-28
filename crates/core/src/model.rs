@@ -52,6 +52,19 @@ impl Step {
     ];
 }
 
+/// Processing progress, sent to the UI while a meeting is processed.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Progress {
+    pub meeting_id: Uuid,
+    pub step: Step,
+    /// 1-based position in `Step::ALL`.
+    pub index: u8,
+    /// 5 with a structurer, 4 without.
+    pub total: u8,
+    /// Share of the current step done, in [0, 1].
+    pub fraction: f32,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Participant {
     pub id: String,

@@ -1,8 +1,13 @@
 //! Provider contracts (spec section 6). Implemented by `barnaby-engine` (local)
 //! and, later, API clients. All calls are blocking; callers run them off the UI thread.
 
+use std::sync::Arc;
+
 use crate::model::{MeetingDoc, Summary};
 use serde::{Deserialize, Serialize};
+
+/// Share of the current step done, in [0, 1].
+pub type ProgressFn = Arc<dyn Fn(f32) + Send + Sync>;
 
 /// A transcribed span, times in seconds from the start of the audio.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -34,11 +39,18 @@ pub trait Transcriber: Send + Sync {
     fn name(&self) -> &str;
     /// `samples`: 16 kHz mono f32. `language`: None = auto-detect.
     fn transcribe(&self, samples: &[f32], language: Option<&str>) -> anyhow::Result<Transcript>;
+    /// Same, reporting progress; providers without intermediate steps keep the default.
+    fn transcribe_with_progress(&self, samples: &[f32], language: Option<&str>, _progress: &ProgressFn) -> anyhow::Result<Transcript> {
+        self.transcribe(samples, language)
+    }
 }
 
 pub trait Diarizer: Send + Sync {
     fn name(&self) -> &str;
     fn diarize(&self, samples: &[f32]) -> anyhow::Result<Vec<SpeakerTurn>>;
+    fn diarize_with_progress(&self, samples: &[f32], _progress: &ProgressFn) -> anyhow::Result<Vec<SpeakerTurn>> {
+        self.diarize(samples)
+    }
 }
 
 pub trait Structurer: Send + Sync {

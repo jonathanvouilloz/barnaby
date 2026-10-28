@@ -176,6 +176,7 @@ fn process(app: &App, id: Uuid) {
         diarizer,
         structurer,
         data_dir: app.data_dir.clone(),
+        progress: None,
     };
     // Pipeline::run sets `processing` too, but only returns at the end: tell the UI now.
     let _ = app.db().set_state(id, MeetingState::Processing, None);

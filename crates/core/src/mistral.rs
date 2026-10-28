@@ -9,7 +9,7 @@ use ureq::unversioned::multipart::{Form, Part};
 use crate::audio::{blocks, wav_bytes};
 use crate::model::SAMPLE_RATE;
 use crate::net::NetPolicy;
-use crate::provider::{Coded, RawSegment, Transcriber, Transcript};
+use crate::provider::{Coded, ProgressFn, RawSegment, Transcriber, Transcript};
 
 /// Provider name, also stored as `meeting.model`.
 pub const MISTRAL_MODEL: &str = "mistral-voxtral";
@@ -30,16 +30,24 @@ impl Transcriber for MistralTranscriber {
         MISTRAL_MODEL
     }
 
+    fn transcribe(&self, samples: &[f32], language: Option<&str>) -> Result<Transcript> {
+        self.transcribe_with_progress(samples, language, &(std::sync::Arc::new(|_| {}) as ProgressFn))
+    }
+
     // `language` is ignored: Mistral refuses it together with `timestamp_granularities`.
-    fn transcribe(&self, samples: &[f32], _language: Option<&str>) -> Result<Transcript> {
+    fn transcribe_with_progress(&self, samples: &[f32], _language: Option<&str>, progress: &ProgressFn) -> Result<Transcript> {
         self.policy.check(URL)?;
         let terms = bias_terms(&self.vocabulary);
-        let agent = crate::net::agent(Duration::from_secs(600));
+        // 10 min of 16-bit WAV is 19 MB: 300 s leave ~1 Mb/s of upload plus the transcription.
+        let agent = crate::net::agent(Duration::from_secs(300));
         let mut out = Transcript {
             language: String::new(),
             segments: Vec::new(),
         };
-        for (start, end) in blocks(samples, BLOCK_S) {
+        let all = blocks(samples, BLOCK_S);
+        let count = all.len();
+        for (n, (start, end)) in all.into_iter().enumerate() {
+            let started = std::time::Instant::now();
             // Mistral may reject a near-empty file (400), which would fail the whole meeting.
             if end - start < SAMPLE_RATE as usize {
                 continue;
@@ -78,6 +86,8 @@ impl Transcriber for MistralTranscriber {
                 out.language = block.language;
             }
             out.segments.extend(block.segments);
+            log::info!("mistral block {}/{count} done in {:.1}s", n + 1, started.elapsed().as_secs_f64());
+            progress((n + 1) as f32 / count as f32);
         }
         if out.language.is_empty() {
             out.language = "auto".into();

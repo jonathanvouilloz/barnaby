@@ -47,6 +47,7 @@ fn local_pipeline_attributes_mic_and_system_speech() {
         diarizer: Arc::new(SherpaDiarizer::load(&ensure("pyannote-segmentation-3-0"), &ensure("wespeaker-voxceleb-resnet34-lm")).unwrap()),
         structurer: None,
         data_dir: data_dir.clone(),
+        progress: None,
     };
     pipeline.run(id).unwrap();
 

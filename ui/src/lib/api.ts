@@ -21,6 +21,12 @@ export interface Meeting {
   review_items_total: number; review_items_resolved: number;
 }
 
+/** `meeting-progress` event: `index` is 1-based, `fraction` is the share of the current step done. */
+export interface MeetingProgress {
+  meeting_id: string; step: 'transcribe' | 'diarize' | 'identify' | 'review' | 'structure';
+  index: number; total: number; fraction: number;
+}
+
 export interface Segment {
   id: string; start: number; end: number; speaker_id: string | null;
   text: string; confidence: number; reviewed: boolean;

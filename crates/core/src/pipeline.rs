@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{Arc, MutexGuard};
+use std::time::Instant;
 
 use anyhow::{bail, Result};
 use serde_json::json;
@@ -23,6 +24,8 @@ pub struct Pipeline {
     /// None = LLM disabled; `summary` stays null.
     pub structurer: Option<Arc<dyn Structurer>>,
     pub data_dir: PathBuf,
+    /// Called at the start and end of each step, and within the long ones.
+    pub progress: Option<Arc<dyn Fn(Progress) + Send + Sync>>,
 }
 
 #[derive(Default)]
@@ -87,12 +90,28 @@ impl Pipeline {
             (settings, pending)
         };
         let tracks = if pending.iter().any(|s| *s != Step::Structure) {
-            self.load_audio(id).map_err(fail("audio_failed"))?
+            let t = self.load_audio(id).map_err(fail("audio_failed"))?;
+            log::info!("meeting {id} audio {:.0}s", t.mixed.len() as f64 / f64::from(SAMPLE_RATE));
+            t
         } else {
             Tracks::default()
         };
-        for step in pending {
-            match self.step(id, step, &tracks, &settings) {
+        let total = if self.structurer.is_some() { 5 } else { 4 };
+        for step in Step::ALL.into_iter().take(total) {
+            let report = self.reporter(id, step, total as u8);
+            if !pending.contains(&step) {
+                report(1.0);
+                continue;
+            }
+            report(0.0);
+            log::info!("meeting {id} step {step:?} started");
+            let started = Instant::now();
+            let result = self.step(id, step, &tracks, &settings, &report);
+            if result.is_ok() {
+                log::info!("meeting {id} step {step:?} done in {:.1}s", started.elapsed().as_secs_f64());
+                report(1.0);
+            }
+            match result {
                 Ok(()) => {}
                 // The summary is optional: an unreachable LLM must not block the review.
                 // Nothing is saved, so the next run tries the summary again.
@@ -111,7 +130,19 @@ impl Pipeline {
                 }
             }
         }
+        // Without a structurer the summary step only stores null: done silently.
+        if total == 4 && pending.contains(&Step::Structure) {
+            self.step(id, Step::Structure, &tracks, &settings, &self.reporter(id, Step::Structure, 4))
+                .map_err(fail("structure_failed"))?;
+        }
         Ok(())
+    }
+
+    /// Progress of `step` as a `ProgressFn`; a no-op without `self.progress`.
+    fn reporter(&self, meeting_id: Uuid, step: Step, total: u8) -> ProgressFn {
+        let Some(sink) = self.progress.clone() else { return Arc::new(|_| {}) };
+        let index = Step::ALL.iter().position(|s| *s == step).unwrap_or(0) as u8 + 1;
+        Arc::new(move |fraction| sink(Progress { meeting_id, step, index, total, fraction }))
     }
 
     fn load_audio(&self, id: Uuid) -> Result<Tracks> {
@@ -136,15 +167,15 @@ impl Pipeline {
         Ok(Tracks { mixed, mic, system })
     }
 
-    fn step(&self, id: Uuid, step: Step, t: &Tracks, settings: &Settings) -> Result<()> {
+    fn step(&self, id: Uuid, step: Step, t: &Tracks, settings: &Settings, progress: &ProgressFn) -> Result<()> {
         let output = match step {
             Step::Transcribe => {
                 let lang = Some(settings.transcription_language.as_str()).filter(|l| *l != "auto");
-                let transcript = self.transcriber.transcribe(&t.mixed, lang)?;
+                let transcript = self.transcriber.transcribe_with_progress(&t.mixed, lang, progress)?;
                 self.db().set_language(id, &transcript.language)?;
                 serde_json::to_value(transcript)?
             }
-            Step::Diarize => serde_json::to_value(self.diarizer.diarize(&t.mixed)?)?,
+            Step::Diarize => serde_json::to_value(self.diarizer.diarize_with_progress(&t.mixed, progress)?)?,
             Step::Identify => {
                 let db = self.db();
                 let transcript: Transcript = load(&db, id, Step::Transcribe)?;
@@ -404,7 +435,51 @@ mod tests {
             diarizer: Arc::new(FakeDiarizer),
             structurer: llm,
             data_dir: data_dir.into(),
+            progress: None,
         }
+    }
+
+    type Reports = Arc<Mutex<Vec<Progress>>>;
+
+    fn recording(p: &mut Pipeline) -> Reports {
+        let seen: Reports = Arc::default();
+        let sink = seen.clone();
+        p.progress = Some(Arc::new(move |r| sink.lock().unwrap().push(r)));
+        seen
+    }
+
+    #[test]
+    fn reports_progress_per_step_in_order() {
+        let (store, dir, id) = setup(&[]);
+        let mut p = pipeline(&store, &dir, Arc::new(FakeTranscriber::default()), None);
+        let seen = recording(&mut p);
+        p.run(id).unwrap();
+        let seen = seen.lock().unwrap();
+        let got: Vec<(Step, u8, u8, f32)> = seen.iter().map(|r| (r.step, r.index, r.total, r.fraction)).collect();
+        let mut want = Vec::new();
+        for (i, step) in Step::ALL[..4].iter().enumerate() {
+            want.push((*step, i as u8 + 1, 4, 0.0));
+            want.push((*step, i as u8 + 1, 4, 1.0));
+        }
+        assert_eq!(got, want);
+        assert!(seen.iter().all(|r| r.meeting_id == id));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn resumed_run_reports_skipped_steps_as_done() {
+        let (store, dir, id) = setup(&[]);
+        assert!(pipeline(&store, &dir, Arc::new(QuotaTranscriber), None).run(id).is_err());
+        let transcript = FakeTranscriber::default().transcribe(&[], None).unwrap();
+        lock(&store).save_step(id, Step::Transcribe, &serde_json::to_value(transcript).unwrap()).unwrap();
+        let mut p = pipeline(&store, &dir, Arc::new(QuotaTranscriber), None);
+        let seen = recording(&mut p);
+        p.run(id).unwrap();
+        let seen = seen.lock().unwrap();
+        assert_eq!((seen[0].step, seen[0].index, seen[0].fraction), (Step::Transcribe, 1, 1.0));
+        assert!(seen.iter().all(|r| r.step != Step::Transcribe || r.fraction == 1.0));
+        assert_eq!(seen.last().map(|r| (r.step, r.fraction)), Some((Step::Review, 1.0)));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]
