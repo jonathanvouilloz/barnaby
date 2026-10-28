@@ -2,17 +2,17 @@
 Mise à jour : 2026-10-28
 
 ## Où on en est
-- Release `v0.4.2` publiée. Jon a traité une vraie réunion de 30 min avec Mistral sous Windows : transcription réussie ; validée sans destination, elle n'est allée nulle part (texte resté dans `barnaby.db`, audio supprimé).
-- Plan `docs/plans/meeting-visibility.md` exécuté sur `phase-1` (tâches 1 à 6 commitées, non publiées) : progression du traitement sur l'accueil + journal par étape, Mistral : progression par morceau et délai 300 s, test de la clé Mistral, réunions validées ouvertes en lecture seule avec « Exporter… », étape « dossier » à l'onboarding, avertissement avant un envoi sans destination.
+- Release `v0.4.3` publiée le 2026-10-28 (CI run 40672024862 verte, liens `latest/download` en 200, site à jour). Avant elle, Jon a traité une vraie réunion de 30 min avec Mistral sous Windows : transcription réussie ; validée sans destination, elle n'est allée nulle part (texte resté dans `barnaby.db`, audio supprimé).
+- `v0.4.3` contient le plan `docs/plans/meeting-visibility.md` : progression du traitement sur l'accueil + journal par étape, Mistral : progression par morceau et délai 300 s, test de la clé Mistral, réunions validées ouvertes en lecture seule avec « Exporter… », étape « dossier » à l'onboarding, avertissement avant un envoi sans destination.
 
 ## Prochaine action
-1. Release `v0.4.3` avec l'accord de Jon.
-2. Jon teste sous Windows : barre de progression sur une vraie réunion Mistral, « Tester la clé », ouvrir et exporter une réunion envoyée (dont sa réunion de 30 min), onboarding sur une installation neuve.
-3. Toujours en attente : tests `v0.4.0` sous Windows et `.dmg` sur un vrai Mac.
+1. Jon teste sous Windows : barre de progression sur une vraie réunion Mistral, « Tester la clé », ouvrir et exporter une réunion envoyée (dont sa réunion de 30 min), onboarding sur une installation neuve.
+2. Toujours en attente : tests `v0.4.0` sous Windows et `.dmg` sur un vrai Mac.
 
 ## Vérifications (2026-10-28)
 - Branche visibilité : `cargo clippy --workspace --all-targets -- -D warnings` propre ; `cargo test -p barnaby-core` 50 ok ; `cargo test -p barnaby-engine diarize -- --ignored` ok ; `bun run check` 0 erreur ; `bun test` 44 ok ; captures du mock relues (accueil en traitement, réunion envoyée, étape dossier, avertissement).
-- Non vérifié : avancement réel de la séparation des voix sous Windows, `check_key` contre la vraie API Mistral.
+- Non vérifié : avancement réel de la séparation des voix sous Windows, `check_key` contre la vraie API Mistral, fenêtre Mistral avec message d'erreur (jamais capturée).
+- Laissés de côté (revue finale) : `hasDestination` ignore un chemin fait d'espaces alors que le Rust l'accepte ; en lecture seule, les zones déjà traitées restent surlignées.
 
 ## Vérifications (2026-10-23)
 - `cargo clippy --workspace --all-targets -- -D warnings` : propre. `cargo test -p barnaby-core` : 46 ok. `cargo test -p barnaby-engine cue` : 2 ok. `cd ui && bun run check` : 0 erreur ; `bun test` : 41 ok.
