@@ -131,3 +131,28 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 ## 2026-10-23 — Catalogue : Whisper tiny, base et small retirés
 - Choix : seul Whisper large-v3 turbo reste côté Whisper, et devient le modèle par défaut des réunions ; un réglage qui nommait un modèle retiré revient au défaut au chargement. Les fichiers déjà téléchargés restent sur le disque.
 - Pourquoi : Jon juge les petits Whisper inutiles ; Whisper small était déjà inutilisable en réunion réelle.
+
+## 2026-10-28 — Progression du traitement visible
+- Choix : le pipeline émet `meeting-progress` (étape, rang, total 4 ou 5, part de l'étape) au début et à la fin de chaque étape, par morceau Mistral ou local, et pendant la séparation des voix (rappel sherpa) ; au plus un événement par pour cent. L'accueil affiche « Étape n sur N : … » et une barre. Le journal note le début et la durée de chaque étape, sans contenu.
+- Écarté : pourcentage global pondéré entre étapes (durées trop variables selon le modèle) ; commande pour relire l'état courant à l'ouverture (la fenêtre reste vivante dans la zone de notification).
+- À rouvrir si : Jon ouvre souvent la fenêtre en cours de traitement et voit une ligne sans barre. Revoir après ses tests de `v0.4.3`.
+
+## 2026-10-28 — Clé Mistral vérifiée
+- Choix : la fenêtre Mistral (onboarding et Réglages) teste la clé sur `GET /v1/models` avant de l'enregistrer et refuse une clé rejetée ; hors connexion, elle l'enregistre avec la mention « sans vérification ». Le formulaire de Réglages enregistre puis teste aussitôt ; bouton « Tester la clé » pour la clé enregistrée. Test seulement sur un clic, donc hors de l'invariant « pas de réseau en mode local pendant le traitement ».
+- Écarté : vérifier seulement au premier traitement (Jon ne savait pas si sa clé marchait).
+- À rouvrir si : `/v1/models` accepte une clé que la transcription refuse.
+
+## 2026-10-28 — Réunions validées en lecture seule, avec export
+- Choix : une réunion validée, en envoi, envoyée ou en échec d'envoi s'ouvre depuis l'accueil en lecture seule (ni édition, ni zones, ni renommage) avec « Exporter… » (`.md` + `.json`, comme la destination dossier).
+- Écarté : édition après envoi (le destinataire aurait une version différente) ; bouton « Renvoyer » (l'export couvre le besoin).
+- À rouvrir si : Jon veut corriger une réunion déjà envoyée.
+
+## 2026-10-28 — Destination proposée à l'onboarding, avertissement sinon
+- Choix : étape « dossier » après les modèles, dossier `Documents/Barnaby` actif par défaut (« Passer » le garde) ; sans destination active, « Valider et envoyer » ouvre un avertissement (« Choisir un dossier » ou « Valider quand même »).
+- Écarté : destination par défaut silencieuse pour tous les utilisateurs existants (écrire sur le disque sans le dire).
+- À rouvrir si : des utilisateurs trouvent des dossiers créés sans l'avoir voulu.
+
+## 2026-10-28 — Délai Mistral de 300 s par morceau
+- Choix : 300 s au lieu de 600 s par requête de 10 min d'audio (19 Mo), pour qu'une connexion figée se voie en 5 min plutôt qu'en 30. Annoncé dans les notes de `v0.4.3`.
+- Écarté : délai calculé selon la taille du morceau (plus de code pour un cas rare).
+- À rouvrir si : un utilisateur avec un envoi lent (< 0,6 Mb/s environ) voit échouer ses réunions.

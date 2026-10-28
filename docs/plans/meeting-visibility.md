@@ -56,7 +56,7 @@ Ajouts de ma part, annoncés à Jon : erreur Mistral au bout de 5 minutes au plu
   - `Pipeline { …, pub progress: Option<Arc<dyn Fn(Progress) + Send + Sync>> }`.
   - `api.ts` : `export interface MeetingProgress { meeting_id: string; step: 'transcribe' | 'diarize' | 'identify' | 'review' | 'structure'; index: number; total: number; fraction: number }`.
 
-- [ ] **Step 1: Write the failing tests** dans `pipeline.rs`
+- [x] **Step 1: Write the failing tests** dans `pipeline.rs`
 
 ```rust
 #[test]
@@ -74,18 +74,18 @@ fn resumed_run_reports_skipped_steps_as_done() {
 }
 ```
 
-- [ ] **Step 2: Run** `cargo test -p barnaby-core pipeline` ; attendu : erreur de compilation (`progress` inconnu).
+- [x] **Step 2: Run** `cargo test -p barnaby-core pipeline` ; attendu : erreur de compilation (`progress` inconnu).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
   - `Pipeline::process` : pour chaque étape de `Step::ALL` déjà sauvée, émettre `fraction: 1.0` ; pour chaque étape à faire, émettre `0.0`, lancer, émettre `1.0`. Index = position dans `Step::ALL` + 1 (Structure est la 5e et n'existe que si `total == 5`, donc ne pas l'émettre sans structureur).
   - Transcribe et Diarize appellent les variantes `_with_progress` avec un `ProgressFn` qui émet la fraction de l'étape en cours.
   - Journal : `log::info!("meeting {id} step {step:?} started")` puis `log::info!("meeting {id} step {step:?} done in {:.1}s", …)` avec `Instant` ; `log::info!("meeting {id} audio {:.0}s", durée)` après `load_audio`.
   - `MistralTranscriber` : surcharger `transcribe_with_progress` (le corps actuel y passe, `transcribe` délègue avec un rappel vide) ; après chaque morceau, `progress(fait / total)` et `log::info!("mistral block {n}/{total} done in {:.1}s")`. Délai `Duration::from_secs(300)` avec ce commentaire : `// 10 min de WAV 16 bits = 19 Mo : 300 s laissent ~1 Mb/s d'envoi plus la transcription.`
   - Ajouter `progress: None` dans `e2e.rs` et `meeting.rs`, et le type dans `api.ts`.
 
-- [ ] **Step 4: Run** `cargo test -p barnaby-core` ; attendu : tout passe, dont les deux nouveaux tests.
+- [x] **Step 4: Run** `cargo test -p barnaby-core` ; attendu : tout passe, dont les deux nouveaux tests.
 
-- [ ] **Step 5: Commit** `git commit -m "report pipeline progress and step timings"`
+- [x] **Step 5: Commit** `git commit -m "report pipeline progress and step timings"`
 
 ### Task 2: Progression des moteurs et événement `meeting-progress` (app)
 
@@ -99,15 +99,15 @@ fn resumed_run_reports_skipped_steps_as_done() {
 - Consumes : `ProgressFn`, `Progress`, `Pipeline.progress` (tâche 1).
 - Produces : événement Tauri `meeting-progress` de charge `Progress` ; `events.meetingProgress(cb: (p: MeetingProgress) => void)`.
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
   - `SherpaDiarizer::diarize_with_progress` : passer à `compute` `Some(Box::new(move |done, total| { if total > 0 { p(done as f32 / total as f32) } 0 }))`, avec un clone de l'`Arc`. Vérifier dans `sherpa-rs-0.6.8/src/diarize.rs` (fonction `progress_callback_wrapper`) que 0 veut dire « continuer » et le noter en commentaire. `diarize` délègue avec un rappel vide.
   - `MeetingTranscriber::transcribe_with_progress` : même boucle qu'aujourd'hui, `progress(fin_du_morceau / samples.len())` après chaque morceau ; `transcribe` délègue.
   - `meeting.rs::process` : `progress: Some(Arc::new(move |p| { let _ = handle.emit("meeting-progress", p); }))` avec un clone de `app.handle`.
   - Le rappel sherpa arrive par morceau de segmentation (une dizaine de secondes d'audio) : pas de limitation de débit nécessaire.
 
-- [ ] **Step 2: Run** `cargo clippy --workspace --all-targets -- -D warnings` et `cargo test -p barnaby-engine diarize -- --ignored` (télécharge les modèles une fois) ; attendu : propre, le test passe.
+- [x] **Step 2: Run** `cargo clippy --workspace --all-targets -- -D warnings` et `cargo test -p barnaby-engine diarize -- --ignored` (télécharge les modèles une fois) ; attendu : propre, le test passe.
 
-- [ ] **Step 3: Commit** `git commit -m "emit meeting-progress from transcription and diarization"`
+- [x] **Step 3: Commit** `git commit -m "emit meeting-progress from transcription and diarization"`
 
 ### Task 3: Barre de progression sur l'accueil
 
@@ -122,18 +122,18 @@ fn resumed_run_reports_skipped_steps_as_done() {
 - Consumes : `events.meetingProgress`, `MeetingProgress`.
 - Produces : `app.progress: Record<string, MeetingProgress>` ; `progressLabel(p: MeetingProgress, t): string` dans `ui/src/lib/format.ts`.
 
-- [ ] **Step 1: Write the failing test** dans `lib.test.ts` : `progressLabel({ step: 'diarize', index: 2, total: 5, fraction: 0.4, … })` vaut `'Étape 2 sur 5 : séparation des voix'` en français et `'Step 2 of 5: separating voices'` en anglais.
+- [x] **Step 1: Write the failing test** dans `lib.test.ts` : `progressLabel({ step: 'diarize', index: 2, total: 5, fraction: 0.4, … })` vaut `'Étape 2 sur 5 : séparation des voix'` en français et `'Step 2 of 5: separating voices'` en anglais.
 
-- [ ] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL (`progressLabel` absent).
+- [x] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL (`progressLabel` absent).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
   - Clés i18n : `progress.step` (`Étape {n} sur {total} : {label}`) et `progress.transcribe` « transcription », `progress.diarize` « séparation des voix », `progress.identify` « attribution des phrases », `progress.review` « repérage des zones d’ombre », `progress.structure` « résumé » ; en anglais : transcription, separating voices, assigning speakers, finding unclear passages, summary.
   - `state.svelte.ts` : écouter `meetingProgress` et ranger par `meeting_id` ; dans le gestionnaire `meetingUpdated` existant, supprimer l'entrée quand `state !== 'processing'`.
   - `Home.svelte` : pour une réunion `processing` avec une entrée, afficher sous l'heure le libellé et un `<progress max="1" value={fraction}>` avec `aria-label` = libellé ; sans entrée, l'affichage actuel. Style : tokens de `DESIGN.md`, piste fine, pas d'animation hors `prefers-reduced-motion: no-preference`.
 
-- [ ] **Step 4: Run** `cd ui && bun run check && bun test` ; attendu : 0 erreur, tout passe. Capture du mock (`bun run dev` puis Playwright) d'une ligne en traitement, relue avec `review-ui`.
+- [x] **Step 4: Run** `cd ui && bun run check && bun test` ; attendu : 0 erreur, tout passe. Capture du mock (`bun run dev` puis Playwright) d'une ligne en traitement, relue avec `review-ui`.
 
-- [ ] **Step 5: Commit** `git commit -m "show processing progress on home"`
+- [x] **Step 5: Commit** `git commit -m "show processing progress on home"`
 
 ### Task 4: Vérifier la clé Mistral
 
@@ -148,7 +148,7 @@ fn resumed_run_reports_skipped_steps_as_done() {
   - Commande `test_mistral_key(key: Option<String>) -> CmdResult<()>` : `None` teste la clé enregistrée (`mistral_key_missing` si aucune), dans `spawn_blocking` comme `test_webhook`, erreur = le code.
   - `api.testMistralKey(key?: string) => invoke<void>('test_mistral_key', { key })`.
 
-- [ ] **Step 1: Write the failing tests** dans `mistral.rs`, avec le serveur `destination::tests::serve` :
+- [x] **Step 1: Write the failing tests** dans `mistral.rs`, avec le serveur `destination::tests::serve` :
 
 ```rust
 #[test]
@@ -158,16 +158,16 @@ fn check_key_maps_answers() {
 }
 ```
 
-- [ ] **Step 2: Run** `cargo test -p barnaby-core mistral` ; attendu : FAIL (`check_key_at` absent).
+- [x] **Step 2: Run** `cargo test -p barnaby-core mistral` ; attendu : FAIL (`check_key_at` absent).
 
-- [ ] **Step 3: Implement** le cœur, la commande, puis l'interface :
+- [x] **Step 3: Implement** le cœur, la commande, puis l'interface :
   - `MistralSheet` : « Confirmer » teste d'abord la clé saisie (nettoyée par `trim`) ; si le test échoue, afficher `errorText(code)` sous le champ et ne rien enregistrer ; sinon enregistrer comme aujourd'hui. Libellé du bouton pendant le test : « Vérification… ».
   - `Settings.svelte`, `keyForm` pour `mistral` quand une clé est enregistrée : bouton « Tester la clé » à côté de « Effacer », avec le même schéma d'états que `hookTest` (`idle | running | ok | failed`) ; résultats « La clé fonctionne. » / `errorText(code)`.
   - Mock : `test_mistral_key` réussit, sauf pour la clé `bad` qui renvoie `mistral_auth`.
 
-- [ ] **Step 4: Run** `cargo test -p barnaby-core && cd ui && bun run check && bun test` ; attendu : tout passe.
+- [x] **Step 4: Run** `cargo test -p barnaby-core && cd ui && bun run check && bun test` ; attendu : tout passe.
 
-- [ ] **Step 5: Commit** `git commit -m "test the Mistral key before saving and from settings"`
+- [x] **Step 5: Commit** `git commit -m "test the Mistral key before saving and from settings"`
 
 ### Task 5: Rouvrir et exporter une réunion validée
 
@@ -181,18 +181,18 @@ fn check_key_maps_answers() {
   - `api.exportMeeting(id: string, dir: string)`.
   - `ui/src/lib/review.ts` : `export function isReadOnly(state: MeetingState): boolean`, vrai pour `reviewed`, `sending`, `sent` et pour `failed` quand l'erreur commence par `send_failed`.
 
-- [ ] **Step 1: Write the failing test** dans `lib.test.ts` : `isReadOnly('sent')`, `isReadOnly('reviewed')` vrais ; `isReadOnly('needs_review')`, `isReadOnly('processing')` faux.
+- [x] **Step 1: Write the failing test** dans `lib.test.ts` : `isReadOnly('sent')`, `isReadOnly('reviewed')` vrais ; `isReadOnly('needs_review')`, `isReadOnly('processing')` faux.
 
-- [ ] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL.
+- [x] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
   - `Home.svelte` : cliquable si `needs_review`, `recording` ou `isReadOnly` ; `open` mène à `review` dans les deux derniers cas.
   - `Review.svelte` en lecture seule : pas de bouton « Valider et envoyer », pas d'actions sur les zones, pas d'édition ni de renommage ; à la place, un bouton « Exporter… » qui ouvre `api.pickFolder(defaultFolder ou dossier de destination)` puis appelle `exportMeeting` et notifie « Réunion exportée en Markdown et JSON. ». Le retour mène à l'accueil, pas à la file de relecture. Sans audio (supprimé à la validation), les minutages restent désactivés comme aujourd'hui, et une ligne discrète dit « L’audio a été supprimé après la validation. ».
   - Mock : une réunion `sent` avec segments et sans `audio_path`.
 
-- [ ] **Step 4: Run** `cd src-tauri && cargo clippy --all-targets -- -D warnings` puis `cd ui && bun run check && bun test` ; attendu : propre. Captures du mock (réunion envoyée ouverte), relues avec `review-ui`.
+- [x] **Step 4: Run** `cd src-tauri && cargo clippy --all-targets -- -D warnings` puis `cd ui && bun run check && bun test` ; attendu : propre. Captures du mock (réunion envoyée ouverte), relues avec `review-ui`.
 
-- [ ] **Step 5: Commit** `git commit -m "open sent meetings read-only and export them"`
+- [x] **Step 5: Commit** `git commit -m "open sent meetings read-only and export them"`
 
 ### Task 6: Dossier à l'onboarding et avertissement sans destination
 
@@ -205,21 +205,21 @@ fn check_key_maps_answers() {
 - Consumes : `api.defaultFolder`, `api.pickFolder` (existants).
 - Produces : `STEPS = ['welcome', 'mic', 'models', 'destination', 'dictation', 'tour', 'done']` ; `export function hasDestination(d: Settings['destinations']): boolean` dans `ui/src/lib/settings.ts` (dossier actif avec chemin, ou webhook actif avec URL, comme `from_settings` côté Rust).
 
-- [ ] **Step 1: Write the failing tests** : `STEPS[3] === 'destination'` ; `hasDestination` faux pour les réglages par défaut, vrai avec `folder: { enabled: true, path: 'C:\\x' }`, faux avec `folder: { enabled: true, path: '' }`, vrai avec un webhook actif et une URL.
+- [x] **Step 1: Write the failing tests** : `STEPS[3] === 'destination'` ; `hasDestination` faux pour les réglages par défaut, vrai avec `folder: { enabled: true, path: 'C:\\x' }`, faux avec `folder: { enabled: true, path: '' }`, vrai avec un webhook actif et une URL.
 
-- [ ] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL.
+- [x] **Step 2: Run** `cd ui && bun test` ; attendu : FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
   - `Destination.svelte` : texte « Chaque réunion validée est enregistrée dans ce dossier, en Markdown (lisible) et en JSON (pour d’autres outils). » ; interrupteur actif par défaut ; chemin prérempli avec `defaultFolder()` ; bouton « Parcourir… » ; écrit directement dans `app.settings.destinations.folder` (l'onboarding enregistre `app.settings` à la fin). « Passer » laisse la destination désactivée.
   - `Review.svelte` : au clic sur « Valider et envoyer », si `!hasDestination(app.settings.destinations)`, ouvrir un `Sheet` : titre « Aucune destination », texte « La réunion restera seulement dans Barnaby. Tu pourras l’ouvrir et l’exporter depuis l’accueil. », boutons « Choisir un dossier » (mène aux Réglages, section `s-dest`) et « Valider quand même ».
 
-- [ ] **Step 4: Run** `cd ui && bun run check && bun test` ; attendu : tout passe. Capture de l'étape (mock en onboarding) et de la fenêtre d'avertissement, relues avec `review-ui`.
+- [x] **Step 4: Run** `cd ui && bun run check && bun test` ; attendu : tout passe. Capture de l'étape (mock en onboarding) et de la fenêtre d'avertissement, relues avec `review-ui`.
 
-- [ ] **Step 5: Commit** `git commit -m "ask for a destination folder at onboarding and warn before sending nowhere"`
+- [x] **Step 5: Commit** `git commit -m "ask for a destination folder at onboarding and warn before sending nowhere"`
 
 ### Task 7: Vérification d'ensemble et version
 
-- [ ] **Step 1:** les quatre contrôles des Global Constraints, propres.
-- [ ] **Step 2:** relecture à part de chaque nouveau texte visible (FR et EN) avec `copy-editing`.
-- [ ] **Step 3:** mettre à jour `docs/project/handoff.md` (ce qui reste à tester par Jon sous Windows : progression réelle d'une réunion Mistral de 30 min, test de clé, export, onboarding sur une installation neuve).
-- [ ] **Step 4:** release seulement avec l'accord de Jon.
+- [x] **Step 1:** les quatre contrôles des Global Constraints, propres.
+- [x] **Step 2:** relecture à part de chaque nouveau texte visible (FR et EN) avec `copy-editing`.
+- [x] **Step 3:** mettre à jour `docs/project/handoff.md` (ce qui reste à tester par Jon sous Windows : progression réelle d'une réunion Mistral de 30 min, test de clé, export, onboarding sur une installation neuve).
+- [x] **Step 4:** release seulement avec l'accord de Jon.
