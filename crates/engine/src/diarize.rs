@@ -5,7 +5,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use anyhow::{anyhow, ensure, Result};
-use barnaby_core::{Diarizer, SpeakerTurn};
+use barnaby_core::{Diarizer, ProgressFn, SpeakerTurn};
 use sherpa_rs::diarize::{Diarize, DiarizeConfig};
 
 /// Cosine-distance threshold of sherpa-onnx's fast clustering: lower splits into more
@@ -39,8 +39,20 @@ impl Diarizer for SherpaDiarizer {
     }
 
     fn diarize(&self, samples: &[f32]) -> Result<Vec<SpeakerTurn>> {
+        self.diarize_with_progress(samples, &(std::sync::Arc::new(|_| {}) as ProgressFn))
+    }
+
+    fn diarize_with_progress(&self, samples: &[f32], progress: &ProgressFn) -> Result<Vec<SpeakerTurn>> {
         let mut d = self.inner.lock().unwrap_or_else(|e| e.into_inner());
-        match d.compute(samples.to_vec(), None) {
+        let p = progress.clone();
+        // sherpa-onnx ignores the callback's return value; 0 is what its examples return.
+        let on_chunk: Box<dyn Fn(i32, i32) -> i32 + Send> = Box::new(move |done, total| {
+            if total > 0 {
+                p(done as f32 / total as f32);
+            }
+            0
+        });
+        match d.compute(samples.to_vec(), Some(on_chunk)) {
             Ok(segments) => Ok(segments
                 .into_iter()
                 .map(|s| SpeakerTurn { start: f64::from(s.start), end: f64::from(s.end), speaker: s.speaker.max(0) as u32 })

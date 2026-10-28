@@ -4,7 +4,7 @@
 use std::sync::{Arc, Condvar, Mutex};
 
 use barnaby_core::{
-    audio::{self, rms}, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
+    audio::{self, rms}, ProgressFn, RawSegment, Transcriber, Transcript, SAMPLE_RATE};
 
 #[derive(Default)]
 pub struct Gate {
@@ -61,6 +61,10 @@ impl Transcriber for MeetingTranscriber {
     }
 
     fn transcribe(&self, samples: &[f32], language: Option<&str>) -> anyhow::Result<Transcript> {
+        self.transcribe_with_progress(samples, language, &(Arc::new(|_| {}) as ProgressFn))
+    }
+
+    fn transcribe_with_progress(&self, samples: &[f32], language: Option<&str>, progress: &ProgressFn) -> anyhow::Result<Transcript> {
         let mut segments = Vec::new();
         let mut detected = None;
         for (start, end) in audio::blocks(samples, BLOCK_S) {
@@ -76,6 +80,7 @@ impl Transcriber for MeetingTranscriber {
                 detected.get_or_insert(part.language);
             }
             segments.extend(part.segments.into_iter().map(|s| RawSegment { start: s.start + offset, end: s.end + offset, ..s }));
+            progress(end as f32 / samples.len() as f32);
         }
         Ok(Transcript { language: detected.unwrap_or_else(|| language.unwrap_or("auto").to_string()), segments })
     }

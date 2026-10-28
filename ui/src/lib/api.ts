@@ -154,6 +154,8 @@ export const events = {
   audioLevel: (cb: (l: { mic: number; system: number }) => void) => listen<{ mic: number; system: number }>('audio-level', (e) => cb(e.payload)),
   /** Shown once: system track silent for 30 s, permission denied, no device... (i18n key). */
   captureWarning: (cb: (key: string) => void) => listen<string>('capture-warning', (e) => cb(e.payload)),
+  /** Processing progress of a meeting, at each step boundary and within transcription and diarization. */
+  meetingProgress: (cb: (p: MeetingProgress) => void) => listen<MeetingProgress>('meeting-progress', (e) => cb(e.payload)),
   modelProgress: (cb: (p: { id: string; progress: number }) => void) => listen<{ id: string; progress: number }>('model-progress', (e) => cb(e.payload)),
   /** Backend asks the UI to show a screen (e.g. review queue shortcut). */
   navigate: (cb: (route: string) => void) => listen<string>('navigate', (e) => cb(e.payload)),

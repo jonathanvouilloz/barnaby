@@ -176,7 +176,12 @@ fn process(app: &App, id: Uuid) {
         diarizer,
         structurer,
         data_dir: app.data_dir.clone(),
-        progress: None,
+        progress: Some({
+            let handle = app.handle.clone();
+            Arc::new(move |p| {
+                let _ = handle.emit("meeting-progress", p);
+            })
+        }),
     };
     // Pipeline::run sets `processing` too, but only returns at the end: tell the UI now.
     let _ = app.db().set_state(id, MeetingState::Processing, None);
