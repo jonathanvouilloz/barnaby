@@ -4,7 +4,7 @@ import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, keyLabel, shortcutWarning, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize, groupByDay, localDay, progressLabel } from './format';
 import { canSend, isReadOnly, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
-import { addTerm, consentTemplate, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
+import { addTerm, consentTemplate, hasDestination, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
@@ -180,13 +180,24 @@ describe('missingRequired', () => {
   });
 });
 
+describe('hasDestination', () => {
+  const off = { folder: { enabled: false, path: '' }, webhook: { enabled: false, url: '' } };
+  test('needs an enabled folder with a path or an enabled webhook with a URL', () => {
+    expect(hasDestination(off)).toBe(false);
+    expect(hasDestination({ ...off, folder: { enabled: true, path: 'C:\\x' } })).toBe(true);
+    expect(hasDestination({ ...off, folder: { enabled: true, path: '' } })).toBe(false);
+    expect(hasDestination({ ...off, folder: { enabled: false, path: 'C:\\x' } })).toBe(false);
+    expect(hasDestination({ ...off, webhook: { enabled: true, url: 'https://x.test/hook' } })).toBe(true);
+  });
+});
+
 describe('onboarding', () => {
   const m = (id: string, kind: ModelInfo['kind'], installed = false): ModelInfo => ({ id, kind, name: id, size_mb: 1, installed });
   const settings = { dictation: { model: 'parakeet-v3' }, meeting: { model: 'whisper-large-v3-turbo' } } as Settings;
   const catalog = [m('parakeet-v3', 'parakeet'), m('whisper-large-v3-turbo', 'whisper'),
     m('seg', 'diarization_segmentation'), m('emb', 'diarization_embedding'), m('vad', 'vad')];
   test('steps come in order', () => {
-    expect(STEPS).toEqual(['welcome', 'mic', 'models', 'dictation', 'tour', 'done']);
+    expect(STEPS).toEqual(['welcome', 'mic', 'models', 'destination', 'dictation', 'tour', 'done']);
   });
   test('shouldOnboard shows, marks done or skips', () => {
     expect(shouldOnboard({ ...settings, onboarding_done: false }, [catalog[0]])).toBe('show');

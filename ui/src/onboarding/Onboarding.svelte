@@ -8,6 +8,7 @@
   import { STEPS } from './steps';
   import Mic from './Mic.svelte';
   import Models from './Models.svelte';
+  import Destination from './Destination.svelte';
   import DictationTest from './DictationTest.svelte';
   import Tour from './Tour.svelte';
 
@@ -73,6 +74,9 @@
         {:else if step === 'models'}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.models.title')}</h1>
           <Models bind:ready bind:busy={downloading} />
+        {:else if step === 'destination'}
+          <h1 tabindex="-1" bind:this={heading}>{t('onboarding.destination.title')}</h1>
+          <Destination />
         {:else if step === 'dictation'}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.dictation.title')}</h1>
           <DictationTest bind:ready />

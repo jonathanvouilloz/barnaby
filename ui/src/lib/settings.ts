@@ -1,6 +1,11 @@
 import type { ProcessingMode, Settings } from './api';
 import { translate, type Lang } from './i18n';
 
+/** Mirrors `destination::from_settings`: false means "Valider et envoyer" writes nowhere. */
+export function hasDestination(d: Settings['destinations']): boolean {
+  return (d.folder.enabled && d.folder.path.trim() !== '') || (d.webhook.enabled && d.webhook.url.trim() !== '');
+}
+
 /** Mirrors the backend NetPolicy for local mode: only loopback hosts are allowed. */
 export function isLoopbackUrl(url: string): boolean {
   try {

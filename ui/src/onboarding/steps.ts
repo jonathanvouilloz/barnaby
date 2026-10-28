@@ -2,8 +2,8 @@ import type { ModelInfo, Settings } from '../lib/api';
 import { missingRequired } from '../lib/models';
 import { MISTRAL_MODEL } from '../lib/settings';
 
-export type Step = 'welcome' | 'mic' | 'models' | 'dictation' | 'tour' | 'done';
-export const STEPS: Step[] = ['welcome', 'mic', 'models', 'dictation', 'tour', 'done'];
+export type Step = 'welcome' | 'mic' | 'models' | 'destination' | 'dictation' | 'tour' | 'done';
+export const STEPS: Step[] = ['welcome', 'mic', 'models', 'destination', 'dictation', 'tour', 'done'];
 
 /** Upgrades that already have every model needed are marked done without being shown the flow. */
 export function shouldOnboard(settings: Settings, missing: ModelInfo[]): 'show' | 'skip' | 'mark_done' {

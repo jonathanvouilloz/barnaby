@@ -9,6 +9,8 @@
   import Icon from '../lib/Icon.svelte';
   import Spark from '../lib/Spark.svelte';
   import ReviewZone from './ReviewZone.svelte';
+  import Sheet from '../lib/Sheet.svelte';
+  import { hasDestination } from '../lib/settings';
 
   let { id }: { id: string } = $props();
 
@@ -22,6 +24,7 @@
   let editText = $state('');
   let renames = $state<Record<string, string>>({});
   let sending = $state(false);
+  let nowhere = $state(false);
 
   async function load() {
     const d = await attempt(() => api.getMeeting(id));
@@ -123,7 +126,13 @@
     if (dir && (await attempt(() => api.exportMeeting(id, dir))) !== undefined) notify(t('review.exported'));
   }
 
+  function askSend() {
+    if (app.settings && !hasDestination(app.settings.destinations)) nowhere = true;
+    else send();
+  }
+
   async function send() {
+    nowhere = false;
     sending = true;
     if ((await attempt(() => api.validateReview(id))) !== undefined) {
       notify(t('review.sent'));
@@ -134,6 +143,14 @@
 </script>
 
 <svelte:window {onkeydown} />
+
+<Sheet open={nowhere} title={t('review.nowhere_title')} onclose={() => (nowhere = false)}>
+  <p>{t('review.nowhere_text')}</p>
+  {#snippet actions()}
+    <button class="btn" onclick={() => go({ name: 'settings' })}>{t('review.nowhere_pick')}</button>
+    <button class="btn primary" onclick={send}>{t('review.nowhere_send')}</button>
+  {/snippet}
+</Sheet>
 
 <section class="screen">
   <header class="screen-head" data-tauri-drag-region>
@@ -148,7 +165,7 @@
       <button class="btn" onclick={exportMeeting}>{t('review.export')}</button>
     {:else}
       {#if left > 0}<span id="send-hint" class="secondary">{t('review.remaining', { n: left })}</span>{/if}
-      <button class="btn primary" disabled={!detail || !canSend(items) || sending} aria-describedby={left > 0 ? 'send-hint' : undefined} onclick={send}>
+      <button class="btn primary" disabled={!detail || !canSend(items) || sending} aria-describedby={left > 0 ? 'send-hint' : undefined} onclick={askSend}>
         {t('review.send')}
       </button>
     {/if}
