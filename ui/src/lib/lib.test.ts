@@ -2,12 +2,20 @@ import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, keyLabel, shortcutWarning, type KeyLike } from './accelerator';
-import { formatTimestamp, formatSize, groupByDay, localDay } from './format';
+import { formatTimestamp, formatSize, groupByDay, localDay, progressLabel } from './format';
 import { canSend, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
 import { addTerm, consentTemplate, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
+
+describe('progressLabel', () => {
+  test('names the step and its position', () => {
+    const p = { meeting_id: 'm', step: 'diarize' as const, index: 2, total: 5, fraction: 0.4 };
+    expect(progressLabel(p, 'fr')).toBe('Étape 2 sur 5 : séparation des voix');
+    expect(progressLabel(p, 'en')).toBe('Step 2 of 5: separating voices');
+  });
+});
 
 describe('i18n', () => {
   test('replaces params and keeps unknown placeholders', () => {

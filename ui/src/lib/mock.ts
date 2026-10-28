@@ -327,4 +327,12 @@ export function installMock() {
       emit('dictation-level', speaking ? 0.03 + 0.12 * Math.abs(Math.sin(tick / 2.3)) * Math.random() + 0.04 * Math.random() : 0.004);
     }, 50);
   }
+  // Main window: the processing meeting loops through its steps.
+  let step = 0;
+  const steps = ['transcribe', 'diarize', 'identify', 'review'] as const;
+  setInterval(() => {
+    step = (step + 1) % 40;
+    const index = Math.floor(step / 10);
+    emit('meeting-progress', { meeting_id: 'm5', step: steps[index], index: index + 1, total: 4, fraction: (step % 10) / 9 });
+  }, 400);
 }

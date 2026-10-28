@@ -3,7 +3,7 @@
   import { app, attempt, errorText, go, notify, refreshMeetings } from '../lib/state.svelte';
   import { keyLabel } from '../lib/accelerator';
   import { t } from '../lib/i18n';
-  import { formatDateTime, formatDay, formatTime, groupByDay, localDay } from '../lib/format';
+  import { formatDateTime, formatDay, formatTime, groupByDay, localDay, progressLabel } from '../lib/format';
   import Owl from '../lib/Owl.svelte';
   import Spark from '../lib/Spark.svelte';
   import Sheet from '../lib/Sheet.svelte';
@@ -87,6 +87,12 @@
                     {formatTime(m.started_at, app.lang)}
                     {#if m.review_items_total > 0}{' · '}{t('home.zones', { done: m.review_items_resolved, total: m.review_items_total })}{/if}
                   </p>
+                  {#if m.state === 'processing' && app.progress[m.id]}
+                    {@const p = app.progress[m.id]}
+                    {@const label = progressLabel(p, app.lang)}
+                    <p class="secondary progress-label">{label}</p>
+                    <progress max="1" value={p.fraction} aria-label={label}></progress>
+                  {/if}
                   {#if m.state === 'failed'}<p class="cause">{#if app.mascot}<Owl state="error" size={32} />{/if}{errorText(m.error)}</p>{/if}
                 </div>
                 <span class="state {m.state}">{t(`state.${m.state}`)}</span>
@@ -192,6 +198,17 @@
   /* What waits is the brightest thing on the screen. */
   .state.needs_review { color: var(--accent-text); font-weight: 600; }
   .state.failed { color: var(--danger); }
+  .progress-label { font-size: 12.5px; }
+  progress {
+    display: block; width: 100%; max-width: 240px; height: 4px; margin-top: 4px;
+    appearance: none; border: 0; border-radius: 2px; overflow: hidden; background: var(--fill);
+  }
+  progress::-webkit-progress-bar { background: var(--fill); }
+  progress::-webkit-progress-value { background: var(--accent); border-radius: 2px; }
+  progress::-moz-progress-bar { background: var(--accent); border-radius: 2px; }
+  @media (prefers-reduced-motion: no-preference) {
+    progress::-webkit-progress-value { transition: width 300ms var(--ease); }
+  }
   .cause { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--danger); }
 
   .reveal { opacity: 0; transition: opacity 150ms var(--ease); }

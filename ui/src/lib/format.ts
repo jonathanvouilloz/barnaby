@@ -1,3 +1,6 @@
+import type { MeetingProgress } from './api';
+import { translate, type Lang } from './i18n';
+
 /** `mm:ss`, or `h:mm:ss` from one hour. Negative or invalid input reads as 0. */
 export function formatTimestamp(seconds: number): string {
   const total = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
@@ -42,4 +45,9 @@ export function groupByDay<T>(items: T[], iso: (item: T) => string): { day: stri
 export function formatDay(day: string, lang: string): string {
   const [y, m, d] = day.split('-').map(Number);
   return new Intl.DateTimeFormat(lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(y, m - 1, d));
+}
+
+/** "Étape 2 sur 5 : séparation des voix". */
+export function progressLabel(p: MeetingProgress, lang: Lang): string {
+  return translate(lang, 'progress.step', { n: p.index, total: p.total, label: translate(lang, `progress.${p.step}`) });
 }

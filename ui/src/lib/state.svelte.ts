@@ -1,4 +1,4 @@
-import { api, events, type Dictation, type DictationStatus, type Meeting, type ModelInfo, type Settings } from './api';
+import { api, events, type Dictation, type DictationStatus, type Meeting, type MeetingProgress, type ModelInfo, type Settings } from './api';
 import { bindLocale, has, t, type Lang } from './i18n';
 import { keyLabel } from './accelerator';
 import { missingRequired } from './models';
@@ -35,6 +35,8 @@ export const app = $state({
   notice: '',
   models: [] as ModelInfo[],
   mascot: readMascot(),
+  // shortcut: filled by events only, so a window opened mid-step shows no bar until the next event; add a command if that bothers.
+  progress: {} as Record<string, MeetingProgress>,
 });
 
 bindLocale(app);
@@ -101,6 +103,7 @@ function onMeeting(m: Meeting) {
   const i = app.meetings.findIndex((x) => x.id === m.id);
   if (i === -1) app.meetings.unshift(m);
   else app.meetings[i] = m;
+  if (m.state !== 'processing') delete app.progress[m.id];
 
   if (m.state === 'recording') {
     app.recordingId = m.id;
@@ -130,6 +133,7 @@ export async function init() {
 
   await Promise.all([
     events.meetingUpdated(onMeeting),
+    events.meetingProgress((p) => (app.progress[p.meeting_id] = p)),
     events.dictationStatus((s) => (app.dictationStatus = s)),
     events.dictationDone((d) => {
       if (app.settings?.dictation.keep_history !== false) app.dictations.unshift(d);
