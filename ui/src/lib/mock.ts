@@ -222,6 +222,10 @@ function handle(cmd: string, a: Record<string, any>): unknown {
     case 'has_llm_api_key': return llmApiKey !== '';
     case 'set_mistral_api_key': mistralApiKey = a.key; return null;
     case 'has_mistral_api_key': return mistralApiKey !== '';
+    case 'test_mistral_key': {
+      const key = a.key ?? mistralApiKey;
+      return new Promise((ok, ko) => setTimeout(() => (!key ? ko('mistral_key_missing') : key === 'bad' ? ko('mistral_auth') : ok(null)), 600));
+    }
     case 'list_meetings': return clone(meetings);
     case 'get_meeting': {
       const d = details.get(a.id);

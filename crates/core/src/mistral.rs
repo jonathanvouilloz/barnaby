@@ -15,6 +15,7 @@ use crate::provider::{Coded, ProgressFn, RawSegment, Transcriber, Transcript};
 pub const MISTRAL_MODEL: &str = "mistral-voxtral";
 
 const URL: &str = "https://api.mistral.ai/v1/audio/transcriptions";
+const MODELS_URL: &str = "https://api.mistral.ai/v1/models";
 const BLOCK_S: f64 = 600.0;
 const MAX_BIAS_TERMS: usize = 100;
 
@@ -70,16 +71,7 @@ impl Transcriber for MistralTranscriber {
                 .header("Authorization", format!("Bearer {}", self.api_key))
                 .send(form)
                 .and_then(|mut r| r.body_mut().read_to_string())
-                .map_err(|e| match e {
-                    ureq::Error::StatusCode(status) => {
-                        log::warn!("mistral status {status}");
-                        Coded(status_code(status))
-                    }
-                    e => {
-                        log::warn!("mistral transport error: {e}");
-                        Coded("mistral_unreachable")
-                    }
-                })?;
+                .map_err(coded)?;
             let rate = f64::from(SAMPLE_RATE);
             let block = parse(&body, start as f64 / rate, (end - start) as f64 / rate)?;
             if out.language.is_empty() {
@@ -93,6 +85,34 @@ impl Transcriber for MistralTranscriber {
             out.language = "auto".into();
         }
         Ok(out)
+    }
+}
+
+/// Asks Mistral whether `api_key` works, with the error codes of a transcription.
+/// Only on a user's click: not gated by the processing mode.
+pub fn check_key(api_key: &str) -> Result<()> {
+    check_key_at(MODELS_URL, api_key)
+}
+
+fn check_key_at(url: &str, api_key: &str) -> Result<()> {
+    crate::net::agent(Duration::from_secs(15))
+        .get(url)
+        .header("Authorization", format!("Bearer {api_key}"))
+        .call()
+        .map_err(coded)?;
+    Ok(())
+}
+
+fn coded(e: ureq::Error) -> Coded {
+    match e {
+        ureq::Error::StatusCode(status) => {
+            log::warn!("mistral status {status}");
+            Coded(status_code(status))
+        }
+        e => {
+            log::warn!("mistral transport error: {e}");
+            Coded("mistral_unreachable")
+        }
     }
 }
 
@@ -231,6 +251,21 @@ mod tests {
         assert_eq!(status_code(403), "mistral_auth");
         assert_eq!(status_code(429), "mistral_quota");
         assert_eq!(status_code(500), "mistral_failed");
+    }
+
+    #[test]
+    fn check_key_maps_answers() {
+        let (url, rx) = crate::destination::tests::serve(vec![
+            (200, "{}".into()),
+            (401, String::new()),
+            (429, String::new()),
+        ]);
+        let code = |r: Result<()>| r.unwrap_err().downcast::<Coded>().unwrap().0;
+        assert!(check_key_at(&url, "k").is_ok());
+        let (headers, _) = rx.recv().unwrap();
+        assert!(headers.iter().any(|h| h.eq_ignore_ascii_case("authorization: Bearer k")));
+        assert_eq!(code(check_key_at(&url, "k")), "mistral_auth");
+        assert_eq!(code(check_key_at(&url, "k")), "mistral_quota");
     }
 
     #[test]

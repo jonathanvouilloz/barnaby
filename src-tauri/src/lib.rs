@@ -99,6 +99,7 @@ pub fn run() {
             commands::has_llm_api_key,
             commands::set_mistral_api_key,
             commands::has_mistral_api_key,
+            commands::test_mistral_key,
             commands::list_meetings,
             commands::get_meeting,
             commands::start_meeting,

@@ -98,6 +98,8 @@ export const api = {
   /** Stored in the OS keyring. Empty string clears it. */
   setWebhookSecret: (secret: string) => invoke<void>('set_webhook_secret', { secret }),
   hasWebhookSecret: () => invoke<boolean>('has_webhook_secret'),
+  /** Checks the given key, or the saved one; rejects with a `mistral_*` error code. */
+  testMistralKey: (key?: string) => invoke<void>('test_mistral_key', { key: key ?? null }),
   testWebhook: (url: string) => invoke<void>('test_webhook', { url }),
   generateWebhookSecret: () => invoke<string>('generate_webhook_secret'),
   suspendShortcuts: () => invoke<void>('suspend_shortcuts'),

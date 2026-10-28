@@ -97,6 +97,20 @@
     notify(t(value ? 'settings.secret_saved' : 'settings.secret_cleared'));
   }
 
+  let keyTest = $state<'idle' | 'running' | 'ok' | 'failed'>('idle');
+  let keyError = $state('');
+
+  async function testMistralKey() {
+    keyTest = 'running';
+    try {
+      await api.testMistralKey();
+      keyTest = 'ok';
+    } catch (e) {
+      keyError = errorText(String(e));
+      keyTest = 'failed';
+    }
+  }
+
   let hookTest = $state<'idle' | 'running' | 'ok' | 'refused' | 'server' | 'unreachable'>('idle');
   let hookCode = $state('');
   let generated = $state('');
@@ -176,6 +190,9 @@
     hasKeys[kind] = value !== '';
     keys[kind] = '';
     notify(t(value ? 'settings.key_saved' : 'settings.key_cleared'));
+    keyTest = 'idle';
+    // Saved either way, then checked at once so a wrong key shows before the first meeting.
+    if (kind === 'mistral' && value) testMistralKey();
     return true;
   }
 
@@ -534,8 +551,12 @@
   </form>
   <p class="line secondary" id="{kind}-key-state">
     {t(hasKeys[kind] ? 'settings.key_set' : 'settings.key_none')}
+    {#if hasKeys[kind] && kind === 'mistral'}<button class="btn ghost small" disabled={keyTest === 'running'} onclick={testMistralKey}>{t(keyTest === 'running' ? 'mistral.checking' : 'settings.key_test')}</button>{/if}
     {#if hasKeys[kind]}<button class="btn ghost small danger" onclick={() => storeKey(kind, '')}>{t('settings.key_clear')}</button>{/if}
   </p>
+  {#if kind === 'mistral' && (keyTest === 'ok' || keyTest === 'failed')}
+    <p class="line secondary" role="status" class:ok={keyTest === 'ok'} class:bad={keyTest === 'failed'}>{keyTest === 'ok' ? t('settings.key_ok') : keyError}</p>
+  {/if}
 {/snippet}
 
 <MistralSheet open={mistralOpen} hasKey={hasKeys.mistral} oncancel={cancelMistral} onconfirm={activateMistral} />
@@ -570,6 +591,7 @@
   .ctl { width: 280px; flex: none; }
   .pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   p.ok { color: var(--ok); }
+  p.bad { color: var(--danger); }
   summary { cursor: pointer; font-weight: 500; }
   .stack .line { padding-inline: 0; }
   /* Selects grow to their longest option rather than clip it. */

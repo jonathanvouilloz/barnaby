@@ -107,6 +107,21 @@ pub fn has_mistral_api_key(app: AppState) -> bool {
     app.mistral_api_key().is_some()
 }
 
+/// Checks `key`, or the saved key when None. Errors are the transcription's codes.
+#[tauri::command]
+pub async fn test_mistral_key(app: AppState<'_>, key: Option<String>) -> CmdResult<()> {
+    let key = match key {
+        Some(k) => k.trim().to_string(),
+        None => app.mistral_api_key().ok_or("mistral_key_missing")?,
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        barnaby_core::mistral::check_key(&key)
+            .map_err(|e| e.downcast_ref::<barnaby_core::Coded>().map_or("mistral_failed", |c| c.0).to_string())
+    })
+    .await
+    .map_err(|_| "mistral_unreachable".to_string())?
+}
+
 /// An empty value deletes the secret.
 fn set_secret(user: &str, secret: &str) -> CmdResult<()> {
     let entry = keyring::Entry::new(KEYRING_SERVICE, user).map_err(|_| "keyring_unavailable")?;
