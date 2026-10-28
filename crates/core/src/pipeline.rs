@@ -142,7 +142,15 @@ impl Pipeline {
     fn reporter(&self, meeting_id: Uuid, step: Step, total: u8) -> ProgressFn {
         let Some(sink) = self.progress.clone() else { return Arc::new(|_| {}) };
         let index = Step::ALL.iter().position(|s| *s == step).unwrap_or(0) as u8 + 1;
-        Arc::new(move |fraction| sink(Progress { meeting_id, step, index, total, fraction }))
+        // sherpa can call back once per embedding chunk: keep 0, 1 and steps of at least 1 %.
+        let last = std::sync::Mutex::new(f32::NEG_INFINITY);
+        Arc::new(move |fraction| {
+            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
+            if fraction == 0.0 || fraction >= 1.0 || fraction - *last >= 0.01 {
+                *last = fraction;
+                sink(Progress { meeting_id, step, index, total, fraction });
+            }
+        })
     }
 
     fn load_audio(&self, id: Uuid) -> Result<Tracks> {
@@ -446,6 +454,22 @@ mod tests {
         let sink = seen.clone();
         p.progress = Some(Arc::new(move |r| sink.lock().unwrap().push(r)));
         seen
+    }
+
+    #[test]
+    fn reporter_drops_tiny_steps_but_keeps_ends() {
+        let (store, dir, id) = setup(&[]);
+        let mut p = pipeline(&store, &dir, Arc::new(FakeTranscriber::default()), None);
+        let seen = recording(&mut p);
+        let report = p.reporter(id, Step::Diarize, 4);
+        for i in 0..=10_000 {
+            report(i as f32 / 10_000.0);
+        }
+        let seen = seen.lock().unwrap();
+        assert!(seen.len() <= 102, "{} events", seen.len());
+        assert_eq!(seen.first().map(|r| r.fraction), Some(0.0));
+        assert_eq!(seen.last().map(|r| r.fraction), Some(1.0));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

@@ -2,7 +2,8 @@
   // What leaves the machine with Mistral transcription, and the key that turns it on.
   import { api } from './api';
   import { t } from './i18n';
-  import { attempt, errorText, notify } from './state.svelte';
+  import { attempt, notify } from './state.svelte';
+  import { keyErrorKey } from './settings';
   import Sheet from './Sheet.svelte';
 
   // hasKey: a key is already saved, so the sheet only discloses and confirms.
@@ -23,17 +24,22 @@
     // A refused key is never saved: the first meeting would fail with it.
     checking = true;
     error = '';
+    let unchecked = false;
     try {
       await api.testMistralKey(key.trim());
     } catch (e) {
-      error = errorText(String(e));
-      return;
+      // Offline is not a wrong key: save it, and say it was not checked.
+      unchecked = String(e) === 'mistral_unreachable';
+      if (!unchecked) {
+        error = t(keyErrorKey(String(e)));
+        return;
+      }
     } finally {
       checking = false;
     }
     if ((await attempt(() => api.setMistralApiKey(key.trim()))) === undefined) return;
     key = '';
-    notify(t('settings.key_saved'));
+    notify(t(unchecked ? 'mistral.key_saved_unchecked' : 'settings.key_saved'));
     onconfirm();
   }
 </script>

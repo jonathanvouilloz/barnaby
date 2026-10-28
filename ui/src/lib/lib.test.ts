@@ -4,7 +4,7 @@ import { translate, dictionaries } from './i18n';
 import { acceleratorFromKey, keyLabel, shortcutWarning, type KeyLike } from './accelerator';
 import { formatTimestamp, formatSize, groupByDay, localDay, progressLabel } from './format';
 import { canSend, isReadOnly, nextOpenAfter, remaining, segmentAt, speakerName, stepId, flaggedSegments, wordDiff } from './review';
-import { addTerm, consentTemplate, hasDestination, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
+import { addTerm, consentTemplate, hasDestination, keyErrorKey, isLoopbackUrl, MISTRAL_MODEL, modeFor } from './settings';
 import type { ModelInfo, ReviewItem, Segment, Settings } from './api';
 import { missingRequired } from './models';
 import { modelsFor, shouldOnboard, STEPS } from '../onboarding/steps';
@@ -177,6 +177,16 @@ describe('missingRequired', () => {
     const models = [m('parakeet-v3', 'parakeet'), m('whisper-base', 'whisper'), m('whisper-small', 'whisper', true),
       m('seg', 'diarization_segmentation', true), m('emb', 'diarization_embedding', true), m('vad', 'vad', true)];
     expect(missingRequired(models, s).map((x) => x.id)).toEqual(['parakeet-v3']);
+  });
+});
+
+describe('keyErrorKey', () => {
+  test('key test errors get their own texts, quota keeps the meeting one', () => {
+    expect(keyErrorKey('mistral_auth')).toBe('mistral.key_refused');
+    expect(keyErrorKey('mistral_unreachable')).toBe('mistral.key_unreachable');
+    expect(keyErrorKey('mistral_quota')).toBe('error.mistral_quota');
+    expect(keyErrorKey('mistral_failed')).toBe('mistral.key_failed');
+    expect(keyErrorKey('mistral_key_missing')).toBe('error.mistral_key_missing');
   });
 });
 

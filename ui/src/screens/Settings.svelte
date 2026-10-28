@@ -4,7 +4,7 @@
   import { app, applySettings, attempt, errorText, go, missingModels, notify, refreshModels, setMascot } from '../lib/state.svelte';
   import { t } from '../lib/i18n';
   import { formatSize } from '../lib/format';
-  import { addTerm, cloudSummary, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL } from '../lib/settings';
+  import { addTerm, cloudSummary, isLoopbackUrl, MISTRAL_MODEL, modeFor, OLLAMA_URL, OPENROUTER_URL, keyErrorKey } from '../lib/settings';
   import ShortcutInput from '../lib/ShortcutInput.svelte';
   import Sheet from '../lib/Sheet.svelte';
   import MistralSheet from '../lib/MistralSheet.svelte';
@@ -106,7 +106,7 @@
       await api.testMistralKey();
       keyTest = 'ok';
     } catch (e) {
-      keyError = errorText(String(e));
+      keyError = t(keyErrorKey(String(e)));
       keyTest = 'failed';
     }
   }

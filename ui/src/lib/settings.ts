@@ -1,6 +1,16 @@
 import type { ProcessingMode, Settings } from './api';
 import { translate, type Lang } from './i18n';
 
+/** i18n key for a Mistral key test failure: the meeting texts would send the user to the screen they are on. */
+export function keyErrorKey(code: string): string {
+  switch (code) {
+    case 'mistral_auth': return 'mistral.key_refused';
+    case 'mistral_unreachable': return 'mistral.key_unreachable';
+    case 'mistral_quota': case 'mistral_key_missing': return `error.${code}`;
+    default: return 'mistral.key_failed';
+  }
+}
+
 /** Mirrors `destination::from_settings`: false means "Valider et envoyer" writes nowhere. */
 export function hasDestination(d: Settings['destinations']): boolean {
   return (d.folder.enabled && d.folder.path.trim() !== '') || (d.webhook.enabled && d.webhook.url.trim() !== '');
