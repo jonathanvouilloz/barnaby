@@ -161,3 +161,13 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : le README reprend le site (accroche, téléchargements « dernière version », captures, premiers pas, questions, remerciements) et renvoie à mybarnaby.app ; les notes de chaque release sont en français, au format de `v0.4.3`, écrites à la main après le tag.
 - Écarté : README en anglais (le site et l'app sont en français) ; garder les notes générées par GitHub (vides).
 - À rouvrir si : le site passe en anglais ou des contributeurs non francophones arrivent.
+
+## 2026-10-29 — Nombre de voix fixé par les participants saisis
+- Choix : la séparation des voix cherche autant de voix que de participants saisis avant la réunion, plus l'utilisateur, dès une minute d'audio ; sans liste, seuil de regroupement 0,7 au lieu de 0,5 (une même personne sortait en 3 ou 4 locuteurs sur des micros moyens). Le texte de « Nouvelle réunion » demande de ne pas s'inscrire soi-même.
+- Écarté : séparer les voix sur le seul son de la visio (on perdait les tours de « Moi ») ; extension Chrome lisant les noms dans Meet ou Teams (navigateur seulement, casse à chaque refonte de ces pages, jugée trop lourde par Jon) ; séparation des voix de Voxtral 3 (pas testée, et les blocs de 10 min donnent des numéros de locuteur différents d'un bloc à l'autre).
+- À rouvrir si : une réunion avec la liste remplie sort encore des doublons, ou une réunion de moins d'une minute en a besoin. Tester Voxtral 3 sur la réunion entière avec un enregistrement réel de Jon.
+
+## 2026-10-29 — Transcription et séparation des voix en même temps, Mistral 3 blocs à la fois
+- Choix : les étapes Transcription et Séparation des voix tournent ensemble (réseau d'un côté, processeur de l'autre) ; la barre affiche toujours les étapes dans l'ordre. Mistral reçoit 3 blocs de 10 min à la fois, délai par requête porté à 900 s puisque les 3 envois se partagent la connexion (remplace le délai de 300 s du 2026-10-28).
+- Écarté : file de requêtes continue (plus de code pour un gain de quelques secondes) ; envoi de la réunion entière en un seul fichier (environ 95 Mo de WAV sans compression).
+- À rouvrir si : des réunions échouent en `mistral_quota` (limite de requêtes simultanées) ou en délai dépassé sur une connexion lente.

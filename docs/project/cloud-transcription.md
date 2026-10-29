@@ -32,6 +32,7 @@ Hors périmètre : la diarisation par Mistral (`diarize`, format de réponse non
 - Les blocs de moins d'une seconde (fin de réunion, par exemple) ne sont pas envoyés.
 - `context_bias` : les termes du vocabulaire de l'utilisateur, 100 au plus. Mistral annonce un support expérimental hors anglais ; la correction locale (`vocabulary::correct`) s'applique ensuite comme aujourd'hui.
 - Découpage : morceaux d'environ 10 minutes, coupés au passage le plus calme des dernières secondes. La fonction `blocks` de `src-tauri/src/sched.rs` passe dans `crates/core/src/audio.rs` avec la durée en paramètre ; `MeetingTranscriber` (30 s) et `MistralTranscriber` (600 s) l'utilisent tous deux. Les horodatages de chaque morceau sont décalés de son début.
+- Les morceaux partent trois à la fois, avec un délai de 900 s par requête puisque les trois envois se partagent la connexion. Les résultats sont remis dans l'ordre des morceaux.
 - Le `MistralTranscriber` n'est pas enveloppé dans `MeetingTranscriber` : il n'occupe pas le processeur, il ne prend donc pas le verrou qui donne la priorité à la dictée.
 - `confidence` vaut 1.0 (Mistral n'en fournit pas). Conséquence : pas de zone « confiance faible » à la relecture pour ces réunions ; les zones « chevauchement » restent.
 - `NetPolicy::check` est appelé avant chaque requête : une réunion en mode `local` ne peut pas partir chez Mistral.
