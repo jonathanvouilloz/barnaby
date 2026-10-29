@@ -430,9 +430,11 @@ mod tests {
         thread::sleep(Duration::from_millis(700));
         shared.stopping.store(true, Ordering::Relaxed);
         mixer.join().unwrap();
+        // Bound by the real elapsed time, not 0.7 s: slow CI runners oversleep.
+        let max = (shared.start.elapsed().saturating_sub(MIX_DELAY).as_secs_f64() * f64::from(SAMPLE_RATE)) as usize;
         let total: usize = rx.try_iter().map(|c| c.len()).sum();
-        // 0.5 s emitted on the clock (0.7 s minus the mix delay), at most one more tick after stop.
-        assert!((7_000..=12_800).contains(&total), "{total}");
+        // At least 0.5 s emitted on the clock (0.7 s minus the mix delay), never ahead of it.
+        assert!((7_000..=max).contains(&total), "{total} not in 7000..={max}");
     }
 
     #[test]
