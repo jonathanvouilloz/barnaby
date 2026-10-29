@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/jonathanvouilloz/barnaby/releases/latest"><img src="https://img.shields.io/github/v/release/jonathanvouilloz/barnaby ?label=version" alt="Dernière version"></a>
+  <a href="https://github.com/jonathanvouilloz/barnaby/releases/latest"><img src="https://img.shields.io/github/v/release/jonathanvouilloz/barnaby?label=version" alt="Dernière version"></a>
   <img src="https://img.shields.io/badge/Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-gray" alt="Windows, macOS, Linux">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MIT-blue" alt="Licence MIT"></a>
 </p>
@@ -31,9 +31,9 @@ Barnaby est une app de bureau gratuite et open source, qui tourne sur ton ordina
 
 <table>
   <tr>
-    <td><picture><source media="(prefers-color-scheme : dark)" srcset="site/img/app/record-dark.webp"><img src="site/img/app/record-light.webp" alt="Enregistrement d’une réunion"></picture></td>
-    <td><picture><source media="(prefers-color-scheme : dark)" srcset="site/img/app/transcript-dark.webp"><img src="site/img/app/transcript-light.webp" alt="Transcript avec les locuteurs"></picture></td>
-    <td><picture><source media="(prefers-color-scheme : dark)" srcset="site/img/app/review-dark.webp"><img src="site/img/app/review-light.webp" alt="Relecture des passages incertains"></picture></td>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="site/img/app/record-dark.webp"><img src="site/img/app/record-light.webp" alt="Enregistrement d’une réunion"></picture></td>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="site/img/app/transcript-dark.webp"><img src="site/img/app/transcript-light.webp" alt="Transcript avec les locuteurs"></picture></td>
+    <td><picture><source media="(prefers-color-scheme: dark)" srcset="site/img/app/review-dark.webp"><img src="site/img/app/review-light.webp" alt="Relecture des passages incertains"></picture></td>
   </tr>
   <tr>
     <td align="center">Barnaby écoute</td>
