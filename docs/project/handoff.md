@@ -5,7 +5,7 @@ Mise à jour : 2026-10-29
 - Release `v0.4.3` publiée le 2026-10-28 (plan `docs/plans/meeting-visibility.md` terminé). Décisions dans `decisions.md`.
 - 2026-10-29 : README refait (lien mybarnaby.app, téléchargements, captures, premiers pas, questions), notes en français écrites pour les releases `v0.1.0` à `v0.4.2` (elles étaient vides), site du dépôt GitHub = https://mybarnaby.app. Test `mix_follows_the_wall_clock` borné par le temps réellement écoulé (échouait sur le runner macOS lent).
 - Première vraie réunion Mistral de Jon (30 min, Windows) : texte dans `barnaby.db`, récupérable par « Exporter… » en `v0.4.3`.
-- `main` = `phase-1` = `372a46e` (+ ce commit de docs sur `phase-1`).
+- `main` = `fcc8db4` ; `phase-1` a en plus ce commit de handoff.
 
 ## Prochaine action
 1. Jon lance `cargo test -p barnaby-engine mix_follows_the_wall_clock` sous Windows, puis installe `v0.4.3` et vérifie : barre de progression sur une vraie réunion Mistral, « Tester la clé », ouvrir et exporter sa réunion de 30 min, onboarding sur une installation neuve (étape dossier).
@@ -16,7 +16,7 @@ Mise à jour : 2026-10-29
 - CI run 40856572678 (`main`, `372a46e`) : checks, macOS, Linux, Windows verts.
 - `releases/latest/download/…` (exe, msi, dmg, deb) : 200 ; `curl https://mybarnaby.app/` affiche « Version 0.4.3 ». README rendu par `gh api markdown` : 7 images, ancres ok ; liens externes : 200.
 - Vérifiés le 2026-10-28 et inchangés : `cargo test -p barnaby-core` 51 ok, `bun run check` 0 erreur, `bun test` 45 ok.
-- Doc-reviewer sur `c811125..372a46e` : 0 faux après correction (« seule option payante » oubliait le résumé OpenRouter, corrigé). Invérifiables : libellés des avertissements d'installation Windows et Mac, « Mistral plus rapide sur un petit ordinateur » (aucune mesure). Le site dit encore « La seule chose payante » : à corriger.
+- Doc-reviewer sur `c811125..372a46e` : 0 faux après correction (« seule option payante » oubliait le résumé OpenRouter, corrigé). Invérifiables : libellés des avertissements d'installation Windows et Mac, « Mistral plus rapide sur un petit ordinateur » (aucune mesure). Même phrase corrigée sur le site, déployé le 2026-10-29.
 - Non vérifié : avancement réel de la séparation des voix sous Windows ; `check_key` contre la vraie API Mistral ; comportement réel sous macOS.
 
 ## État non commité
