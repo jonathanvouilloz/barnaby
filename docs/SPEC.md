@@ -470,7 +470,7 @@ Sources des sections 19.1 à 19.4 :
 - **Code** : MIT.
 - **Logo et mascotte** : CC BY 4.0 (voir 19.4).
 - **Nom** : politique de marque dans `TRADEMARK.md`.
-- Contributions : `CONTRIBUTING.md`, décisions d'architecture dans `docs/adr/`.
+- Contributions : `CONTRIBUTING.md` (à écrire), décisions d'implémentation dans `docs/project/decisions.md`.
 - `CODE_OF_CONDUCT.md` standard.
 
 ## 21. Roadmap

@@ -2,7 +2,7 @@
 Mise à jour : 2026-10-28
 
 ## Où on en est
-- Release `v0.4.3` publiée le 2026-10-28 : plan `docs/plans/meeting-visibility.md` terminé (progression du traitement sur l'accueil et dans le journal, test de la clé Mistral, réunions validées ouvertes en lecture seule avec « Exporter… », étape « dossier » à l'onboarding, avertissement avant un envoi sans destination). Décisions dans `decisions.md` (2026-10-28).
+- Release `v0.4.3` publiée le 2026-10-28 (contenu : `CHANGELOG.md`). Plan `docs/plans/meeting-visibility.md` terminé. Décisions dans `decisions.md` (2026-10-28).
 - Première vraie réunion Mistral de Jon (30 min, Windows) : transcription réussie, validée sans destination ; le texte est dans `barnaby.db`, récupérable par « Exporter… » en `v0.4.3` (audio supprimé à la validation).
 - `main` = `phase-1` = `a4f3998`.
 
