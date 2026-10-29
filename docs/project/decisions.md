@@ -156,3 +156,8 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : 300 s au lieu de 600 s par requête de 10 min d'audio (19 Mo), pour qu'une connexion figée se voie en 5 min plutôt qu'en 30. Annoncé dans les notes de `v0.4.3`.
 - Écarté : délai calculé selon la taille du morceau (plus de code pour un cas rare).
 - À rouvrir si : un utilisateur avec un envoi lent (< 0,6 Mb/s environ) voit échouer ses réunions.
+
+## 2026-10-29 — README en français, calqué sur le site
+- Choix : le README reprend le site (accroche, téléchargements « dernière version », captures, premiers pas, questions, remerciements) et renvoie à mybarnaby.app ; les notes de chaque release sont en français, au format de `v0.4.3`, écrites à la main après le tag.
+- Écarté : README en anglais (le site et l'app sont en français) ; garder les notes générées par GitHub (vides).
+- À rouvrir si : le site passe en anglais ou des contributeurs non francophones arrivent.
