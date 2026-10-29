@@ -38,6 +38,51 @@ models/                     modèles GGML et ONNX (téléchargés ou déposés �
 6. **Un envoi raté ne perd rien.** La réunion passe à `failed`, avec la cause et « réessayer ». Le webhook envoie `Idempotency-Key: <meeting.id>`.
 7. **L'overlay ne prend jamais le focus**, sinon le collage partirait dans la pastille. Sous Windows, il reste visible et on le déplace hors écran au lieu de le cacher.
 
+## Commandes exposées au front
+
+Liste tirée du code : commandes enregistrées dans `src-tauri/src/lib.rs` face aux appels de `ui/src/lib/api.ts`. Une cellule `NON` signale un côté oublié.
+
+<!-- BEGIN generated:commands -->
+| name | Rust | api.ts |
+| --- | --- | --- |
+| add_note | oui | oui |
+| check_shortcut | oui | oui |
+| clear_dictations | oui | oui |
+| current_recording | oui | oui |
+| delete_dictation | oui | oui |
+| delete_meeting | oui | oui |
+| delete_model | oui | oui |
+| download_model | oui | oui |
+| export_meeting | oui | oui |
+| generate_webhook_secret | oui | oui |
+| get_meeting | oui | oui |
+| get_settings | oui | oui |
+| has_llm_api_key | oui | oui |
+| has_mistral_api_key | oui | oui |
+| has_webhook_secret | oui | oui |
+| list_dictations | oui | oui |
+| list_meetings | oui | oui |
+| list_models | oui | oui |
+| list_outputs | oui | oui |
+| rename_speaker | oui | oui |
+| resolve_review_item | oui | oui |
+| resume_shortcuts | oui | oui |
+| retry_meeting | oui | oui |
+| save_settings | oui | oui |
+| set_llm_api_key | oui | oui |
+| set_mistral_api_key | oui | oui |
+| set_webhook_secret | oui | oui |
+| start_meeting | oui | oui |
+| start_mic_test | oui | oui |
+| stop_meeting | oui | oui |
+| stop_mic_test | oui | oui |
+| suspend_shortcuts | oui | oui |
+| test_mistral_key | oui | oui |
+| test_webhook | oui | oui |
+| update_segment_text | oui | oui |
+| validate_review | oui | oui |
+<!-- END generated:commands -->
+
 ## Environnements
 
 - Dev (VPS, sans sudo) : tout compile et se teste après `. ~/sysroot/env.sh` (en-têtes extraits dans un sysroot). Pas de matériel audio.

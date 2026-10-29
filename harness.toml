@@ -1,0 +1,32 @@
+# Contrat du projet pour le harnais (doc-check, apply-profile, hooks). AGENTS.md y renvoie pour les commandes.
+
+# M et non L : une seule application de bureau, un propriétaire, trois crates ; le site est une page statique.
+scale = "M"
+profile = "app"
+
+[commands]
+# Contrôle complet = celui de la CI (jobs checks + build, sans l'installeur). Long : voir [environment].
+check = "cargo clippy --workspace --all-targets -- -D warnings && cargo test -p barnaby-core && cargo test -p barnaby-engine && cd ui && bun run check && bun test"
+# Rapide (sans dépendance native, donc possible partout) : cœur Rust + types du front.
+quick = "cargo clippy -p barnaby-core --all-targets -- -D warnings && cargo test -p barnaby-core && cd ui && bun run check"
+# Les tests Rust vivent dans les modules ; seul le front a des fichiers de test.
+test_file = "cd ui && bun test {file}"
+generate = []
+
+[docs]
+prd = "docs/SPEC.md"
+code = ["crates", "src-tauri", "ui/src"]
+
+# Contrat entre le front et le Rust : commandes enregistrées côté Rust, appelées par api.ts.
+# Une cellule « NON » dans la section générée est une dérive.
+[facts.commands]
+cmd = "python3 tools/facts-commands.py"
+doc = "docs/project/architecture.md"
+
+[doc_check]
+max_feature_tokens = 3000
+allow_duplicates = []
+
+[environment]
+# Le contrôle complet dure une quarantaine de minutes sur le VPS (2 CPU) : il tourne en CI ou chez le propriétaire.
+heavy_tests = "ci"

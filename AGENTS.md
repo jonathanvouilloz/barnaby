@@ -12,12 +12,10 @@ App de bureau local-first : dictée au curseur et assistant de réunion (capture
 ## Stack et commandes
 Tauri 2 + Rust (workspace : `crates/core`, `crates/engine`, `src-tauri`), front Svelte 5 + Vite + TypeScript dans `ui/`, avec Bun. Choix et raisons : `docs/project/decisions.md`.
 
+Contrôles (rapide, complet, un fichier de test) : `harness.toml`. Autres commandes :
+
 | Tâche | Commande |
 |---|---|
-| Tests du cœur (partout) | `cargo test -p barnaby-core` |
-| Lint Rust | `cargo clippy --workspace --all-targets -- -D warnings` |
-| Front : types | `cd ui && bun run check` |
-| Front : tests | `cd ui && bun test` |
 | App en dev | `cd src-tauri && cargo tauri dev` (machine avec webview et audio) |
 | Installeurs | Linux : `cd src-tauri && bunx @tauri-apps/cli build`. Windows : `cargo build --release -p barnaby` puis `bunx @tauri-apps/cli build --config tauri.bundle-windows.json` (DLL sherpa). macOS : `cd src-tauri && bunx @tauri-apps/cli build` (`.dmg`). Ou via la CI ; un tag `v*` publie la release. |
 

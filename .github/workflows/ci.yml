@@ -21,6 +21,8 @@ jobs:
       - name: UI checks
         working-directory: ui
         run: bun install --frozen-lockfile && bun run check && bun test
+      - name: Documentation
+        run: python3 tools/doc-check.py --check
 
   build:
     needs: checks
