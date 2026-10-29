@@ -7,6 +7,7 @@ Mise à jour : 2026-10-28
 - `main` = `phase-1` = `a4f3998`.
 
 ## Prochaine action
+- Branche `chore/harness-contract` (2026-10-29, non fusionnée) : contrat `harness.toml` (taille M, profil `app`), index et fiches des fonctionnalités livrées, CHANGELOG tiré des tags, fact `commands` (commandes Tauri ↔ `api.ts`, 36 concordent), `tools/doc-check.py` et son étape CI. `python3 tools/doc-check.py --check` : 0 écart. À relire par le propriétaire puis fusionner dans `phase-1`.
 1. Jon installe `v0.4.3` sous Windows et vérifie : barre de progression sur une vraie réunion Mistral, « Tester la clé », ouvrir et exporter sa réunion de 30 min, onboarding sur une installation neuve (étape dossier).
 2. Toujours en attente : tests de la `v0.4.0` sous Windows (pastille, son, raccourcis, Parcourir…, Tester) et `.dmg` sur un vrai Mac.
 
