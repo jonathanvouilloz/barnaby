@@ -18,6 +18,8 @@ const URL: &str = "https://api.mistral.ai/v1/audio/transcriptions";
 const MODELS_URL: &str = "https://api.mistral.ai/v1/models";
 const BLOCK_S: f64 = 600.0;
 const MAX_BIAS_TERMS: usize = 100;
+/// Blocks sent at once: each takes Mistral tens of seconds, so waiting for them in turn adds up.
+const PARALLEL: usize = 3;
 
 pub struct MistralTranscriber {
     pub api_key: String,
@@ -37,54 +39,81 @@ impl Transcriber for MistralTranscriber {
 
     // `language` is ignored: Mistral refuses it together with `timestamp_granularities`.
     fn transcribe_with_progress(&self, samples: &[f32], _language: Option<&str>, progress: &ProgressFn) -> Result<Transcript> {
-        self.policy.check(URL)?;
+        self.transcribe_at(URL, samples, progress)
+    }
+}
+
+impl MistralTranscriber {
+    fn transcribe_at(&self, url: &str, samples: &[f32], progress: &ProgressFn) -> Result<Transcript> {
+        self.policy.check(url)?;
         let terms = bias_terms(&self.vocabulary);
-        // 10 min of 16-bit WAV is 19 MB: 300 s leave ~1 Mb/s of upload plus the transcription.
-        let agent = crate::net::agent(Duration::from_secs(300));
+        // 10 min of 16-bit WAV is 19 MB, and PARALLEL blocks share the upload:
+        // 900 s leave ~1 Mb/s per block plus the transcription.
+        let agent = crate::net::agent(Duration::from_secs(900));
         let mut out = Transcript {
             language: String::new(),
             segments: Vec::new(),
         };
         let all = blocks(samples, BLOCK_S);
-        let count = all.len();
-        for (n, (start, end)) in all.into_iter().enumerate() {
-            let started = std::time::Instant::now();
-            // Mistral may reject a near-empty file (400), which would fail the whole meeting.
-            if end - start < SAMPLE_RATE as usize {
-                continue;
+        let mut done = 0;
+        for batch in all.chunks(PARALLEL) {
+            let results: Vec<Result<Option<Transcript>>> = std::thread::scope(|s| {
+                let (agent, terms) = (&agent, &terms);
+                let handles: Vec<_> = batch
+                    .iter()
+                    .map(|&(start, end)| s.spawn(move || self.block(agent, url, terms, &samples[start..end], start)))
+                    .collect();
+                handles
+                    .into_iter()
+                    .map(|h| h.join().unwrap_or_else(|_| Err(Coded("mistral_failed").into())))
+                    .collect()
+            });
+            for block in results {
+                let Some(block) = block? else { continue };
+                if out.language.is_empty() {
+                    out.language = block.language;
+                }
+                out.segments.extend(block.segments);
             }
-            let wav = wav_bytes(&samples[start..end])?;
-            let mut form = Form::new()
-                .text("model", "voxtral-mini-latest")
-                .text("timestamp_granularities", "segment");
-            for t in &terms {
-                form = form.text("context_bias", t);
-            }
-            let form = form.part(
-                "file",
-                Part::bytes(&wav)
-                    .file_name("audio.wav")
-                    .mime_str("audio/wav")?,
-            );
-            let body = agent
-                .post(URL)
-                .header("Authorization", format!("Bearer {}", self.api_key))
-                .send(form)
-                .and_then(|mut r| r.body_mut().read_to_string())
-                .map_err(coded)?;
-            let rate = f64::from(SAMPLE_RATE);
-            let block = parse(&body, start as f64 / rate, (end - start) as f64 / rate)?;
-            if out.language.is_empty() {
-                out.language = block.language;
-            }
-            out.segments.extend(block.segments);
-            log::info!("mistral block {}/{count} done in {:.1}s", n + 1, started.elapsed().as_secs_f64());
-            progress((n + 1) as f32 / count as f32);
+            done += batch.len();
+            progress(done as f32 / all.len() as f32);
         }
         if out.language.is_empty() {
             out.language = "auto".into();
         }
         Ok(out)
+    }
+
+    /// Transcript of `block`, which starts at sample `start`; None when too short to send.
+    fn block(&self, agent: &ureq::Agent, url: &str, terms: &[&str], block: &[f32], start: usize) -> Result<Option<Transcript>> {
+        // Mistral may reject a near-empty file (400), which would fail the whole meeting.
+        if block.len() < SAMPLE_RATE as usize {
+            return Ok(None);
+        }
+        let started = std::time::Instant::now();
+        let wav = wav_bytes(block)?;
+        let mut form = Form::new()
+            .text("model", "voxtral-mini-latest")
+            .text("timestamp_granularities", "segment");
+        for t in terms {
+            form = form.text("context_bias", t);
+        }
+        let form = form.part(
+            "file",
+            Part::bytes(&wav)
+                .file_name("audio.wav")
+                .mime_str("audio/wav")?,
+        );
+        let body = agent
+            .post(url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .send(form)
+            .and_then(|mut r| r.body_mut().read_to_string())
+            .map_err(coded)?;
+        let rate = f64::from(SAMPLE_RATE);
+        let transcript = parse(&body, start as f64 / rate, block.len() as f64 / rate)?;
+        log::info!("mistral block at {:.0}s done in {:.1}s", start as f64 / rate, started.elapsed().as_secs_f64());
+        Ok(Some(transcript))
     }
 }
 
@@ -280,6 +309,30 @@ mod tests {
         assert_eq!(t.name(), MISTRAL_MODEL);
         let err = t.transcribe(&[0.0; 16_000], None).unwrap_err();
         assert!(crate::net::is_blocked(&err));
+    }
+
+    #[test]
+    fn blocks_keep_their_order_and_offsets() {
+        let reply = r#"{"text":"x","segments":[{"text":"x","start":0.0,"end":1.0}]}"#.to_string();
+        let (url, _rx) = crate::destination::tests::serve(vec![(200, reply); 3]);
+        let t = MistralTranscriber {
+            api_key: "k".into(),
+            vocabulary: vec![],
+            policy: NetPolicy {
+                mode: ProcessingMode::Api,
+            },
+        };
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let sink = seen.clone();
+        let progress: ProgressFn = std::sync::Arc::new(move |f| sink.lock().unwrap().push(f));
+        // 1300 s: three blocks, cut near 600 s and 1200 s.
+        let out = t.transcribe_at(&url, &vec![0.1; 16_000 * 1300], &progress).unwrap();
+        let starts: Vec<f64> = out.segments.iter().map(|s| s.start).collect();
+        assert_eq!(starts.len(), 3);
+        assert_eq!(starts[0], 0.0);
+        assert!((595.0..=600.0).contains(&starts[1]), "{starts:?}");
+        assert!((1190.0..=1200.0).contains(&starts[2]), "{starts:?}");
+        assert_eq!(seen.lock().unwrap().last(), Some(&1.0));
     }
 
     #[test]

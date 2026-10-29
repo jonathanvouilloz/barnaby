@@ -159,7 +159,7 @@ pub(crate) mod tests {
                 }
                 let mut body = vec![0; len];
                 reader.read_exact(&mut body).unwrap();
-                tx.send((headers, String::from_utf8(body).unwrap()))
+                tx.send((headers, String::from_utf8_lossy(&body).into_owned()))
                     .unwrap();
                 let resp = format!(
                     "HTTP/1.1 {status} X\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{reply}",

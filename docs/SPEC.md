@@ -244,7 +244,7 @@ Phase 1 : saisie manuelle en début de réunion.
 
 Phase 2 : **Google Calendar uniquement** (v1), en lecture seule via OAuth. Toujours validé par l'utilisateur.
 
-Les participants servent à proposer des noms aux locuteurs, pas à les attribuer de façon définitive.
+Les participants saisis (sans l’utilisateur) fixent le nombre de voix que cherche la diarisation (leur nombre + 1, à partir d’une minute d’audio) et servent à proposer des noms aux locuteurs, pas à les attribuer de façon définitive.
 
 ## 12. Identification des locuteurs
 

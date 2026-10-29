@@ -47,9 +47,10 @@ pub trait Transcriber: Send + Sync {
 
 pub trait Diarizer: Send + Sync {
     fn name(&self) -> &str;
-    fn diarize(&self, samples: &[f32]) -> anyhow::Result<Vec<SpeakerTurn>>;
-    fn diarize_with_progress(&self, samples: &[f32], _progress: &ProgressFn) -> anyhow::Result<Vec<SpeakerTurn>> {
-        self.diarize(samples)
+    /// `speakers`: how many voices to find; None = unknown.
+    fn diarize(&self, samples: &[f32], speakers: Option<u32>) -> anyhow::Result<Vec<SpeakerTurn>>;
+    fn diarize_with_progress(&self, samples: &[f32], speakers: Option<u32>, _progress: &ProgressFn) -> anyhow::Result<Vec<SpeakerTurn>> {
+        self.diarize(samples, speakers)
     }
 }
 

@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, MutexGuard};
 use std::time::Instant;
 
@@ -97,34 +98,35 @@ impl Pipeline {
             Tracks::default()
         };
         let total = if self.structurer.is_some() { 5 } else { 4 };
+        let together = pending.contains(&Step::Transcribe) && pending.contains(&Step::Diarize);
         for step in Step::ALL.into_iter().take(total) {
             let report = self.reporter(id, step, total as u8);
             if !pending.contains(&step) {
                 report(1.0);
                 continue;
             }
-            report(0.0);
-            log::info!("meeting {id} step {step:?} started");
-            let started = Instant::now();
-            let result = self.step(id, step, &tracks, &settings, &report);
-            if result.is_ok() {
-                log::info!("meeting {id} step {step:?} done in {:.1}s", started.elapsed().as_secs_f64());
-                report(1.0);
+            if together && step == Step::Diarize {
+                continue; // ran alongside Transcribe
             }
+            let result = if together && step == Step::Transcribe {
+                self.transcribe_and_diarize(id, &tracks, &settings, &report, &self.reporter(id, Step::Diarize, total as u8))
+            } else {
+                self.timed(id, step, &tracks, &settings, &report).map_err(|e| (step, e))
+            };
             match result {
                 Ok(()) => {}
                 // The summary is optional: an unreachable LLM must not block the review.
                 // Nothing is saved, so the next run tries the summary again.
-                Err(e) if step == Step::Structure && !net::is_blocked(&e) => {
+                Err((Step::Structure, e)) if !net::is_blocked(&e) => {
                     log::warn!("meeting {id}: structure_failed");
                 }
-                Err(e) => {
+                Err((failed, e)) => {
                     let code = if net::is_blocked(&e) {
                         net::BLOCKED.to_string()
                     } else if let Some(code) = error_code(&e) {
                         code.to_string()
                     } else {
-                        format!("{step:?}_failed").to_lowercase()
+                        format!("{failed:?}_failed").to_lowercase()
                     };
                     return Err((code, e));
                 }
@@ -136,6 +138,53 @@ impl Pipeline {
                 .map_err(fail("structure_failed"))?;
         }
         Ok(())
+    }
+
+    /// Runs `step` between progress 0 and 1, logging its duration.
+    fn timed(&self, id: Uuid, step: Step, t: &Tracks, settings: &Settings, report: &ProgressFn) -> Result<()> {
+        report(0.0);
+        log::info!("meeting {id} step {step:?} started");
+        let started = Instant::now();
+        self.step(id, step, t, settings, report)?;
+        log::info!("meeting {id} step {step:?} done in {:.1}s", started.elapsed().as_secs_f64());
+        report(1.0);
+        Ok(())
+    }
+
+    /// Transcription waits on the network (or one engine) and diarization on the CPU:
+    /// run them at once. Each saves its own output, so a failure of one keeps the other.
+    fn transcribe_and_diarize(
+        &self,
+        id: Uuid,
+        t: &Tracks,
+        settings: &Settings,
+        report: &ProgressFn,
+        diarize_report: &ProgressFn,
+    ) -> Result<(), (Step, anyhow::Error)> {
+        let shown = Arc::new(AtomicBool::new(false));
+        // Diarization shows its progress only after transcription, so the steps still read in order;
+        // its 0 and 1 are sent from here, whenever it really started or ended.
+        let gated: ProgressFn = {
+            let (r, shown) = (diarize_report.clone(), shown.clone());
+            Arc::new(move |f| {
+                if shown.load(Ordering::SeqCst) && f > 0.0 && f < 1.0 {
+                    r(f);
+                }
+            })
+        };
+        std::thread::scope(|s| {
+            let diarized = s.spawn(|| self.timed(id, Step::Diarize, t, settings, &gated));
+            let transcribed = self.timed(id, Step::Transcribe, t, settings, report);
+            if transcribed.is_ok() {
+                diarize_report(0.0);
+                shown.store(true, Ordering::SeqCst);
+            }
+            let diarized = diarized.join().unwrap_or_else(|_| Err(anyhow::anyhow!("diarizer panicked")));
+            transcribed.map_err(|e| (Step::Transcribe, e))?;
+            diarized.map_err(|e| (Step::Diarize, e))?;
+            diarize_report(1.0);
+            Ok(())
+        })
     }
 
     /// Progress of `step` as a `ProgressFn`; a no-op without `self.progress`.
@@ -183,7 +232,10 @@ impl Pipeline {
                 self.db().set_language(id, &transcript.language)?;
                 serde_json::to_value(transcript)?
             }
-            Step::Diarize => serde_json::to_value(self.diarizer.diarize_with_progress(&t.mixed, progress)?)?,
+            Step::Diarize => {
+                let speakers = speaker_count(&self.db().participants(id)?, t.mixed.len());
+                serde_json::to_value(self.diarizer.diarize_with_progress(&t.mixed, speakers, progress)?)?
+            }
             Step::Identify => {
                 let db = self.db();
                 let transcript: Transcript = load(&db, id, Step::Transcribe)?;
@@ -231,6 +283,17 @@ fn load<T: serde::de::DeserializeOwned>(db: &Store, id: Uuid, step: Step) -> Res
         Some(v) => Ok(serde_json::from_value(v)?),
         None => bail!("missing_step_output"),
     }
+}
+
+/// Voices to find: the participants typed before the meeting, plus the user.
+/// shortcut: None under a minute of audio, where sherpa may have fewer voice chunks than speakers;
+/// lower the bound if short meetings need it.
+pub fn speaker_count(participants: &[Participant], samples: usize) -> Option<u32> {
+    let typed = participants
+        .iter()
+        .filter(|p| p.id != "me" && !p.id.starts_with("speaker_"))
+        .count();
+    (typed > 0 && samples >= 60 * SAMPLE_RATE as usize).then(|| typed as u32 + 1)
 }
 
 /// Speaker id per turn: "me" when the mic track dominates the turn, otherwise
@@ -342,7 +405,7 @@ mod tests {
     use crate::llm::{tests::chat_reply, OpenAiStructurer};
     use crate::net::NetPolicy;
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-    use std::sync::Mutex;
+    use std::sync::{mpsc, Mutex};
 
     #[derive(Default)]
     struct FakeTranscriber(AtomicUsize);
@@ -377,7 +440,7 @@ mod tests {
         fn name(&self) -> &str {
             "fake-diar"
         }
-        fn diarize(&self, _: &[f32]) -> Result<Vec<SpeakerTurn>> {
+        fn diarize(&self, _: &[f32], _: Option<u32>) -> Result<Vec<SpeakerTurn>> {
             Ok(vec![
                 SpeakerTurn {
                     start: 0.0,
@@ -454,6 +517,66 @@ mod tests {
         let sink = seen.clone();
         p.progress = Some(Arc::new(move |r| sink.lock().unwrap().push(r)));
         seen
+    }
+
+    /// One side of a meeting point: sends, then waits for the other side.
+    struct Meet {
+        tx: mpsc::Sender<()>,
+        rx: Mutex<mpsc::Receiver<()>>,
+    }
+    impl Meet {
+        fn pair() -> (Meet, Meet) {
+            let (a_tx, a_rx) = mpsc::channel();
+            let (b_tx, b_rx) = mpsc::channel();
+            (Meet { tx: a_tx, rx: Mutex::new(b_rx) }, Meet { tx: b_tx, rx: Mutex::new(a_rx) })
+        }
+        fn wait(&self) -> Result<()> {
+            let _ = self.tx.send(());
+            match self.rx.lock().unwrap().recv_timeout(std::time::Duration::from_secs(5)) {
+                Ok(()) => Ok(()),
+                Err(_) => bail!("ran alone"),
+            }
+        }
+    }
+    struct MeetingTranscriber(Meet);
+    impl Transcriber for MeetingTranscriber {
+        fn name(&self) -> &str {
+            "fake-asr"
+        }
+        fn transcribe(&self, samples: &[f32], language: Option<&str>) -> Result<Transcript> {
+            self.0.wait()?;
+            FakeTranscriber::default().transcribe(samples, language)
+        }
+    }
+    struct MeetingDiarizer(Meet);
+    impl Diarizer for MeetingDiarizer {
+        fn name(&self) -> &str {
+            "fake-diar"
+        }
+        fn diarize(&self, samples: &[f32], speakers: Option<u32>) -> Result<Vec<SpeakerTurn>> {
+            self.0.wait()?;
+            FakeDiarizer.diarize(samples, speakers)
+        }
+    }
+
+    #[test]
+    fn transcription_and_diarization_run_together() {
+        let (store, dir, id) = setup(&[]);
+        let (a, b) = Meet::pair();
+        let mut p = pipeline(&store, &dir, Arc::new(MeetingTranscriber(a)), None);
+        p.diarizer = Arc::new(MeetingDiarizer(b));
+        p.run(id).unwrap();
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn speaker_count_adds_the_user_and_needs_a_minute() {
+        let p = |id: &str| Participant { id: id.into(), name: id.into(), email: None, confirmed: true };
+        let minute = 60 * SAMPLE_RATE as usize;
+        let typed = [p("u1"), p("u2"), p("me"), p("speaker_c")];
+        assert_eq!(speaker_count(&typed, minute), Some(3));
+        assert_eq!(speaker_count(&typed, minute - 1), None);
+        assert_eq!(speaker_count(&[p("me"), p("speaker_a")], minute), None);
     }
 
     #[test]
