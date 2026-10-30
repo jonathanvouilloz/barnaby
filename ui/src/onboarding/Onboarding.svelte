@@ -68,6 +68,11 @@
           <p class="lead">{t('onboarding.welcome.text')}</p>
           <p class="promise">{t('onboarding.welcome.promise')}</p>
           <p class="secondary">{t('onboarding.welcome.time')}</p>
+          <label class="field name">
+            <span>{t('onboarding.welcome.name')}</span>
+            <input type="text" bind:value={app.settings!.user_name} autocomplete="given-name" aria-describedby="name-hint" />
+            <span id="name-hint" class="secondary">{t('onboarding.welcome.name_hint')}</span>
+          </label>
         {:else if step === 'mic'}
           <h1 tabindex="-1" bind:this={heading}>{t('onboarding.mic.title')}</h1>
           <Mic bind:ready />
@@ -130,6 +135,7 @@
   h1:focus { outline: none; }
   .lead { font-size: 16px; }
   .promise { font-weight: 550; }
+  .name { width: min(320px, 100%); margin-top: 8px; }
 
   footer {
     display: flex; align-items: center; gap: 8px;

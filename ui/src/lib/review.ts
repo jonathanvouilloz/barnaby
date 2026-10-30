@@ -49,8 +49,9 @@ export function speakerName(
   t: (key: string, params?: Record<string, string>) => string,
 ): string {
   if (id === null) return t('speaker.unknown');
-  if (id === 'me') return t('speaker.me');
   const p = participants.find((x) => x.id === id);
+  // "Moi" is the backend's unnamed default, shown in the interface language.
+  if (id === 'me') return p && p.name !== 'Moi' ? p.name : t('speaker.me');
   if (p) return p.name;
   const anon = /^speaker_([a-z])$/.exec(id);
   return anon ? t('speaker.anon', { letter: anon[1].toUpperCase() }) : id;

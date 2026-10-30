@@ -322,6 +322,8 @@ pub struct Settings {
     pub cloud_disclosure_acknowledged: bool,
     /// The first-run onboarding was completed or skipped.
     pub onboarding_done: bool,
+    /// What the user is called in meetings, in place of "Moi"; empty when not given.
+    pub user_name: String,
 }
 
 impl Default for DictationSettings {
@@ -412,6 +414,7 @@ impl Default for Settings {
             vocabulary: Vec::new(),
             cloud_disclosure_acknowledged: false,
             onboarding_done: false,
+            user_name: String::new(),
         }
     }
 }

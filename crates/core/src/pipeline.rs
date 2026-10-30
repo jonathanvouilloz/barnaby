@@ -356,7 +356,7 @@ pub fn assign_segments(
         .collect()
 }
 
-/// Adds the user ("me") and anonymous speakers, and applies remembered spellings
+/// Adds the user ("me", named from the settings, else as last renamed) and anonymous speakers, and applies remembered spellings
 /// to names the user typed. Names stay suggestions: nothing is matched by voice.
 fn merge_participants(
     db: &Store,
@@ -369,7 +369,12 @@ fn merge_participants(
         }
     }
     if !participants.iter().any(|p| p.id == "me") {
-        let name = db.remembered_me()?.unwrap_or_else(|| "Moi".into());
+        let typed = db.settings()?.user_name.trim().to_string();
+        let name = if typed.is_empty() {
+            db.remembered_me()?.unwrap_or_else(|| "Moi".into())
+        } else {
+            typed
+        };
         participants.insert(
             0,
             Participant {
@@ -752,6 +757,25 @@ mod tests {
                 ("speaker_a", "Speaker A")
             ]
         );
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn user_name_from_settings_names_me() {
+        let (store, dir, id) = setup(&[]);
+        {
+            let db = lock(&store);
+            let mut settings = db.settings().unwrap();
+            settings.user_name = " Jon ".into();
+            db.save_settings(&settings).unwrap();
+            let other = db.create_meeting("old", &[], ProcessingMode::Local).unwrap().id;
+            db.rename_speaker(other, "me", "Jonathan").unwrap();
+        }
+        pipeline(&store, &dir, Arc::new(FakeTranscriber::default()), None)
+            .run(id)
+            .unwrap();
+        let ps = lock(&store).participants(id).unwrap();
+        assert_eq!((ps[0].id.as_str(), ps[0].name.as_str()), ("me", "Jon"));
         std::fs::remove_dir_all(dir).unwrap();
     }
 

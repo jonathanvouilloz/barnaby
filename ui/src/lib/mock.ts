@@ -27,6 +27,7 @@ let settings: Settings = {
   vocabulary: ['Barber Concept', 'Barnaby'],
   cloud_disclosure_acknowledged: false,
   onboarding_done: false,
+  user_name: '',
 };
 let webhookSecret = '';
 let llmApiKey = '';

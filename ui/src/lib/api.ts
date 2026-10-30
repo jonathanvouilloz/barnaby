@@ -81,6 +81,8 @@ export interface Settings {
   /** The user saw what leaves the machine in hybrid/api mode (spec 6). */
   cloud_disclosure_acknowledged: boolean;
   onboarding_done: boolean;
+  /** What the user is called in meetings, in place of "Moi"; empty when not given. */
+  user_name: string;
 }
 
 /** 'parakeet': fast dictation model (sherpa-onnx); 'whisper': meetings, dictation fallback. */

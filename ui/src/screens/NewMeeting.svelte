@@ -68,21 +68,22 @@
           <p class="secondary">{t('new.participants_hint')}</p>
         </div>
 
-        {#if participants.length === 0}
-          <p class="secondary none">{t('new.none')}</p>
-        {:else}
-          <ul>
-            {#each participants as p, i (p.id)}
-              <li>
-                <span class="name">{p.name}</span>
-                {#if p.email}<span class="secondary">{p.email}</span>{/if}
-                <button class="btn ghost small" aria-label={t('new.remove', { name: p.name })} onclick={() => participants.splice(i, 1)}>
-                  {t('new.remove_short')}
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
+        <ul>
+          <!-- The user, always counted by the backend: shown so nobody adds themselves twice. -->
+          <li>
+            <span class="name">{app.settings!.user_name.trim() || t('speaker.me')}</span>
+            <span class="secondary">{t('new.you')}</span>
+          </li>
+          {#each participants as p, i (p.id)}
+            <li>
+              <span class="name">{p.name}</span>
+              {#if p.email}<span class="secondary">{p.email}</span>{/if}
+              <button class="btn ghost small" aria-label={t('new.remove', { name: p.name })} onclick={() => participants.splice(i, 1)}>
+                {t('new.remove_short')}
+              </button>
+            </li>
+          {/each}
+        </ul>
 
         <form class="add" onsubmit={add}>
           <label class="field"><span>{t('new.p_name')}</span><input type="text" bind:value={name} bind:this={nameInput} autocomplete="off" /></label>
@@ -127,7 +128,6 @@
   li:hover { background: var(--fill); }
   .name { font-weight: 500; }
   li .btn { margin-left: auto; }
-  .none { padding: 4px 0; }
   .add { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
   .rec { width: 8px; height: 8px; border-radius: 50%; background: var(--rec); }
   .template {

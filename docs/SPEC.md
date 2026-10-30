@@ -240,7 +240,7 @@ Pilotage en ligne de commande d'une instance déjà lancée (`barnaby --toggle`,
 
 ## 11. Participants
 
-Phase 1 : saisie manuelle en début de réunion.
+Phase 1 : saisie manuelle en début de réunion. L’utilisateur y figure d’office, sous le prénom donné à l’onboarding ou dans Réglages (« Moi » sinon), et n’a pas à s’ajouter.
 
 Phase 2 : **Google Calendar uniquement** (v1), en lecture seule via OAuth. Toujours validé par l'utilisateur.
 

@@ -297,6 +297,10 @@
         <h2 id="s-meeting">{t('settings.meeting')}</h2>
         <div class="box">
           <label class="line">
+            <span class="lbl">{t('settings.user_name')}<span id="user-name-hint" class="secondary">{t('settings.user_name_hint')}</span></span>
+            <input class="ctl" type="text" bind:value={draft.user_name} placeholder={t('speaker.me')} autocomplete="given-name" aria-describedby="user-name-hint" />
+          </label>
+          <label class="line">
             <span class="lbl">{t('settings.model')}</span>
             <select class="ctl" value={draft.meeting.model} onchange={(e) => pickMeetingModel(e.currentTarget.value)}>
               {#each whisper as m (m.id)}<option value={m.id}>{modelLabel(m)}</option>{/each}

@@ -146,6 +146,8 @@ describe('review', () => {
     expect(speakerName('p1', people, t)).toBe('Camille');
     expect(speakerName('speaker_b', people, t)).toBe('speaker.anon:B');
     expect(speakerName('me', people, t)).toBe('speaker.me');
+    expect(speakerName('me', [{ id: 'me', name: 'Jon', email: null, confirmed: true }], t)).toBe('Jon');
+    expect(speakerName('me', [{ id: 'me', name: 'Moi', email: null, confirmed: true }], t)).toBe('speaker.me');
     expect(speakerName(null, people, t)).toBe('speaker.unknown');
   });
 });
