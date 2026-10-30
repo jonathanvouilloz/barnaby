@@ -171,3 +171,8 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : les étapes Transcription et Séparation des voix tournent ensemble (réseau d'un côté, processeur de l'autre) ; la barre affiche toujours les étapes dans l'ordre. Mistral reçoit 3 blocs de 10 min à la fois, délai par requête porté à 900 s puisque les 3 envois se partagent la connexion (remplace le délai de 300 s du 2026-10-28).
 - Écarté : file de requêtes continue (plus de code pour un gain de quelques secondes) ; envoi de la réunion entière en un seul fichier (environ 95 Mo de WAV sans compression).
 - À rouvrir si : des réunions échouent en `mistral_quota` (limite de requêtes simultanées) ou en délai dépassé sur une connexion lente.
+
+## 2026-10-30 — Prénom de l'utilisateur et ligne « Moi » fixe
+- Choix : l'onboarding (écran d'accueil) et Réglages › Réunion demandent un prénom facultatif (`Settings.user_name`) ; il nomme « me » dans les réunions traitées ensuite, avant le nom retenu d'un ancien renommage, puis « Moi ». « Nouvelle réunion » affiche l'utilisateur en tête de liste, sans bouton Retirer, « déjà compté ».
+- Écarté : nouvelle étape d'onboarding dédiée (un champ sur l'accueil suffit) ; envoyer l'utilisateur dans la liste des participants (le compte des voix l'ajoute déjà).
+- À rouvrir si : le prénom doit aussi renommer les réunions déjà traitées.

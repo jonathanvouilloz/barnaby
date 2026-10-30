@@ -1,24 +1,20 @@
 # Reprise : Barnaby
-Mise à jour : 2026-10-29
+Mise à jour : 2026-10-30
 
 ## Où on en est
-- Dernière release : `v0.4.3` (2026-10-28). README et notes de release en français à jour.
-- Retour de Jon sur ses vraies réunions Mistral en visio : 15 min de traitement pour 30 à 50 min de réunion, et une quinzaine de locuteurs pour 5 personnes. Corrigé dans `6ffbc75` sur `phase-1`, pas encore publié (décisions du 2026-10-29) :
-  - la séparation des voix cherche « participants saisis + 1 » voix dès une minute d'audio, seuil 0,7 sans liste ;
-  - transcription et séparation des voix en même temps, Mistral 3 blocs à la fois (délai 900 s par requête).
-- `main` = `fcc8db4` ; `phase-1` a en plus le handoff précédent, `6ffbc75` et ce commit de docs.
+- Dernière release : `v0.4.4` (2026-10-30), notes en français, site à jour (« Version 0.4.4 », tailles inchangées). `main` = `phase-1`.
+- Contenu : nombre de voix = participants saisis + 1 (dès une minute), transcription et séparation des voix en même temps, Mistral 3 blocs à la fois, prénom de l'utilisateur (onboarding et Réglages › Réunion) et ligne « Moi » fixe dans « Nouvelle réunion ».
 
 ## Prochaine action
-1. Jon installe l'artefact de la CI run 40970261598 (https://github.com/jonathanvouilloz/barnaby/actions/runs/40970261598), se retire de la liste des participants s'il s'y était mis, relance le traitement de sa réunion à 5 et note : nombre de locuteurs, durée totale (le journal donne la durée de chaque étape et de chaque bloc Mistral).
-2. Si c'est bon : tag `v0.4.4` avec son accord, notes en français.
-3. Ensuite, au choix de Jon : séparation des voix sur plusieurs cœurs (voir Bloquants), test de la séparation des voix de Voxtral 3 sur une réunion entière.
+1. Jon installe `v0.4.4`, met son prénom dans Réglages › Réunion, relance sa réunion à 5 (sans s'ajouter) et note : nombre de locuteurs, durée totale (le journal donne la durée de chaque étape et de chaque bloc Mistral).
+2. Ensuite, au choix de Jon : séparation des voix sur plusieurs cœurs (voir Bloquants), test de la séparation des voix de Voxtral 3 sur une réunion entière.
 
-## Vérifications (2026-10-29)
-- `cargo test -p barnaby-core` : 54 ok (nouveaux : `blocks_keep_their_order_and_offsets`, `transcription_and_diarization_run_together`, `speaker_count_adds_the_user_and_needs_a_minute`).
-- `cargo clippy -p barnaby-core --all-targets -- -D warnings` : propre. Clippy du workspace impossible sur le VPS (alsa, glib manquants).
-- `cd ui && bun test` : 45 ok ; `bun run check` : 0 erreur.
-- CI run 40970261598 (`phase-1`, `6ffbc75`) : checks, Linux, Windows, macOS verts (clippy workspace et tests engine compris).
-- Non vérifié : gain de temps réel, nombre de locuteurs sur une vraie réunion, comportement de Mistral avec 3 requêtes simultanées (risque de `mistral_quota`).
+## Vérifications (2026-10-30)
+- `cargo test -p barnaby-core` : 55 ok (nouveau : `user_name_from_settings_names_me`).
+- `cd ui && bun test` : 45 ok (`speaker names` étendu) ; `bun run check` : 0 erreur.
+- Captures mock (onboarding, Nouvelle réunion, Réglages ; clair, sombre, 1440 et 900 px) dans `design/shots/` : conformes à `refs.md`.
+- CI run 41092435001 (tag `v0.4.4`) : checks, Linux, Windows, macOS, release verts. `curl https://mybarnaby.app` : « Version 0.4.4 ».
+- Non vérifié : gain de temps réel, nombre de locuteurs sur une vraie réunion, Mistral avec 3 requêtes simultanées (risque de `mistral_quota`), clippy du workspace sur le VPS (fait par la CI).
 
 ## État non commité
 - Rien hors `barnaby.zip` et `.wrangler/` (ignorés). Branche `phase-1`.
@@ -26,12 +22,12 @@ Mise à jour : 2026-10-29
 ## Bloquants et actions du propriétaire
 - Le jeton Cloudflare du serveur (`CLOUDFLARE_API_TOKEN`) n'a pas le droit DNS : enregistrements DNS à faire par Jon dans le tableau de bord.
 - Site : vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`).
-- Toujours en attente côté Jon : tests de la `v0.4.0` et `v0.4.3` sous Windows (pastille, son, raccourcis, Tester la clé, export), `.dmg` sur un vrai Mac.
+- Toujours en attente côté Jon : tests de la `v0.4.0` à `v0.4.4` sous Windows (pastille, son, raccourcis, Tester la clé, export), `.dmg` sur un vrai Mac.
 - À trancher : séparation des voix limitée à un cœur (sherpa-rs 0.6.8 fixe `num_threads: 1`, il faudrait appeler `sherpa-rs-sys` directement) ; sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral ; réunion à un seul micro (tout le monde étiqueté « Moi ») ; fusion de deux locuteurs à la relecture.
 - Mineurs laissés de côté : `hasDestination` ignore un chemin fait d'espaces alors que le Rust l'accepte ; en lecture seule, les zones traitées restent surlignées ; « Choisir un dossier » ouvre Réglages sans défiler jusqu'à Destinations ; sourdine du son comptée depuis le micro ; Linux sans `_NET_ACTIVE_WINDOW` ne colle plus ; raccourcis rétablis seulement au `blur` ; F25+ signalées « déjà prises » ; webhook : 30 s sur hôte muet, régénérer écrase le secret sans confirmation ; commentaire de `sound_cues` dans `model.rs` périmé.
 
 ## En production
-- GitHub : release `v0.4.3`, dépôt public, README à jour sur `main`. Après chaque tag, remplacer les notes générées par des notes en français (format de `v0.4.3`).
+- GitHub : release `v0.4.4`, dépôt public, README à jour sur `main`. Après chaque tag, remplacer les notes générées par des notes en français (format de `v0.4.3`).
 - Site : https://mybarnaby.app. Publication à la main : `bunx wrangler@4 pages deploy site --project-name barnaby --branch main`. Tailles et version dans les cartes de L'installer à mettre à jour à chaque release.
 
 ## Pièges connus
