@@ -3,6 +3,8 @@ mod dictation;
 mod inject;
 mod meeting;
 mod overlay;
+#[cfg(target_os = "linux")]
+mod portal;
 mod sched;
 mod shortcuts;
 mod state;
