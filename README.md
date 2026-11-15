@@ -56,6 +56,7 @@ L’app n’est pas signée (la signature coûte cher pour un projet gratuit), d
 
 - **Windows** : clique sur « Informations complémentaires », puis sur « Exécuter quand même ».
 - **Mac** : ouvre Réglages Système, puis Confidentialité et sécurité, et clique sur « Ouvrir quand même ». Barnaby demande ensuite l’accès au micro, au son de l’ordinateur et à l’Accessibilité (pour coller le texte). Après une mise à jour, macOS peut les redemander.
+- **Linux sous Wayland** : les raccourcis passent par GNOME 48 ou plus récent (ou KDE Plasma 6). GNOME demande une fois l’autorisation « bureau à distance », qui sert à coller le texte. Avec une version plus ancienne, lie `barnaby --toggle` à un raccourci dans les réglages du clavier. La petite bulle de dictée reste où le bureau la place.
 
 ## Premiers pas
 
