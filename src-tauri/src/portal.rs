@@ -128,9 +128,59 @@ fn request<B: serde::Serialize + zbus::zvariant::DynamicType>(p: &Portal, token:
     Ok(())
 }
 
+/// Evdev keycode of the W3C codes whose character depends on the layout (QWERTZ, AZERTY...).
+fn evdev(code: &str) -> Option<u32> {
+    const ROWS: [(&str, u32); 4] = [("1234567890", 2), ("QWERTYUIOP", 16), ("ASDFGHJKL", 30), ("ZXCVBNM", 44)];
+    if let Some(c) = code.strip_prefix("Key").or_else(|| code.strip_prefix("Digit")).filter(|c| c.len() == 1) {
+        return ROWS.iter().find_map(|(row, start)| row.find(c).map(|i| start + i as u32));
+    }
+    Some(match code {
+        "Minus" => 12,
+        "Equal" => 13,
+        "BracketLeft" => 26,
+        "BracketRight" => 27,
+        "Semicolon" => 39,
+        "Quote" => 40,
+        "Backquote" => 41,
+        "Backslash" => 43,
+        "Comma" => 51,
+        "Period" => 52,
+        "Slash" => 53,
+        "IntlBackslash" => 86,
+        _ => return None,
+    })
+}
+
+/// Keysym that the physical key `code` types with the active layout, without modifier.
+/// GTK main thread only (shortcuts are registered from it).
+fn layout_keysym(code: &str) -> Option<String> {
+    let keycode = evdev(code)? + 8;
+    let keymap = gdk::Keymap::for_display(&gdk::Display::default()?)?;
+    let (_, keyval) = keymap.entries_for_keycode(keycode).into_iter().find(|(k, _)| k.group() == 0 && k.level() == 0)?;
+    gdk::keys::Key::from(keyval).name().map(|n| n.to_string())
+}
+
 /// Tauri accelerator (`Ctrl+Alt+Space`, `Super+Shift+R`) → xdg shortcut (`CTRL+ALT+space`).
-/// Key names are xkb keysyms; an unknown one is passed as is and the compositor asks the user.
+/// The UI records physical keys, the portal wants the keysym they type: on a Swiss layout,
+/// `BracketRight` types `dead_diaeresis` and `KeyZ` types `y`.
 pub fn trigger(accel: &str) -> String {
+    let base = static_trigger(accel);
+    let key = accel.rsplit('+').next().unwrap_or("");
+    // The UI stores letters and digits bare (`R`, `1`), every other key as its W3C code.
+    let code = match key.chars().next() {
+        Some(c) if key.len() == 1 && c.is_ascii_alphabetic() => format!("Key{key}"),
+        Some(_) if key.len() == 1 => format!("Digit{key}"),
+        _ => key.to_string(),
+    };
+    match (layout_keysym(&code), base.rsplit_once('+')) {
+        (Some(sym), Some((mods, _))) => format!("{mods}+{sym}"),
+        (Some(sym), None) => sym,
+        (None, _) => base,
+    }
+}
+
+/// Key names are xkb keysyms of a US layout; an unknown one is passed as is and the compositor asks the user.
+fn static_trigger(accel: &str) -> String {
     let parts: Vec<&str> = accel.split('+').collect();
     let (key, mods) = parts.split_last().unwrap_or((&"", &[]));
     let mut out: Vec<String> = mods
@@ -182,7 +232,7 @@ pub fn trigger(accel: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::trigger;
+    use super::{evdev, static_trigger as trigger};
 
     #[test]
     fn accelerators_become_xdg_triggers() {
@@ -192,5 +242,6 @@ mod tests {
         assert_eq!(trigger("F9"), "F9");
         assert_eq!(trigger("Alt+ArrowUp"), "ALT+Up");
         assert_eq!(trigger("Ctrl+Numpad1"), "CTRL+KP_1");
+        assert_eq!((evdev("KeyQ"), evdev("KeyZ"), evdev("Digit0"), evdev("BracketRight")), (Some(16), Some(44), Some(11), Some(27)));
     }
 }

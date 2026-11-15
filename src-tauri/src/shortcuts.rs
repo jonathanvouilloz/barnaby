@@ -49,13 +49,14 @@ pub fn register(handle: &AppHandle, settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
-/// Wayland: the compositor owns the keys. The id carries the accelerator, so a changed one
+/// Wayland: the compositor owns the keys. The id carries the trigger, so a changed one
 /// is a new shortcut and gets its preferred trigger (the portal keeps the user's choice per id).
 #[cfg(target_os = "linux")]
 fn register_portal(handle: &AppHandle, bindings: &[(&str, Action)]) {
     static LISTENING: std::sync::Once = std::sync::Once::new();
-    let actions: Vec<(String, Action)> = bindings.iter().map(|(accel, action)| (format!("{}:{accel}", action.name()), *action)).collect();
-    let shortcuts = actions.iter().map(|(id, a)| (id.clone(), crate::portal::trigger(id.split_once(':').map_or("", |p| p.1)), a.description())).collect();
+    let triggers: Vec<String> = bindings.iter().map(|(accel, _)| crate::portal::trigger(accel)).collect();
+    let actions: Vec<(String, Action)> = bindings.iter().zip(&triggers).map(|((_, action), t)| (format!("{}:{t}", action.name()), *action)).collect();
+    let shortcuts = actions.iter().zip(triggers).map(|((id, a), t)| (id.clone(), t, a.description())).collect();
     *lock(&PORTAL_ACTIONS) = actions;
     let handle = handle.clone();
     LISTENING.call_once(|| {

@@ -305,6 +305,7 @@ dependencies = [
  "chrono",
  "core-foundation",
  "enigo",
+ "gdk",
  "keyring",
  "log",
  "serde",
