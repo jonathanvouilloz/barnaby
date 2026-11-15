@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-22.04, macos-14]
+        os: [windows-latest, ubuntu-22.04, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       # Portable whisper.cpp on x86: by default ggml targets the build machine's CPU, which may
@@ -52,6 +52,10 @@ jobs:
       - name: UI deps
         working-directory: ui
         run: bun install --frozen-lockfile
+      # sherpa-rs-sys copies its libraries into target/*/deps before cargo creates it on a cold cache.
+      - name: Target dirs
+        shell: bash
+        run: mkdir -p target/debug/deps target/release/deps
       - name: Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Engine tests

@@ -32,6 +32,11 @@ arboard = "3.7"
 enigo = "0.6"
 keyring = "4.2"
 
+# Wayland global shortcuts (xdg-desktop-portal); already pulled in by the notification plugin.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "5"
+gdk = "0.18"
+
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
 windows = { version = "0.61", features = ["Win32_System_Com", "Win32_UI_Accessibility"] }

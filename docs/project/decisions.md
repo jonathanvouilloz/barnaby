@@ -176,3 +176,14 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Choix : l'onboarding (écran d'accueil) et Réglages › Réunion demandent un prénom facultatif (`Settings.user_name`) ; il nomme « me » dans les réunions traitées ensuite, avant le nom retenu d'un ancien renommage, puis « Moi ». « Nouvelle réunion » affiche l'utilisateur en tête de liste, sans bouton Retirer, « déjà compté ».
 - Écarté : nouvelle étape d'onboarding dédiée (un champ sur l'accueil suffit) ; envoyer l'utilisateur dans la liste des participants (le compte des voix l'ajoute déjà).
 - À rouvrir si : le prénom doit aussi renommer les réunions déjà traitées.
+
+## 2026-11-15 — Wayland : raccourcis et collage par les portails
+- Choix : sous Wayland (GNOME), les raccourcis globaux passent par le portail `GlobalShortcuts` (`src-tauri/src/portal.rs`), le Ctrl+V par le portail `RemoteDesktop` avec jeton de restauration gardé dans `remote-desktop.token` (une seule autorisation). L'id d'un raccourci porte son déclencheur xdg (`dictation:CTRL+ALT+space`), sinon GNOME garde l'ancien choix ; la touche physique est traduite en keysym de la disposition active (GDK), car la touche `BracketRight` tape `dead_diaeresis` en suisse.
+- Écarté : le grab X11 de tauri-plugin-global-shortcut (ne reçoit rien quand une fenêtre Wayland a le focus, dont Barnaby) ; le XTEST d'enigo via XWayland (passe par le même portail, sans garder l'autorisation : GNOME redemandait) ; la crate `ashpd` (zbus et gdk sont déjà dans l'arbre).
+- À rouvrir si : un autre compositeur (KDE) refuse le format des déclencheurs, ou l'icône « contrôle à distance » à chaque collage gêne.
+
+## 2026-11-15 — Pastille de dictée sous Wayland : on la laisse au centre
+- Choix : sous GNOME Wayland, la pastille reste où GNOME la met (centre) et peut passer derrière une fenêtre cliquée. Jon s'en accommode.
+- Écarté : lancer toute l'app sous XWayland (`GDK_BACKEND=x11`) pour pouvoir la placer en bas et au premier plan : flou à l'échelle 125 % de Jon. GNOME n'a pas de layer-shell.
+- À rouvrir si : GNOME active `xwayland-native-scaling` par défaut, ou une extension GNOME devient acceptable.
+

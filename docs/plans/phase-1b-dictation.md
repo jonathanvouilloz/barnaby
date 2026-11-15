@@ -17,7 +17,7 @@ Contrat déjà figé (commit de ce plan) :
 - `llm` : le prompt inclut le vocabulaire ; `api_key` est envoyée en `Authorization: Bearer`. Les en-têtes OpenRouter facultatifs (`HTTP-Referer`, `X-Title: Barnaby`) sont acceptés. Le mode `hybrid` autorise l'hôte distant (c'est déjà le comportement de `NetPolicy`) : test à l'appui.
 
 ## Lot F — moteur et app (`crates/engine`, `src-tauri`, CI)
-- Moteur : `ParakeetTranscriber` (sherpa-rs `TransducerRecognizer`, `model_type = "nemo_transducer"`, greedy) qui implémente `Transcriber`. Entrée de catalogue `parakeet-v3` (archive `sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2`, sha256 `5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf`, plusieurs fichiers à extraire : encoder, decoder, joiner, tokens).
+- Moteur : `ParakeetTranscriber` (sherpa-rs `TransducerRecognizer`, `model_type = "nemo_transducer"`, greedy) qui implémente `Transcriber`. Entrée de catalogue `parakeet-v3` (archive `sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2`, sha256 `1495e91b59d7fc53ddca91f3431758ec99f8fa253fdb0e1e851be0f72b14b0f9 (archive republiée le 2026-11-07)`, plusieurs fichiers à extraire : encoder, decoder, joiner, tokens).
 - Dictée en continu : pendant l'enregistrement, VAD Silero en flux. Chaque segment de parole terminé (pause d'environ 0,5 s, ou 20 s au maximum) est transcrit aussitôt en arrière-plan, avec la priorité dictée. À l'arrêt, seul le dernier segment reste à transcrire. Ensuite : assemblage, correction du vocabulaire, collage. Objectif : moins de 0,5 s après l'arrêt sur un PC de bureau, pour 30 à 60 s de dictée.
 - Préchargement du modèle de dictée au démarrage (fil d'arrière-plan) et après un changement de réglage.
 - `dictation-level` émis environ 20 fois par seconde pendant la dictée.

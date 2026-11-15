@@ -64,7 +64,7 @@ static CATALOG: &[ModelEntry] = &[
         name: "Parakeet v3",
         size_mb: 487,
         url: "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2",
-        sha256: "5793d0fd397c5778d2cf2126994d58e9d56b1be7c04d13c7a15bb1b4eafb16bf", file_name: "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/tokens.txt",
+        sha256: "1495e91b59d7fc53ddca91f3431758ec99f8fa253fdb0e1e851be0f72b14b0f9", file_name: "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/tokens.txt",
     },
     ModelEntry {
         id: "pyannote-segmentation-3-0",

@@ -31,6 +31,11 @@ pub fn register(handle: &AppHandle, settings: &Settings) -> Result<(), String> {
         (&s.marker, Action::Marker),
         (&s.review_queue, Action::ReviewQueue),
     ];
+    #[cfg(target_os = "linux")]
+    if crate::portal::wanted() {
+        register_portal(handle, &bindings);
+        return Ok(());
+    }
     for (accel, action) in bindings {
         let result = gs.on_shortcut(accel, move |handle, _, event| {
             let app = handle.state::<Arc<App>>().inner().clone();
@@ -44,9 +49,45 @@ pub fn register(handle: &AppHandle, settings: &Settings) -> Result<(), String> {
     Ok(())
 }
 
+/// Wayland: the compositor owns the keys. The id carries the trigger, so a changed one
+/// is a new shortcut and gets its preferred trigger (the portal keeps the user's choice per id).
+#[cfg(target_os = "linux")]
+fn register_portal(handle: &AppHandle, bindings: &[(&str, Action)]) {
+    static LISTENING: std::sync::Once = std::sync::Once::new();
+    let triggers: Vec<String> = bindings.iter().map(|(accel, _)| crate::portal::trigger(accel)).collect();
+    let actions: Vec<(String, Action)> = bindings.iter().zip(&triggers).map(|((_, action), t)| (format!("{}:{t}", action.name()), *action)).collect();
+    let shortcuts = actions.iter().zip(triggers).map(|((id, a), t)| (id.clone(), t, a.description())).collect();
+    *lock(&PORTAL_ACTIONS) = actions;
+    let handle = handle.clone();
+    LISTENING.call_once(|| {
+        let result = crate::portal::listen(move |id, pressed| {
+            let action = lock(&PORTAL_ACTIONS).iter().find(|(i, _)| i == id).map(|(_, a)| *a);
+            if let Some(action) = action {
+                let app = handle.state::<Arc<App>>().inner().clone();
+                action.run(&app, if pressed { ShortcutState::Pressed } else { ShortcutState::Released });
+            }
+        });
+        if let Err(e) = result {
+            log::warn!("shortcut portal listen: {e:#}");
+        }
+    });
+    // Off the caller's thread: the compositor may show a dialog and wait for the user.
+    std::thread::spawn(move || {
+        if let Err(e) = crate::portal::bind(shortcuts) {
+            log::warn!("shortcut portal bind: {e:#}");
+        }
+    });
+}
+
+/// Ids bound through the portal and their actions.
+#[cfg(target_os = "linux")]
+static PORTAL_ACTIONS: Mutex<Vec<(String, Action)>> = Mutex::new(Vec::new());
+
 /// Lets the settings capture a key combination that is currently bound (it would never reach the webview).
 pub fn suspend(handle: &AppHandle) {
     let _ = handle.global_shortcut().unregister_all();
+    #[cfg(target_os = "linux")]
+    crate::portal::unbind();
 }
 
 /// Whether another application already holds `accel` system-wide. Call while suspended,
@@ -69,6 +110,27 @@ enum Action {
 }
 
 impl Action {
+    #[cfg(target_os = "linux")]
+    fn name(self) -> &'static str {
+        match self {
+            Action::Dictation { .. } => "dictation",
+            Action::Meeting => "meeting",
+            Action::Marker => "marker",
+            Action::ReviewQueue => "review",
+        }
+    }
+
+    /// Shown by the compositor (GNOME Settings › Apps), in the interface's default language.
+    #[cfg(target_os = "linux")]
+    fn description(self) -> &'static str {
+        match self {
+            Action::Dictation { .. } => "Dictée",
+            Action::Meeting => "Démarrer ou arrêter une réunion",
+            Action::Marker => "Marqueur de réunion",
+            Action::ReviewQueue => "File de relecture",
+        }
+    }
+
     fn run(self, app: &Arc<App>, state: ShortcutState) {
         let pressed = state == ShortcutState::Pressed;
         match self {

@@ -24,8 +24,10 @@ pub fn create(handle: &AppHandle) -> tauri::Result<()> {
         // Windows: shown once here, never re-shown (see `show`).
         .visible(cfg!(target_os = "windows"))
         .build()?;
-    // Click-through: the pill never catches the mouse.
-    let _ = w.set_ignore_cursor_events(true);
+    // Click-through: the pill never catches the mouse. Linux: only once shown (see `show`).
+    if !cfg!(target_os = "linux") {
+        let _ = w.set_ignore_cursor_events(true);
+    }
     // Not `.position(OFF_SCREEN)`: tao ignores a start position outside every monitor.
     hide(handle);
     Ok(())
@@ -48,6 +50,9 @@ pub fn show(handle: &AppHandle) {
     if !cfg!(target_os = "windows") {
         let _ = w.show();
     }
+    // tao unwraps the GdkWindow, which a never-shown window does not have yet: abort, not an error.
+    #[cfg(target_os = "linux")]
+    let _ = w.set_ignore_cursor_events(true);
     raise(&w);
 }
 
