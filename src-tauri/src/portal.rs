@@ -80,7 +80,7 @@ pub fn bind(shortcuts: Vec<(String, String, &str)>) -> Result<()> {
     let token = format!("barnaby{}", TOKEN.fetch_add(1, Ordering::Relaxed));
     let session = format!("{PATH}/session/{}/{token}", sender(p));
     let opts = HashMap::from([("handle_token", Value::from(token.as_str())), ("session_handle_token", Value::from(token.as_str()))]);
-    request(p, &token, "CreateSession", &(opts,))?;
+    request(p, IFACE, &token, "CreateSession", &(opts,))?;
     *slot = Some(session.clone());
     drop(slot);
     let list: Vec<(&str, HashMap<&str, Value>)> = shortcuts
@@ -89,7 +89,7 @@ pub fn bind(shortcuts: Vec<(String, String, &str)>) -> Result<()> {
         .collect();
     let token = format!("barnaby{}", TOKEN.fetch_add(1, Ordering::Relaxed));
     let opts = HashMap::from([("handle_token", Value::from(token.as_str()))]);
-    request(p, &token, "BindShortcuts", &(ObjectPath::try_from(session.as_str())?, list, "", opts))
+    request(p, IFACE, &token, "BindShortcuts", &(ObjectPath::try_from(session.as_str())?, list, "", opts)).map(drop)
 }
 
 pub fn unbind() {
@@ -98,6 +98,42 @@ pub fn unbind() {
             close(p, &old);
         }
     }
+}
+
+const REMOTE: &str = "org.freedesktop.portal.RemoteDesktop";
+/// Where the remote-desktop restore token lives: with it, GNOME asks once, not on every paste.
+pub static TOKEN_FILE: OnceLock<std::path::PathBuf> = OnceLock::new();
+
+/// Ctrl+V through the RemoteDesktop portal. Xwayland's XTEST goes through the same portal
+/// but cannot keep the permission, so GNOME asked again and again. Evdev keycodes: Ctrl 29, V 47.
+pub fn paste() -> Result<()> {
+    let Some(p) = portal() else { bail!("no portal") };
+    let token = || format!("barnaby{}", TOKEN.fetch_add(1, Ordering::Relaxed));
+    let t = token();
+    let session = format!("{PATH}/session/{}/{t}", sender(p));
+    request(p, REMOTE, &t, "CreateSession", &(HashMap::from([("handle_token", Value::from(t.as_str())), ("session_handle_token", Value::from(t.as_str()))]),))?;
+    let result = (|| {
+        let path = ObjectPath::try_from(session.as_str())?;
+        let saved = TOKEN_FILE.get().and_then(|f| std::fs::read_to_string(f).ok()).unwrap_or_default();
+        let t = token();
+        // types 1 = keyboard; persist_mode 2 = until the user revokes it.
+        let mut opts = HashMap::from([("handle_token", Value::from(t.as_str())), ("types", Value::from(1u32)), ("persist_mode", Value::from(2u32))]);
+        if !saved.trim().is_empty() {
+            opts.insert("restore_token", Value::from(saved.trim()));
+        }
+        request(p, REMOTE, &t, "SelectDevices", &(&path, opts))?;
+        let t = token();
+        let results = request(p, REMOTE, &t, "Start", &(&path, "", HashMap::from([("handle_token", Value::from(t.as_str()))])))?;
+        if let (Some(file), Some(new)) = (TOKEN_FILE.get(), results.get("restore_token").and_then(|v| String::try_from(v.clone()).ok())) {
+            let _ = std::fs::write(file, new);
+        }
+        for (key, state) in [(29i32, 1u32), (47, 1), (47, 0), (29, 0)] {
+            p.conn.call_method(Some(DEST), PATH, Some(REMOTE), "NotifyKeyboardKeycode", &(&path, HashMap::<&str, Value>::new(), key, state))?;
+        }
+        Ok(())
+    })();
+    close(p, &session);
+    result
 }
 
 fn close(p: &Portal, session: &str) {
@@ -110,7 +146,7 @@ fn sender(p: &Portal) -> String {
 }
 
 /// Calls `method` and waits for its `Request.Response`, subscribed before the call so it cannot be missed.
-fn request<B: serde::Serialize + zbus::zvariant::DynamicType>(p: &Portal, token: &str, method: &str, body: &B) -> Result<()> {
+fn request<B: serde::Serialize + zbus::zvariant::DynamicType>(p: &Portal, iface: &str, token: &str, method: &str, body: &B) -> Result<HashMap<String, OwnedValue>> {
     let path = format!("{PATH}/request/{}/{token}", sender(p));
     let rule = MatchRule::builder()
         .msg_type(zbus::message::Type::Signal)
@@ -119,13 +155,13 @@ fn request<B: serde::Serialize + zbus::zvariant::DynamicType>(p: &Portal, token:
         .path(path)?
         .build();
     let mut responses = MessageIterator::for_match_rule(rule, &p.conn, Some(1))?;
-    p.conn.call_method(Some(DEST), PATH, Some(IFACE), method, body)?;
+    p.conn.call_method(Some(DEST), PATH, Some(iface), method, body)?;
     let Some(msg) = responses.next() else { bail!("{method}: no response") };
-    let (code, _) = msg?.body().deserialize::<(u32, HashMap<String, OwnedValue>)>()?;
+    let (code, results) = msg?.body().deserialize::<(u32, HashMap<String, OwnedValue>)>()?;
     if code != 0 {
         bail!("{method}: response {code}");
     }
-    Ok(())
+    Ok(results)
 }
 
 /// Evdev keycode of the W3C codes whose character depends on the layout (QWERTZ, AZERTY...).

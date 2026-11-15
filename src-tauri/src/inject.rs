@@ -52,6 +52,12 @@ fn simulate_paste() -> Result<()> {
             return Ok(());
         }
     }
+    if wayland {
+        match crate::portal::paste() {
+            Ok(()) => return Ok(()),
+            Err(e) => log::info!("portal paste: {e:#}"),
+        }
+    }
     enigo_paste()
 }
 

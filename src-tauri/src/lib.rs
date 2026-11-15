@@ -58,6 +58,8 @@ pub fn run() {
             std::fs::create_dir_all(data_dir.join("models"))?;
             let store = Store::open(&data_dir.join("barnaby.db"))?;
             let (jobs, rx) = mpsc::channel();
+            #[cfg(target_os = "linux")]
+            let _ = portal::TOKEN_FILE.set(data_dir.join("remote-desktop.token"));
             let app = Arc::new(App::new(handle.clone(), store, data_dir, jobs));
             handle.manage(app.clone());
 
