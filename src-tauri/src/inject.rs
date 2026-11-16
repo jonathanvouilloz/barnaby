@@ -92,17 +92,16 @@ fn simulate_paste() -> Result<()> {
 fn enigo_paste() -> Result<()> {
     use enigo::{Direction, Enigo, Key, Keyboard, Settings};
     let mut enigo = Enigo::new(&Settings::default()).context("input_unavailable")?;
-    if cfg!(target_os = "linux") {
-        enigo.key(Key::Shift, Direction::Press).context("paste_failed")?;
-        let click = enigo.key(Key::Insert, Direction::Click);
-        enigo.key(Key::Shift, Direction::Release).context("paste_failed")?;
-        return click.context("paste_failed");
-    }
-    let modifier = if cfg!(target_os = "macos") { Key::Meta } else { Key::Control };
-    enigo.key(modifier, Direction::Press).context("paste_failed")?;
+    // Linux: Shift+Insert (see `simulate_paste`); `Key::Insert` exists only on Windows and Linux.
+    #[cfg(target_os = "linux")]
+    let (modifier, v) = (Key::Shift, Key::Insert);
     // macOS: the V key by position (kVK_ANSI_V). `Unicode('v')` looks the layout up through
     // text-input APIs that abort when called off the main thread, as here.
-    let v = if cfg!(target_os = "macos") { Key::Other(9) } else { Key::Unicode('v') };
+    #[cfg(target_os = "macos")]
+    let (modifier, v) = (Key::Meta, Key::Other(9));
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    let (modifier, v) = (Key::Control, Key::Unicode('v'));
+    enigo.key(modifier, Direction::Press).context("paste_failed")?;
     let click = enigo.key(v, Direction::Click);
     enigo.key(modifier, Direction::Release).context("paste_failed")?;
     click.context("paste_failed")
