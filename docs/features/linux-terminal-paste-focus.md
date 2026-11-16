@@ -1,6 +1,15 @@
 # Linux : collage dans les terminaux et pastille sans vol de focus
 
-> **Statut** : DONE (testé à la main, Linux seulement) · **Livré** : 2026-11-16 · **Commits** : `b7fcce3` (branche `fix/linux-terminal-paste-focus`, base `333b486`)
+> **Statut** : DONE (testé à la main, Linux seulement) · **Livré** : 2026-11-16 en `v0.4.5` · **Commits** : `b7fcce3` (PR #3), `d583d61` (correctif build macOS)
+
+## Etat session 2026-11-16
+
+**Fait :** collage Shift+Insert + PRIMARY sous Linux ; XWayland forcé sur GNOME Wayland (pastille sans vol de focus) ; PR #3 fusionnée ; correctif build macOS (`Key::Insert` absent d'enigo sur Mac, `#[cfg]` par OS dans `enigo_paste`) ; release `v0.4.5` (notes FR) et site publiés.
+**Prochain :** rien sur cette feature. À surveiller : retour d'un utilisateur GNOME en échelle fractionnaire (flou XWayland) ou d'un testeur Mac (pastille et focus).
+**Pieges :** `if cfg!(...)` compile les deux branches : une variante d'enum propre à un OS demande `#[cfg]`. Tag `v0.4.5` reposé une fois (première CI rouge sur macOS, aucune release publiée). wrangler depuis `!` échoue (non interactif) : `wrangler login` dans un vrai terminal ; erreur CSRF = ancien onglet Cloudflare ouvert.
+**Commit :** 5e93202 site: v0.4.5
+
+---
 
 ## Ce que ça fait
 Sous Linux, le texte dicté se colle aussi bien dans un terminal (Ptyxis, VTE, xterm) que dans une appli graphique (VS Code). Sur GNOME Wayland, la pastille d'enregistrement ne vole plus le focus de la fenêtre où l'on dicte.

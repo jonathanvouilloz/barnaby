@@ -1,19 +1,17 @@
 # Reprise : Barnaby
-Mise à jour : 2026-11-15
+Mise à jour : 2026-11-16
 
 ## Où on en est
-- Dernière release : `v0.4.4`. Branche `fix/parakeet-wayland-shortcuts` poussée, PR #2 vers `main`, pas fusionnée.
-- PR #2 : SHA-256 de Parakeet v3 (archive republiée le 2026-11-07), raccourcis et collage sous Wayland par les portails, plantage au lancement sous Linux (`set_ignore_cursor_events` sur une pastille jamais affichée : tao fait `unwrap`, la v0.4.4 plante sur le laptop de Jon).
-- Testé par Jon sur son laptop (Fedora 44, GNOME 50, Wayland, clavier suisse) : lancement, téléchargement de Parakeet, dictée au raccourci pendant l'onboarding.
+- Dernière release : `v0.4.5` (GitHub + site mybarnaby.app). Contient la PR #2 (Parakeet, portails Wayland, plantage Linux) et la PR #3 (collage Shift+Insert, XWayland sur GNOME) → `docs/features/linux-terminal-paste-focus.md`.
+- Testé par Jon (Fedora 44, GNOME Wayland, échelle 100 %) : dictée collée dans Ptyxis et VS Code, focus gardé.
 
 ## Prochaine action
-1. Vérifier la CI de la PR #2 (Windows et macOS compilent sans `portal.rs`, réservé à Linux), puis fusionner dans `main` avec l'accord de Jon et sortir une `v0.4.5`.
-2. Confirmer avec Jon que l'autorisation « bureau à distance » n'est demandée qu'une fois (jeton `remote-desktop.token`), y compris après redémarrage de Barnaby.
+1. Confirmer avec Jon que l'autorisation « bureau à distance » n'est demandée qu'une fois, y compris après redémarrage de Barnaby.
+2. Tests Windows et `.dmg` sur un vrai Mac toujours en attente (voir Bloquants).
 
-## Vérifications (2026-11-15)
-- `cargo clippy -p barnaby --release --all-targets -D warnings` propre ; test `accelerators_become_xdg_triggers` ok.
-- Portail : 4 raccourcis liés sans dialogue (`dconf dump /org/gnome/settings-daemon/global-shortcuts/`). Un déclencheur pris ou non valide ouvre un dialogue GNOME qui attend l'utilisateur.
-- Non vérifié : collage par le portail RemoteDesktop (demande un clic de Jon), CI de la PR, autres compositeurs.
+## Vérifications (2026-11-16)
+- `cargo clippy -p barnaby` propre sous Linux ; CI du tag `v0.4.5` verte sur les trois OS.
+- Non vérifié : flou XWayland en échelle fractionnaire chez d'autres utilisateurs ; pastille et focus sur Mac.
 
 ## État non commité
 - Rien.
