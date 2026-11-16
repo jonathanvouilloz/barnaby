@@ -22,7 +22,7 @@ Mise à jour : 2026-11-15
 - Le jeton Cloudflare du serveur (`CLOUDFLARE_API_TOKEN`) n'a pas le droit DNS : enregistrements DNS à faire par Jon dans le tableau de bord.
 - Site : vidéo YouTube et lien de don à poser (sections cachées dans `site/index.html`).
 - Toujours en attente côté Jon : tests de la `v0.4.0` à `v0.4.4` sous Windows (pastille, son, raccourcis, Tester la clé, export), `.dmg` sur un vrai Mac.
-- Wayland GNOME : la pastille reste au centre et peut passer derrière (décision du 2026-11-15).
+- Wayland GNOME : app lancée sous XWayland (pastille placée, sans vol de focus), floue en échelle fractionnaire sans `xwayland-native-scaling` (décision du 2026-11-16).
 - À trancher : séparation des voix limitée à un cœur (sherpa-rs 0.6.8 fixe `num_threads: 1`, il faudrait appeler `sherpa-rs-sys` directement) ; sélecteur de micro dans l'onboarding ; bouton « Retranscrire » avec Mistral ; réunion à un seul micro (tout le monde étiqueté « Moi ») ; fusion de deux locuteurs à la relecture.
 - Mineurs laissés de côté : `hasDestination` ignore un chemin fait d'espaces alors que le Rust l'accepte ; en lecture seule, les zones traitées restent surlignées ; « Choisir un dossier » ouvre Réglages sans défiler jusqu'à Destinations ; sourdine du son comptée depuis le micro ; Linux sans `_NET_ACTIVE_WINDOW` ne colle plus ; raccourcis rétablis seulement au `blur` ; F25+ signalées « déjà prises » ; webhook : 30 s sur hôte muet, régénérer écrase le secret sans confirmation ; commentaire de `sound_cues` dans `model.rs` périmé.
 

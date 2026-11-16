@@ -13,6 +13,14 @@ pub fn paste_text(text: &str, before_paste: Duration, paste: bool) -> Result<()>
     let _one_at_a_time = PASTE.lock().unwrap_or_else(|e| e.into_inner());
     let mut clipboard = arboard::Clipboard::new().context("clipboard_unavailable")?;
     set_private(&mut clipboard, text).context("clipboard_write")?;
+    // Shift+Insert pastes PRIMARY in terminals (VTE, xterm): fill it too. Best effort.
+    #[cfg(target_os = "linux")]
+    {
+        use arboard::{LinuxClipboardKind, SetExtLinux};
+        if let Err(e) = clipboard.set().clipboard(LinuxClipboardKind::Primary).exclude_from_history().text(text) {
+            log::info!("primary selection: {e}");
+        }
+    }
     // Linux (X11, Wayland): the text lives as long as its owner; keep it for a manual paste.
     // arboard shares one clipboard, so this keeps a single reference alive, not one per dictation.
     #[cfg(target_os = "linux")]
@@ -38,14 +46,16 @@ fn set_private(clipboard: &mut arboard::Clipboard, text: &str) -> Result<(), arb
     set.text(text)
 }
 
+/// Linux pastes with Shift+Insert, not Ctrl+V: terminals take Ctrl+V as a literal key, and
+/// Wayland cannot tell which app has the focus. GUI apps paste CLIPBOARD on Shift+Insert.
 #[cfg(target_os = "linux")]
 fn simulate_paste() -> Result<()> {
     // Native tools first: enigo cannot synthesize keys on most Wayland compositors.
     let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
     let attempts: &[(&str, &[&str])] = if wayland {
-        &[("wtype", &["-M", "ctrl", "v", "-m", "ctrl"]), ("dotool", &[]), ("xdotool", &["key", "--clearmodifiers", "ctrl+v"])]
+        &[("wtype", &["-M", "shift", "-k", "Insert", "-m", "shift"]), ("dotool", &[]), ("xdotool", &["key", "--clearmodifiers", "shift+Insert"])]
     } else {
-        &[("xdotool", &["key", "--clearmodifiers", "ctrl+v"])]
+        &[("xdotool", &["key", "--clearmodifiers", "shift+Insert"])]
     };
     for (bin, args) in attempts {
         if run_tool(bin, args) {
@@ -68,7 +78,7 @@ fn run_tool(bin: &str, args: &[&str]) -> bool {
     if bin == "dotool" {
         // dotool reads commands on stdin.
         let Ok(mut child) = Command::new(bin).stdin(std::process::Stdio::piped()).spawn() else { return false };
-        let wrote = child.stdin.take().is_some_and(|mut s| s.write_all(b"key ctrl+v\n").is_ok());
+        let wrote = child.stdin.take().is_some_and(|mut s| s.write_all(b"key shift+insert\n").is_ok());
         return wrote && child.wait().is_ok_and(|s| s.success());
     }
     Command::new(bin).args(args).status().is_ok_and(|s| s.success())
@@ -82,6 +92,12 @@ fn simulate_paste() -> Result<()> {
 fn enigo_paste() -> Result<()> {
     use enigo::{Direction, Enigo, Key, Keyboard, Settings};
     let mut enigo = Enigo::new(&Settings::default()).context("input_unavailable")?;
+    if cfg!(target_os = "linux") {
+        enigo.key(Key::Shift, Direction::Press).context("paste_failed")?;
+        let click = enigo.key(Key::Insert, Direction::Click);
+        enigo.key(Key::Shift, Direction::Release).context("paste_failed")?;
+        return click.context("paste_failed");
+    }
     let modifier = if cfg!(target_os = "macos") { Key::Meta } else { Key::Control };
     enigo.key(modifier, Direction::Press).context("paste_failed")?;
     // macOS: the V key by position (kVK_ANSI_V). `Unicode('v')` looks the layout up through

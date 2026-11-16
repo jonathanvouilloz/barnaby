@@ -104,8 +104,9 @@ const REMOTE: &str = "org.freedesktop.portal.RemoteDesktop";
 /// Where the remote-desktop restore token lives: with it, GNOME asks once, not on every paste.
 pub static TOKEN_FILE: OnceLock<std::path::PathBuf> = OnceLock::new();
 
-/// Ctrl+V through the RemoteDesktop portal. Xwayland's XTEST goes through the same portal
-/// but cannot keep the permission, so GNOME asked again and again. Evdev keycodes: Ctrl 29, V 47.
+/// Shift+Insert through the RemoteDesktop portal (see `inject::simulate_paste`). Xwayland's XTEST
+/// goes through the same portal but cannot keep the permission, so GNOME asked again and again.
+/// Evdev keycodes: Shift 42, Insert 110.
 pub fn paste() -> Result<()> {
     let Some(p) = portal() else { bail!("no portal") };
     let token = || format!("barnaby{}", TOKEN.fetch_add(1, Ordering::Relaxed));
@@ -127,7 +128,7 @@ pub fn paste() -> Result<()> {
         if let (Some(file), Some(new)) = (TOKEN_FILE.get(), results.get("restore_token").and_then(|v| String::try_from(v.clone()).ok())) {
             let _ = std::fs::write(file, new);
         }
-        for (key, state) in [(29i32, 1u32), (47, 1), (47, 0), (29, 0)] {
+        for (key, state) in [(42i32, 1u32), (110, 1), (110, 0), (42, 0)] {
             p.conn.call_method(Some(DEST), PATH, Some(REMOTE), "NotifyKeyboardKeycode", &(&path, HashMap::<&str, Value>::new(), key, state))?;
         }
         Ok(())

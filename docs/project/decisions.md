@@ -178,7 +178,7 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - À rouvrir si : le prénom doit aussi renommer les réunions déjà traitées.
 
 ## 2026-11-15 — Wayland : raccourcis et collage par les portails
-- Choix : sous Wayland (GNOME), les raccourcis globaux passent par le portail `GlobalShortcuts` (`src-tauri/src/portal.rs`), le Ctrl+V par le portail `RemoteDesktop` avec jeton de restauration gardé dans `remote-desktop.token` (une seule autorisation). L'id d'un raccourci porte son déclencheur xdg (`dictation:CTRL+ALT+space`), sinon GNOME garde l'ancien choix ; la touche physique est traduite en keysym de la disposition active (GDK), car la touche `BracketRight` tape `dead_diaeresis` en suisse.
+- Choix : sous Wayland (GNOME), les raccourcis globaux passent par le portail `GlobalShortcuts` (`src-tauri/src/portal.rs`), le collage par le portail `RemoteDesktop` (Ctrl+V à l'origine, Shift+Insert depuis le 2026-11-16) avec jeton de restauration gardé dans `remote-desktop.token` (une seule autorisation). L'id d'un raccourci porte son déclencheur xdg (`dictation:CTRL+ALT+space`), sinon GNOME garde l'ancien choix ; la touche physique est traduite en keysym de la disposition active (GDK), car la touche `BracketRight` tape `dead_diaeresis` en suisse.
 - Écarté : le grab X11 de tauri-plugin-global-shortcut (ne reçoit rien quand une fenêtre Wayland a le focus, dont Barnaby) ; le XTEST d'enigo via XWayland (passe par le même portail, sans garder l'autorisation : GNOME redemandait) ; la crate `ashpd` (zbus et gdk sont déjà dans l'arbre).
 - À rouvrir si : un autre compositeur (KDE) refuse le format des déclencheurs, ou l'icône « contrôle à distance » à chaque collage gêne.
 
@@ -187,3 +187,8 @@ Les décisions produit (sections 19 et 22) sont dans `docs/SPEC.md`. Ici, seulem
 - Écarté : lancer toute l'app sous XWayland (`GDK_BACKEND=x11`) pour pouvoir la placer en bas et au premier plan : flou à l'échelle 125 % de Jon. GNOME n'a pas de layer-shell.
 - À rouvrir si : GNOME active `xwayland-native-scaling` par défaut, ou une extension GNOME devient acceptable.
 
+
+## 2026-11-16 — Linux : collage par Shift+Insert, app sous XWayland sur GNOME Wayland
+- Choix : sous Linux, le collage envoie Shift+Insert (portail, wtype, dotool, xdotool, enigo) et remplit aussi la sélection PRIMARY, car les terminaux (Ptyxis/VTE) prennent Ctrl+V littéralement et Wayland ne dit pas quelle app a le focus. Sous GNOME Wayland, `main.rs` fixe `GDK_BACKEND=x11` sauf s'il est déjà défini : mutter donne le focus à toute fenêtre affichée, la pastille le volait ; sous XWayland elle reste infocusable, au premier plan et placée. Remplace la décision « pastille au centre » du 2026-11-15.
+- Écarté : Ctrl+V (casse les terminaux) ; détecter l'app active pour choisir la touche (impossible sous Wayland) ; pastille au centre sans XWayland.
+- À rouvrir si : la sélection PRIMARY écrasée à chaque dictée gêne, du flou apparaît à l'échelle fractionnaire sous XWayland (le flou à 125 % avait écarté cette voie le 2026-11-15, non revérifié), ou un GNOME donne le focus correctement sans XWayland.
