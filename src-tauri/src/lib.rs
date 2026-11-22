@@ -78,6 +78,11 @@ pub fn run() {
             }
             let worker_app = app.clone();
             std::thread::spawn(move || meeting::worker(worker_app, rx));
+            let idle_app = app.clone();
+            std::thread::spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_secs(60));
+                idle_app.unload_idle_models();
+            });
             tray::refresh(&app);
             Ok(())
         })

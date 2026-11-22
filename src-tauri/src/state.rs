@@ -4,7 +4,7 @@ use std::{
     collections::HashMap,
     path::PathBuf,
     sync::{mpsc::Sender, Arc, Mutex, MutexGuard},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use barnaby_core::{
@@ -40,7 +40,11 @@ pub struct App {
     pub mic_test: Mutex<Option<MicTest>>,
     transcribers: Mutex<HashMap<String, Arc<dyn Transcriber>>>,
     diarizer: Mutex<Option<Arc<SherpaDiarizer>>>,
+    models_used: Mutex<Instant>,
 }
+
+/// Loaded models hold ~2 GB of RAM; drop them after this long without use.
+pub const MODEL_IDLE_UNLOAD: Duration = Duration::from_secs(10 * 60);
 
 pub const KEYRING_SERVICE: &str = "barnaby";
 pub const WEBHOOK_SECRET_USER: &str = "webhook-secret";
@@ -71,6 +75,7 @@ impl App {
             mic_test: Mutex::default(),
             transcribers: Mutex::default(),
             diarizer: Mutex::default(),
+            models_used: Mutex::new(Instant::now()),
         }
     }
 
@@ -103,6 +108,7 @@ impl App {
 
     /// Loaded once per model id; loading a large model takes seconds.
     pub fn transcriber(&self, model_id: &str) -> anyhow::Result<Arc<dyn Transcriber>> {
+        *lock(&self.models_used) = Instant::now();
         let mut cache = lock(&self.transcribers);
         if let Some(t) = cache.get(model_id) {
             return Ok(t.clone());
@@ -130,6 +136,7 @@ impl App {
     }
 
     pub fn diarizer(&self) -> anyhow::Result<Arc<SherpaDiarizer>> {
+        *lock(&self.models_used) = Instant::now();
         let mut cache = lock(&self.diarizer);
         if let Some(d) = cache.as_ref() {
             return Ok(d.clone());
@@ -153,12 +160,40 @@ impl App {
         lock(&self.transcribers).clear();
         *lock(&self.diarizer) = None;
     }
+
+    /// Called every minute. A job still running keeps its own Arc, so only the cache is dropped.
+    pub fn unload_idle_models(&self) {
+        if !idle(*lock(&self.models_used), Instant::now()) {
+            return;
+        }
+        let loaded = !lock(&self.transcribers).is_empty() || lock(&self.diarizer).is_some();
+        if loaded {
+            self.forget_models();
+            log::info!("models unloaded after {} min idle", MODEL_IDLE_UNLOAD.as_secs() / 60);
+        }
+    }
 }
 
 fn secret(user: &str) -> Option<String> {
     keyring::Entry::new(KEYRING_SERVICE, user).ok()?.get_password().ok()
 }
 
+fn idle(last_used: Instant, now: Instant) -> bool {
+    now.duration_since(last_used) >= MODEL_IDLE_UNLOAD
+}
+
 pub fn lock<T>(m: &Mutex<T>) -> MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn models_unload_after_ten_idle_minutes() {
+        let last = Instant::now();
+        assert!(!idle(last, last + Duration::from_secs(9 * 60 + 59)));
+        assert!(idle(last, last + MODEL_IDLE_UNLOAD));
+    }
 }
