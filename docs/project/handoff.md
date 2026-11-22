@@ -2,7 +2,7 @@
 Mise à jour : 2026-11-23
 
 ## Où on en est
-- Dernière release : `v0.4.6` (GitHub ; site à redéployer). Déchargement des modèles après 10 min sans usage (`MODEL_IDLE_UNLOAD`, `state.rs`), à confirmer par Jon sur la mémoire réelle. `v0.4.5` Contient la PR #2 (Parakeet, portails Wayland, plantage Linux) et la PR #3 (collage Shift+Insert, XWayland sur GNOME) → `docs/features/linux-terminal-paste-focus.md`.
+- Dernière release : `v0.4.6` (GitHub + site mybarnaby.app). Déchargement des modèles après 10 min sans usage (`MODEL_IDLE_UNLOAD`, `state.rs`), à confirmer par Jon sur la mémoire réelle. `v0.4.5` Contient la PR #2 (Parakeet, portails Wayland, plantage Linux) et la PR #3 (collage Shift+Insert, XWayland sur GNOME) → `docs/features/linux-terminal-paste-focus.md`.
 - Testé par Jon (Fedora 44, GNOME Wayland, échelle 100 %) : dictée collée dans Ptyxis et VS Code, focus gardé.
 
 ## Prochaine action
